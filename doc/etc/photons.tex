@@ -1,0 +1,407 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath}
+\usepackage{psfig}
+\usepackage{bm}
+
+\evensidemargin=1truein
+\oddsidemargin=1truein
+\hoffset=-1truein
+\voffset=-1truecm
+\textheight=9.5truein
+\textwidth=6.5truein
+
+\newcommand{\D}{{\rm d}}
+
+\begin{document}
+
+\begin{center}
+{\Large\bf
+Computation of Selected Nonthermal Photon Spectra}\\
+\large
+John C. Houck \\
+\verb|<houck@space.mit.edu>|
+\end{center}
+
+\section{Synchrotron Radiation}
+
+From Blumenthal \& Gould (1970),
+the total synchrotron power emitted per unit frequency
+from an electron spiraling in a magnetic field is
+\begin{equation}
+P_{\rm emitted}(\nu) =
+\frac{\sqrt{3} e^3 B \sin\alpha}{mc^2}
+\frac{\nu}{\nu_c} \int_{\nu/\nu_c}^\infty \D\xi K_{5/3}(\xi)
+\label{eq:p-emitted}
+\end{equation}
+where $B$ is the magnetic field strength, and
+$\alpha$ is the pitch angle between the electron's velocity
+vector ${\bf v}$ and the magnetic field vector ${\bf B}$.
+In (\ref{eq:p-emitted}), $\nu_c$ is the critical frequency, defined as
+\begin{equation}
+  \nu_c = \frac{3eB\gamma^2}{4\pi m c} \sin\alpha
+  \equiv \nu_0 \gamma^2 \sin\alpha,
+\label{eq:nu-c}
+\end{equation}
+
+We assume a time-independent electron distribution and define
+$N(\gamma, \alpha, {\bf r})~d\gamma~d\Omega_\alpha$, as the
+density of nonthermal electrons at ${\bf r}$, with pitch angle
+$\alpha$ within $d\Omega_\alpha$ and energy $\gamma$ within
+$d\gamma$. From Blumenthal \& Gould (1970), the total
+synchrotron power received per unit volume per unit frequency
+averaged over pitch-angles is
+\begin{equation}
+\frac{dW}{d\nu dt} = \frac{1}{4\pi}\int \D\gamma \int \D\Omega_\alpha~
+              P_{\rm emitted}(\nu)~N(\gamma, \alpha, {\bf r})
+\label{eq:dwdnudt}
+\end{equation}
+
+Combining (\ref{eq:p-emitted}), (\ref{eq:nu-c}) and
+(\ref{eq:dwdnudt}), and assuming an isotropic distribution
+of pitch-angles, we obtain
+\begin{equation}
+\frac{dW}{d\nu dt} =
+\frac{\sqrt{3} e^3 B}{4\pi mc^2}
+\int \D\gamma N(\gamma) \int \D\phi_\alpha~ \int \D\alpha
+\sin^2\alpha ~F\left(\frac{\nu}{\nu_0\gamma^2\sin\alpha}\right).
+\end{equation}
+Substituting $t\equiv \sin\alpha$, and
+expressing the result in terms of the photon emission rate, we have
+\begin{equation}
+\varepsilon\frac{dn_\varepsilon}{d\varepsilon dt} =
+\frac{\sqrt{3} e^3 B}{hmc^2}
+\int_0^\infty \D\gamma N(\gamma) \int_0^1 \D t
+\frac{t^2}{\sqrt{1 - t^2}} F\left(\frac{\nu}{\nu_0\gamma^2 t}\right),
+\label{eq:sync-emis1}
+\end{equation}
+where $\varepsilon = h\nu/(mc^2)$ is the photon energy in units
+of the electron rest energy.
+
+Writing the inner integral in the form
+\begin{equation}
+I(x) = \int_0^1 \D t \frac{t^2 F(x/t)}{\sqrt{1 - t^2}}
+\end{equation}
+it is clearly a function of a single variable and may be
+precomputed to speed numerical evaluation of (\ref{eq:sync-emis1})
+(see the upper panel of Fig \ref{anglefun-fig}).
+The asymptotic behavior of $F(x)$ ensures that the integrand
+is well behaved at the limits of integration:
+\begin{align}
+F(\xi) &=
+\frac{4\pi}{\sqrt{3}\Gamma(1/3)}\left(\frac{\xi}{2}\right)^{1/3}
+     & \xi \ll 1 \\
+F(\xi) &=
+\left(\frac{\pi}{2}\right)^{1/2}\xi^{1/2} \exp(-\xi)
+     & \xi \gg 1
+\end{align}
+The lower panel Fig \ref{anglefun-fig} shows
+effect of angle-averaging over an isotropic distribution of pitch
+angles.  For $t \ll 1$, $I(t) \approx 0.84131 F(x)$.
+
+Expressing (\ref{eq:sync-emis1}) in terms of $I(x)$, we have
+\begin{equation}
+\frac{dn_\varepsilon}{d\varepsilon dt} =
+\frac{\sqrt{3} e^3 B}{hmc^2\varepsilon}
+\int_0^\infty \D\gamma N(\gamma) I\left(\frac{\varepsilon}{\varepsilon_0\gamma^2}\right),
+\label{eq:sync-emis}
+\end{equation}
+
+\begin{figure}
+\hbox{\hspace*{-0.25in}\psfig{file=angfun.ps,width=5.25in,angle=-90}}
+\caption{}
+\label{anglefun-fig}
+\end{figure}
+
+\clearpage
+\newpage
+
+\section{Inverse Compton Scattering}
+
+Given a distribution of nonthermal electrons $N(\gamma)$, immersed
+in an isotropic radiation field with photon number density
+$n(\varepsilon_i)$, the total spectrum of Compton scattered photons
+is
+\begin{equation}
+\frac{dn_\varepsilon}{d\varepsilon dt} =
+c \int \D\gamma N(\gamma) \int \D\varepsilon_i
+  n(\varepsilon_i)
+  \sigma_{\rm K-N}(\gamma, \varepsilon_i, \varepsilon).
+\end{equation}
+In this expression,
+\begin{equation}
+ \sigma_{\rm K-N}(\gamma, \varepsilon_i, \varepsilon) =
+\frac{2\pi r_0^2}{\varepsilon_i \gamma^2}
+\left[
+1 + q - 2q^2 + 2q\ln q +
+\frac{\Gamma^2 q^2 (1-q)}{2(1 + \Gamma q)}
+\right]
+\end{equation}
+is the Klein-Nishina scattering cross-section,
+where $\Gamma \equiv 4\varepsilon_i\gamma$ and
+\begin{equation}
+ q \equiv \frac{\varepsilon}
+             {4 \varepsilon_i \gamma (\gamma - \varepsilon)},
+             (0 \le q \le 1).
+\end{equation}
+The constant $r_0 = e^2 /(m_ec^2)$ is the classial electron
+radius ($\sigma_T = 8\pi r_0^2/3$ is the Thomson cross-section).
+For a blackbody radiation field,
+the photon number density is
+\begin{equation}
+  n(\varepsilon) = \frac{1}{\pi^2 \lambda^3}
+  \frac{\varepsilon^2}{e^{\varepsilon/\Theta} - 1}
+\end{equation}
+where $\varepsilon \equiv h\nu/(mc^2)$, $\lambda \equiv \hbar/(mc)$
+is the electron Compton wavelength
+and $\Theta \equiv kT/(mc^2)$.
+
+It is useful to tabulate the integral over $\varepsilon_i$
+for a given spectrum of seed photons, $n(\varepsilon_i)$.
+The resulting table gives the value of the integral as a function
+of $\gamma$ and $\varepsilon$.
+For the cosmic background radiation field, the resulting table
+is shown in Fig \ref{ic-fig}.
+
+\begin{figure}
+\hbox{\hspace*{-0.25in}\psfig{file=ic_table_CBR.ps,width=5.25in,angle=-90}}
+\caption{}
+\label{ic-fig}
+\end{figure}
+
+\clearpage
+\newpage
+
+\section{Nonthermal $e^{-}e^{-}$ Bremsstrahlung}
+
+The rate of interactions between incident and target particles
+per unit space-time volume may be in written in covariant form as
+\begin{equation}
+  \frac{d^4N}{dx^4} = \left({\tilde j_1}\cdot{\tilde j_2}\right) \beta_r \sigma
+\end{equation}
+where ${\tilde j_i} = n_i(1,{\bm \beta_i})$ is the particle-current
+4-vector for the $i$th species, with density $n_i$ and velocity
+3-vector ${\bm \beta_i}$.  In this expression, $\beta_r$ is the invariant
+relative velocity
+\begin{equation}
+  \beta_r^2 = \frac{\left({\tilde p_1}\cdot{\tilde p_2}\right)^2
+              - m_1^2 m_2^2}{\left({\tilde p_1}\cdot{\tilde p_2}\right)^2}
+\end{equation}
+where ${\tilde p_i} = m_i{\tilde u_i}$ is the 4-momentum
+and $m_i$ is the particle mass.  The total cross-section for
+the interaction is $\sigma$ (and is {\it required} to be invariant).
+
+Following Dermer (1984, ApJ 280, 328), the relativistic
+reaction rate $r$ is defined as the number of interactions per
+unit space-time volume and is also an invariant quantity.
+The reaction rate for two interacting distributions of
+identical particles is given by
+\begin{equation}
+ r = \int\cdots\int \left(1 - {\bm \beta_1} \cdot {\bm \beta_2}\right) \beta_r d\sigma dn_1 dn_2
+\end{equation}
+where the integrals extend over all momenta of the interacting
+distributions.
+
+Given azimuthal symmetry, the particle collisions may be
+characterized by three variables, the two particle momenta and
+the cosine of the angle between them. Writing the reaction rate
+integral in terms of particle distributions, $f_i(p_i)$,
+the lab-frame emitted photon spectrum is
+\begin{equation}
+ S(k) = \left(2\pi\right)^2
+        \int dp_1 p_1^2 f_1(p_1)
+        \int dp_2 p_2^2 f_2(p_2)
+        \int d(\cos\theta)
+        \left(1 - {\bm \beta_1} \cdot {\bm \beta_2}\right)
+        \beta_r \frac{d\sigma}{dk}
+\end{equation}
+where $\theta$ is the angle between the two particle momenta
+and $d\sigma/dk$ is the differential cross-section for emitting
+a photon of energy $k$.
+
+Specializing to the case where $\beta_1 \gg \beta_2$, the
+target particles are essentially stationary so that ${\bm
+\beta_1} \cdot {\bm \beta_2} = 0$. Replacing $f_2(p_2)$ with a
+delta function, $\delta(p_2)$, the integral over target momenta
+can be evaluated trivially. The lab-frame photon spectrum is
+then
+\begin{equation}
+S(k) = n_2 \int_{1 + k/m_1}^\infty d\gamma_1
+        f_1^\prime(\gamma_1) \beta_r \frac{d\sigma}{dk}.
+\label{eebrems-spectrum}
+\end{equation}
+where we have replaced the integral over momentum space
+with the corresponding integral over incident electron energies.
+The integral limits span the range of electron energies
+which can produce a photon of energy $k$.
+
+Because the theoretical cross-section is derived in the center
+of momentum (CM) frame, we will derive the lab-frame
+differential cross-section by applying a Lorentz transformation
+to the CM frame result.  We will make use of the Lorentz
+invariant
+\begin{equation}
+   k \frac{d^3\sigma}{dp^3}
+\end{equation}
+where ${\bm p}$ is the momentum 3-vector.
+To demonstrate that this quantity is a Lorentz invariant,
+consider components of the momentum parallel and perpendicular
+to the direction of motion,
+\begin{equation}
+   k \frac{d^3\sigma}{dp^3} = k \frac{d^3\sigma}{dp_{||}d^2p_\perp}
+\end{equation}
+and note that under a Lorentz transformation,
+$k$ and $dp_{||}$ behave the same way while the perpendicular
+components are unchanged.
+
+Equating the lab frame and CM frame values
+of this invariant, we have
+\begin{equation}
+ k \frac{d^3\sigma}{p^2 dp d\Omega} =
+  k_* \frac{d^3\sigma_*}{p_*^2 dp_* d\Omega_*}
+\end{equation}
+where starred quantities are to be evaluated in the CM frame.
+The photon energy-momentum 4-vector is $k(1,{\bm n})$, where
+${\bm n}$ is a unit 3-vector in the propagation direction.  It
+follows that $p^2 dp = k^2 dk$ so that, integrating over
+lab-frame solid angles and assuming azimuthal symmetry, we have
+\begin{equation}
+  \frac{d\sigma}{dk} =
+   2\pi \int_{\mu_{\rm min}}^1 d\mu \frac{k}{k_*}
+  \frac{d^3\sigma_*}{dk_* d\Omega_*}
+\label{sigma-angular-integral}
+\end{equation}
+where, $\mu \equiv \cos\psi$ and the integral extends over all lab-frame angles
+which are accessible to emitted photons.  In this expression,
+the differential cross-section is to be evaluated at
+the appropriately Lorentz-transformed values of the electron
+energy, photon energy and photon emission angle:
+\begin{equation}
+\frac{d^3\sigma_*}{dk_* d\Omega_*} \equiv
+F_*\left[k_*(\gamma, k, \psi), \gamma_*(\gamma, k, \psi), \psi_*(\gamma, k, \psi)\right].
+\end{equation}
+The differential cross-section $F_*(\gamma_*, k_*, \psi_*)$,
+having units of e.g. barns~keV${}^{-1}$~sr${}^{-1}$, is computed using
+software kindly provided by Eberhard Haug.
+
+To determine the Lorentz transformation between the lab
+frame and the CM frame, consider the Lorentz invariant
+product, $\eta \equiv {\tilde p_1}\cdot{\tilde p_1}$.
+In the CM frame, $|{\bm \beta_c}| \equiv {\bm \beta_1} = -{\bm \beta_2}$, so that
+$\eta_{\rm cm} = \gamma_c^2 (1+\beta_c^2)$.  In the lab frame,
+particle 2 is arbitrarily chosen to be at rest so that
+$\eta_{\rm lab} = \gamma_1$.  Requiring $\eta_{\rm lab} =
+\eta_{\rm cm}$ yields
+\begin{equation}
+  \gamma_c \equiv \frac{1}{\sqrt{1 - \beta_c^2}} =
+\left(\frac{\gamma_1 + 1}{2}\right)^{1/2},
+\end{equation}
+which determines the desired Lorentz transformation.
+
+In the lab frame, the emitted photon has energy $k$ and is
+emitted with direction angle $\psi$ so that the
+CM frame photon energy is
+\begin{equation}
+k_* = k \gamma_c \left(1 - \beta_c \cos\psi\right)
+\end{equation}
+and the CM frame photon direction cosine is
+\begin{equation}
+\cos\psi_* = \frac{\cos\psi - \beta_c}{1 - \beta_c\cos\psi}.
+\end{equation}
+In general, the electron energy
+in a moving frame is
+\begin{equation}
+ E_* = \gamma_c \left(E - \beta_c p \cos\omega\right)
+\end{equation}
+where the electron energy-momentum 4-vector is
+$m_1\gamma_1 (1, \beta_1)$, and $\omega$ is the angle between the velocity 3-vectors
+of the electron and of the moving frame.  Because the
+electron velocity is, by definition, parallel to the
+CM frame velocity vector, $\omega \equiv 0$ so that,
+for the electron,
+\begin{equation}
+ \gamma_* = \gamma_c \gamma_1 \left(1 - \beta_c \beta_1\right).
+\end{equation}
+
+The limits on the lab-frame angular integral over the
+cross-section (\ref{sigma-angular-integral}) are given by Haug
+(1975) and follow from energy-momentum conservation.
+In the CM frame, the photon emission is symmetric along
+the direction of motion and all values of $\psi_*$ are
+accessible.  In the lab frame, beaming restricts the photon
+emission angles to a narrow cone in the forward direction.
+From Haug (1975), the limits of integration are
+${\psi_{\rm min}} = 0$ and, for photons with energies
+$(\gamma_1 -1)/(\gamma_1 + \gamma_1 \beta_1 + 1) < k \leq k_{\rm
+max} \equiv (\gamma_1 -1)/(\gamma_1 - \gamma_1 \beta_1 + 1)$,
+the maximum emission angle, $\psi_{\rm max}$, is determined by
+\begin{equation}
+\cos {\psi_{\rm max}} = \frac{(\gamma_1 + 1)k - (\gamma_1-1)}{k \gamma_1 \beta_1}
+\end{equation}
+Lower energy photons may span $\pi < \psi < 0$.
+
+In principle, the photon spectrum due to nonthermal $e^-e^-$
+bremsstrahlung is computed using the differential cross-section
+from (\ref{sigma-angular-integral}) in
+(\ref{eebrems-spectrum}). However, because of relativistic
+beaming, numerical evaluation of the integral in
+(\ref{sigma-angular-integral}) can become dominated by
+round-off errors associated with finite-precision arithmetic.
+The problem is that the factors $(\cos \psi - \beta_c)$ and $(1
+- \beta_c \cos\psi)$ and $\gamma_c\gamma_1(1 - \beta_c
+\beta_1)$ are dominated by round-off errors in the limit that
+$\beta_c \rightarrow 1$, $\beta_1 \rightarrow 1$ and $\psi
+\rightarrow 0$.
+
+To avoid this loss of numerical precision, we isolate the
+neighborhood of $\psi = 0$ by
+breaking (\ref{sigma-angular-integral}) into two pieces,
+\begin{equation}
+  \frac{1}{2\pi}\frac{d\sigma}{dk} \equiv I_1 + I_\epsilon
+  \equiv
+   \int_{\mu_{\rm min}}^{1 - \epsilon} d\mu f(\mu)
+   + \int_{1-\epsilon}^1 d\mu f(\mu),
+\end{equation}
+where $f(\mu) \equiv (k/k_*)F_*(\gamma_*, k_*, \psi_*)$.
+$I_1$ can be evaluated as it stands because $\epsilon > 0$ is
+chosen large enough to avoid the difficult region. If $\mu_{\rm min}
+\geq 1 - \epsilon$, $I_1 \equiv 0$ and the entire contribution
+comes from $I_\epsilon$. To evalute $I_\epsilon$, we introduce
+a change of variables to ensure that the numerical cancellation
+is handled analytically, retaining full machine precision
+as much as possible. Defining $\mu \equiv 1 - u$,
+the second integral may be written
+\begin{equation}
+  I_\epsilon = \int_0^\epsilon du f(1-u).
+\end{equation}
+In this form, the integrand may be computed directly in terms of
+numerically small values.  To do that, we rewrite the
+Lorentz transform expressions in terms of $\mu \equiv 1-u$,
+$\beta \equiv 1 - \delta\beta$, and
+$\beta_c \equiv 1 - \delta\beta_c$.  The problematic factors
+then become
+\begin{eqnarray}
+ &\mu - \beta = \delta\beta - \delta\mu \nonumber\\
+ &1 - \beta\mu = \delta\mu + \delta\beta - \delta\mu\delta\beta \\
+ &\gamma_c \gamma_1 (1 - \beta_c\beta_1) =
+ \frac{\delta\beta_c + \delta\beta_1 - \delta\beta_c\delta\beta_1}{
+\sqrt{\delta\beta_1\delta\beta_c(2-\delta\beta_1)(2-\delta\beta_c)}\nonumber
+ }
+\end{eqnarray}
+We then compute $\delta\beta_1$ and $\delta\beta_c$
+using
+\begin{equation}
+ \delta\beta(\gamma) \equiv 1 - \beta(\gamma) =
+   \frac{1}{2}\gamma^{-2}
+ + \frac{1\cdot 1}{2\cdot 4}\gamma^{-4}
+ + \frac{1\cdot 1 \cdot 3}{2\cdot 4 \cdot 6}\gamma^{-6}
+ + \frac{1\cdot 1 \cdot 3 \cdot 5}{2\cdot 4 \cdot 6 \cdot 8}\gamma^{-8}
+ + \dots
+\label{dbeta-series}
+\end{equation}
+The series
+(\ref{dbeta-series}) converges
+rapidly for $\gamma \gg 1$ so the first few terms are sufficient to achieve
+high accuracy.
+
+\end{document}

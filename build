@@ -1,0 +1,17 @@
+#! /bin/sh
+
+# CFLAGS="-g -O2 -Wall -W \
+# -Wmissing-prototypes -Wstrict-prototypes \
+# -Wtraditional -Wconversion -Wshadow \
+# -Wpointer-arith -Wcast-align \
+# -Wnested-externs -fshort-enums -fno-common"
+
+# export CFLAGS
+
+# --with-slang=/nfs/cxc/h1/davis/sys/i686 \
+
+./configure --with-slang=/nfs/verus/d1/i686 \
+       --with-gsl=/nfs/verus/d1/i686 \
+       --with-isis=$HOME/sys/i686/isis
+
+make

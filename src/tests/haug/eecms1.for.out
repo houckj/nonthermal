@@ -1,0 +1,34 @@
+ Electron-electron bremsstrahlung in the cms
+ electron energy =  100.0 keV
+
+ Photon energy =   1.0 keV: CS = 0.21155E-01 b/keV   CSC = 0.21154E-01 b/keV
+ Photon energy =   2.0 keV: CS = 0.94986E-02 b/keV   CSC = 0.94981E-02 b/keV
+ Photon energy =   3.0 keV: CS = 0.59029E-02 b/keV   CSC = 0.59024E-02 b/keV
+ Photon energy =   4.0 keV: CS = 0.41945E-02 b/keV   CSC = 0.41940E-02 b/keV
+ Photon energy =   5.0 keV: CS = 0.32087E-02 b/keV   CSC = 0.32083E-02 b/keV
+ Photon energy =   6.0 keV: CS = 0.25724E-02 b/keV   CSC = 0.25720E-02 b/keV
+ Photon energy =   7.0 keV: CS = 0.21303E-02 b/keV   CSC = 0.21299E-02 b/keV
+ Photon energy =   8.0 keV: CS = 0.18067E-02 b/keV   CSC = 0.18063E-02 b/keV
+ Photon energy =   9.0 keV: CS = 0.15604E-02 b/keV   CSC = 0.15600E-02 b/keV
+ Photon energy =  10.0 keV: CS = 0.13673E-02 b/keV   CSC = 0.13669E-02 b/keV
+ Photon energy =  15.0 keV: CS = 0.81340E-03 b/keV   CSC = 0.81303E-03 b/keV
+ Photon energy =  20.0 keV: CS = 0.55531E-03 b/keV   CSC = 0.55496E-03 b/keV
+ Photon energy =  25.0 keV: CS = 0.40892E-03 b/keV   CSC = 0.40859E-03 b/keV
+ Photon energy =  30.0 keV: CS = 0.31590E-03 b/keV   CSC = 0.31558E-03 b/keV
+ Photon energy =  35.0 keV: CS = 0.25222E-03 b/keV   CSC = 0.25192E-03 b/keV
+ Photon energy =  40.0 keV: CS = 0.20627E-03 b/keV   CSC = 0.20598E-03 b/keV
+ Photon energy =  45.0 keV: CS = 0.17179E-03 b/keV   CSC = 0.17150E-03 b/keV
+ Photon energy =  50.0 keV: CS = 0.14511E-03 b/keV   CSC = 0.14483E-03 b/keV
+ Photon energy =  60.0 keV: CS = 0.10686E-03 b/keV   CSC = 0.10660E-03 b/keV
+ Photon energy =  70.0 keV: CS = 0.81091E-04 b/keV   CSC = 0.80840E-04 b/keV
+ Photon energy =  80.0 keV: CS = 0.62777E-04 b/keV   CSC = 0.62536E-04 b/keV
+ Photon energy =  90.0 keV: CS = 0.49232E-04 b/keV   CSC = 0.48999E-04 b/keV
+ Photon energy = 100.0 keV: CS = 0.38893E-04 b/keV   CSC = 0.38667E-04 b/keV
+ Photon energy = 110.0 keV: CS = 0.30795E-04 b/keV   CSC = 0.30575E-04 b/keV
+ Photon energy = 120.0 keV: CS = 0.24307E-04 b/keV   CSC = 0.24093E-04 b/keV
+ Photon energy = 130.0 keV: CS = 0.19006E-04 b/keV   CSC = 0.18796E-04 b/keV
+ Photon energy = 140.0 keV: CS = 0.14589E-04 b/keV   CSC = 0.14384E-04 b/keV
+ Photon energy = 150.0 keV: CS = 0.10839E-04 b/keV   CSC = 0.10639E-04 b/keV
+ Photon energy = 160.0 keV: CS = 0.75870E-05 b/keV   CSC = 0.73934E-05 b/keV
+ Photon energy = 170.0 keV: CS = 0.46858E-05 b/keV   CSC = 0.44992E-05 b/keV
+ Photon energy = 180.0 keV: CS = 0.18643E-05 b/keV   CSC = 0.16848E-05 b/keV

@@ -1,0 +1,128 @@
+# -*- sh -*-
+
+#---------------------------------------------------------------------------
+# List of modules and associated .sl files to install
+#---------------------------------------------------------------------------
+MODULES = nonthermal-module.so libnonthermal.so
+SL_FILES = nonthermal.sl 
+
+#---------------------------------------------------------------------------
+# Installation Directories
+#---------------------------------------------------------------------------
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+MODULE_INSTALL_DIR = @MODULE_INSTALL_DIR@
+SL_FILES_INSTALL_DIR = @SL_FILES_INSTALL_DIR@
+
+#---------------------------------------------------------------------------
+# C Compiler to create a shared library
+#---------------------------------------------------------------------------
+CC_SHARED 	= @CC_SHARED@
+
+#---------------------------------------------------------------------------
+# Location of the S-Lang library and its include file
+#---------------------------------------------------------------------------
+SLANG_INC	= @SLANG_INC@
+SLANG_LIB	= @SLANG_LIB@ -lslang
+
+#---------------------------------------------------------------------------
+# Additional Libraries required by the module
+#---------------------------------------------------------------------------
+GSL_INC	= @GSL_INC@
+GSL_LIB	= @GSL_LIB@ -lgsl -lgslcblas
+ISIS_INC= @ISIS_INC@
+ISIS_LIB= @ISIS_LIB@ -lisis
+MODULE_LIBS = $(GSL_LIB) $(ISIS_LIB)
+RPATH		= @RPATH@
+
+#---------------------------------------------------------------------------
+# Misc Programs required for installation
+#---------------------------------------------------------------------------
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+MKINSDIR = ../autoconf/mkinsdir.sh
+
+#---------------------------------------------------------------------------
+# DESTDIR is designed to facilitate making packages.  Normally it is empty
+#---------------------------------------------------------------------------
+DESTDIR =
+DEST_MODULE_INSTALL_DIR = $(DESTDIR)$(MODULE_INSTALL_DIR)
+DEST_SL_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)
+
+#---------------------------------------------------------------------------
+LIBS = $(SLANG_LIB) $(MODULE_LIBS) $(RPATH) $(DL_LIB) -lm
+INCS = $(SLANG_INC) $(ISIS_INC) $(GSL_INC) 
+
+OBJDIR = .
+SRCDIR = .
+OBJS = @PROGRAM_OBJECTS@
+
+ALL_CFLAGS = $(CFLAGS) -Dunix $(INCS)
+COMPILE_CMD = $(CC) -c $(ALL_CFLAGS)
+
+all: $(MODULES)
+
+#---------------------------------------------------------------------------
+# Put Rules to create the modules here
+#---------------------------------------------------------------------------
+
+ic-table:	make_ic_table
+	./make_ic_table
+
+syn-table:	make_syn_table
+	./make_syn_table
+	
+tables:
+	make ic-table syn-table
+
+nonthermal-module.so: nonthermal-module.c
+	$(CC_SHARED) $(INCS) nonthermal-module.c -o nonthermal-module.so $(LIBS)
+
+libnonthermal.so: libnonthermal.c $(OBJS) 
+	$(CC_SHARED) $(INCS) libnonthermal.c -o libnonthermal.so $(OBJS) $(LIBS)
+
+#---------------------------------------------------------------------------
+# Regression tests
+#---------------------------------------------------------------------------
+test:
+	@for X in tests/test_*.sl; \
+	do \
+		slsh $$X; \
+	done
+#---------------------------------------------------------------------------
+# Installation Rules
+#---------------------------------------------------------------------------
+install_directories:
+	$(MKINSDIR) $(DEST_MODULE_INSTALL_DIR)
+	$(MKINSDIR) $(DEST_SL_FILES_INSTALL_DIR)
+
+install_modules:
+	@for X in $(MODULES); \
+	do \
+		echo $(INSTALL_DATA) $$X $(DEST_MODULE_INSTALL_DIR); \
+		$(INSTALL_DATA) $$X $(DEST_MODULE_INSTALL_DIR); \
+		if [ "$$?" != "0" ]; then \
+		  exit 1; \
+		fi; \
+	done
+install_slfiles:
+	@for X in $(SL_FILES); \
+	do \
+		echo $(INSTALL_DATA) $$X $(DEST_SL_FILES_INSTALL_DIR); \
+		$(INSTALL_DATA) $$X $(DEST_SL_FILES_INSTALL_DIR); \
+		if [ "$$?" != "0" ]; then \
+		  exit 1; \
+		fi; \
+	done
+
+install: all install_directories install_modules install_slfiles
+
+clean:
+	-/bin/rm -f $(MODULES) *.o *~ \#*
+distclean: clean
+	-/bin/rm -f config.h Makefile
+
+#---------------------------------------------------------------------------
+# Everything else from configure script
+#---------------------------------------------------------------------------
+
