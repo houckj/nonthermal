@@ -143,12 +143,12 @@ define plot_comparison (index)
 define main ()
 {
    variable device, indices;
-#iftrue
+#iffalse
    device = "t.ps/cps";
    indices = [-1.8, -2.0, -2.3];
 #else
    device = "x.ps/cps";
-   indices = [-2.0]; 
+   indices = [-1.8, -2.0, -2.3];
    Ntb_Interpolate=0;   
 #endif   
    

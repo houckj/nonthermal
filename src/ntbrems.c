@@ -296,7 +296,7 @@ static double delta_beta (double gamma) /*{{{*/
 
 /*}}}*/
 
-/* Use this integrand to handle round-off errors in the limit \mu->1.
+/* Use this integrand to handle round-off errors in the limit \mu->1, \beta->1.
  * These expressions handle cancellation analytically, computing
  * everything in terms of numerically small values. */
 static double eebrems_diff_lab_deltamu (double een, double pen, double delta_mu) /*{{{*/
