@@ -430,7 +430,7 @@ ISIS_USER_SOURCE_MODULE(sync,p,options) /*{{{*/
    static double default_value[] = { 1.0,  1.0, -2.0,  0.0, 10.0};
    static double default_min[]   = { 0.0,  0.0, -3.0, -1.0,  1.0};
    static unsigned int default_freeze[] = {0, 0, 0, 1, 0};
-   static unsigned int norm_indexes[] = {1};
+   static unsigned int norm_indexes[] = {0};
 
    /*           V
     * norm = --------  (dn/dE)_0
@@ -543,7 +543,7 @@ ISIS_USER_SOURCE_MODULE(invc,p,options) /*{{{*/
    static double default_value[] = { 1.0, -2.0,  0.0, 10.0,  CBR_TEMPERATURE};
    static double default_min[]   = { 0.0, -3.0, -1.0,  1.0,   0.0};
    static unsigned int default_freeze[] = {0, 0, 1, 0, 1};
-   static unsigned int norm_indexes[] = {1};
+   static unsigned int norm_indexes[] = {0};
 
    p->function_exit = invc_free_client_data;
    p->binned = binned_invc;
@@ -807,7 +807,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
    static double default_value[] = { 1.0, -2.0,  0.0, 10.0};
    static double default_min[]   = { 0.0, -3.0, -1.0,  1.0};
    static unsigned int default_freeze[] = {0, 0, 1, 0};
-   static unsigned int norm_indexes[] = {1};
+   static unsigned int norm_indexes[] = {0};
 
    p->function_exit = NULL;
    p->binned = binned_brem;

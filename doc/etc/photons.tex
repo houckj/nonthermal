@@ -278,7 +278,7 @@ the appropriately Lorentz-transformed values of the electron
 energy, photon energy and photon emission angle:
 \begin{equation}
 \frac{d^3\sigma_*}{dk_* d\Omega_*} \equiv
-F_*\left[k_*(\gamma, k, \psi), \gamma_*(\gamma, k, \psi), \psi_*(\gamma, k, \psi)\right].
+F_*\left[\gamma_*(\gamma, k, \psi), k_*(\gamma, k, \psi), \psi_*(\gamma, k, \psi)\right].
 \end{equation}
 The differential cross-section $F_*(\gamma_*, k_*, \psi_*)$,
 having units of e.g. barns~keV${}^{-1}$~sr${}^{-1}$, is computed using
@@ -353,8 +353,8 @@ The problem is that the factors $(\cos \psi - \beta_c)$ and $(1
 $\beta_c \rightarrow 1$, $\beta_1 \rightarrow 1$ and $\psi
 \rightarrow 0$.
 
-To avoid this loss of numerical precision, we isolate the
-neighborhood of $\psi = 0$ by
+To avoid this loss of numerical precision, we treat
+separately the neighborhood $\psi = 0$ by
 breaking (\ref{sigma-angular-integral}) into two pieces,
 \begin{equation}
   \frac{1}{2\pi}\frac{d\sigma}{dk} \equiv I_1 + I_\epsilon
@@ -362,15 +362,15 @@ breaking (\ref{sigma-angular-integral}) into two pieces,
    \int_{\mu_{\rm min}}^{1 - \epsilon} d\mu f(\mu)
    + \int_{1-\epsilon}^1 d\mu f(\mu),
 \end{equation}
-where $f(\mu) \equiv (k/k_*)F_*(\gamma_*, k_*, \psi_*)$.
-$I_1$ can be evaluated as it stands because $\epsilon > 0$ is
-chosen large enough to avoid the difficult region. If $\mu_{\rm min}
+where $f(\mu) \equiv (k/k_*)F_*(\gamma_*, k_*, \psi_*)$. $I_1$
+can be evaluated as it stands because $\epsilon > 0$ is chosen
+large enough to contain the difficult region. If $\mu_{\rm min}
 \geq 1 - \epsilon$, $I_1 \equiv 0$ and the entire contribution
 comes from $I_\epsilon$. To evalute $I_\epsilon$, we introduce
 a change of variables to ensure that the numerical cancellation
-is handled analytically, retaining full machine precision
-as much as possible. Defining $\mu \equiv 1 - u$,
-the second integral may be written
+is handled analytically, retaining as much precision as
+possible. Defining $\mu \equiv 1 - u$, the second integral may
+be written
 \begin{equation}
   I_\epsilon = \int_0^\epsilon du f(1-u).
 \end{equation}
