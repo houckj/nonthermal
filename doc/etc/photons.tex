@@ -66,13 +66,13 @@ of pitch-angles, we obtain
 \int \D\gamma N(\gamma) \int \D\phi_\alpha~ \int \D\alpha
 \sin^2\alpha ~F\left(\frac{\nu}{\nu_0\gamma^2\sin\alpha}\right).
 \end{equation}
-Substituting $t\equiv \sin\alpha$, and
+Substituting $\omega\equiv \sin\alpha$, and
 expressing the result in terms of the photon emission rate, we have
 \begin{equation}
 \varepsilon\frac{dn_\varepsilon}{d\varepsilon dt} =
 \frac{\sqrt{3} e^3 B}{hmc^2}
-\int_0^\infty \D\gamma N(\gamma) \int_0^1 \D t
-\frac{t^2}{\sqrt{1 - t^2}} F\left(\frac{\nu}{\nu_0\gamma^2 t}\right),
+\int_0^\infty \D\gamma N(\gamma) \int_0^1 \D \omega
+\frac{\omega^2}{\sqrt{1 - \omega^2}} F\left(\frac{\nu}{\nu_0\gamma^2 \omega}\right),
 \label{eq:sync-emis1}
 \end{equation}
 where $\varepsilon = h\nu/(mc^2)$ is the photon energy in units
@@ -80,7 +80,7 @@ of the electron rest energy.
 
 Writing the inner integral in the form
 \begin{equation}
-I(x) = \int_0^1 \D t \frac{t^2 F(x/t)}{\sqrt{1 - t^2}}
+I(x) = \int_0^1 \D \omega \frac{\omega^2 F(x/\omega)}{\sqrt{1 - \omega^2}}
 \end{equation}
 it is clearly a function of a single variable and may be
 precomputed to speed numerical evaluation of (\ref{eq:sync-emis1})
@@ -97,7 +97,7 @@ F(\xi) &=
 \end{align}
 The lower panel Fig \ref{anglefun-fig} shows
 effect of angle-averaging over an isotropic distribution of pitch
-angles.  For $t \ll 1$, $I(t) \approx 0.84131 F(x)$.
+angles.  For $x \ll 1$, $I(x) \approx 0.84131 F(x)$.
 
 Expressing (\ref{eq:sync-emis1}) in terms of $I(x)$, we have
 \begin{equation}
