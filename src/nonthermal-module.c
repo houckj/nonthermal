@@ -177,8 +177,8 @@ static int find_gamma_min (Density_Info *di, double *gamma) /*{{{*/
    unsigned int n = 8;
    int status = 1;
 
-   /* FIXME: This won't handle pathological cases, e.g. where 
-    * the two curves cross at a tangent point or where there are 
+   /* FIXME: This won't handle pathological cases, e.g. where
+    * the two curves cross at a tangent point or where there are
     * two roots above the thermal peak.  I'm not worried about
     * that right now though. */
 
@@ -555,7 +555,7 @@ int init_nonthermal_module_ns (char *ns_name)
         || (-1 == SLns_add_intrin_var_table (ns, Intrin_Variables, NULL))
         || (-1 == SLns_add_iconstant_table (ns, Intrin_Const, NULL)))
      return -1;
-   
+
    return 0;
 }
 
