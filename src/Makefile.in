@@ -5,14 +5,15 @@
 #---------------------------------------------------------------------------
 MODULES = libnonthermal.so nonthermal-module.so 
 SL_FILES = nonthermal.sl 
+DATA_FILES = syn_table.fits ic_table.fits ntb_ee_table.fits
 
 #---------------------------------------------------------------------------
 # Installation Directories
 #---------------------------------------------------------------------------
 prefix = @prefix@
 exec_prefix = @exec_prefix@
-MODULE_INSTALL_DIR = @MODULE_INSTALL_DIR@
-SL_FILES_INSTALL_DIR = @SL_FILES_INSTALL_DIR@
+MODULE_INSTALL_DIR = ${exec_prefix}/lib/isis/modules
+SL_FILES_INSTALL_DIR = ${exec_prefix}/share/isis
 
 #---------------------------------------------------------------------------
 # C Compiler to create a shared library
@@ -48,6 +49,7 @@ MKINSDIR = ../autoconf/mkinsdir.sh
 DESTDIR =
 DEST_MODULE_INSTALL_DIR = $(DESTDIR)$(MODULE_INSTALL_DIR)
 DEST_SL_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)
+DEST_DATA_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)/nonthermal/tables
 
 #---------------------------------------------------------------------------
 LIBS = $(MODULE_LIBS) $(RPATH) $(DL_LIB) -lm
@@ -56,6 +58,8 @@ INCS = $(SLANG_INC) $(ISIS_INC) $(GSL_INC)
 OBJDIR = .
 SRCDIR = .
 OBJS = @PROGRAM_OBJECTS@
+
+MODULE_OBJS = $(OBJDIR)/bisect.o $(OBJDIR)/particle_spectrum.o
 
 ALL_CFLAGS = $(CFLAGS) -Dunix $(INCS)
 COMPILE_CMD = $(CC) -c $(ALL_CFLAGS)
@@ -66,17 +70,11 @@ all: $(MODULES)
 # Put Rules to create the modules here
 #---------------------------------------------------------------------------
 
-ic-table:	make_ic_table
-	./make_ic_table
-
-syn-table:	make_syn_table
-	./make_syn_table
-	
 tables:
-	make ic-table syn-table
+	./make_tables
 
-nonthermal-module.so: nonthermal-module.c
-	$(CC_SHARED) $(INCS) nonthermal-module.c -o nonthermal-module.so $(LIBS)
+nonthermal-module.so: nonthermal-module.c $(MODULE_OBJS)
+	$(CC_SHARED) $(INCS) nonthermal-module.c -o nonthermal-module.so -DINSTALL_PREFIX=\"${prefix}\" $(MODULE_OBJS) $(LIBS)
 
 libnonthermal.so: libnonthermal.c $(OBJS) 
 	$(CC_SHARED) $(INCS) libnonthermal.c -o libnonthermal.so $(OBJS) $(LIBS)
@@ -95,6 +93,7 @@ test:
 install_directories:
 	$(MKINSDIR) $(DEST_MODULE_INSTALL_DIR)
 	$(MKINSDIR) $(DEST_SL_FILES_INSTALL_DIR)
+	$(MKINSDIR) $(DEST_DATA_FILES_INSTALL_DIR)
 
 install_modules:
 	@for X in $(MODULES); \
@@ -114,8 +113,17 @@ install_slfiles:
 		  exit 1; \
 		fi; \
 	done
+install_datafiles:
+	@for X in $(DATA_FILES); \
+	do \
+		echo $(INSTALL_DATA) $$X $(DEST_DATA_FILES_INSTALL_DIR); \
+		$(INSTALL_DATA) $$X $(DEST_DATA_FILES_INSTALL_DIR); \
+		if [ "$$?" != "0" ]; then \
+		  exit 1; \
+		fi; \
+	done
 
-install: all install_directories install_modules install_slfiles
+install: all install_directories install_modules install_slfiles install_datafiles
 
 clean:
 	-/bin/rm -f $(MODULES) *.o *~ \#*

@@ -537,9 +537,12 @@ static SLang_IConstant_Type Intrin_Const [] =
    SLANG_END_ICONST_TABLE
 };
 
+static char *Module_Install_Prefix = INSTALL_PREFIX ;
+
 static SLang_Intrin_Var_Type Intrin_Variables [] =
 {
    MAKE_VARIABLE("_nonthermal_module_version_string", &Module_Version_String, SLANG_STRING_TYPE, 1),
+   MAKE_VARIABLE("_nonthermal_install_prefix", &Module_Install_Prefix, SLANG_STRING_TYPE, 1),
    SLANG_END_INTRIN_VAR_TABLE
 };
 

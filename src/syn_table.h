@@ -3,8 +3,6 @@
 
 #include "synchrotron.h"
 
-#define SYN_TABLE_ENV  "SYN_TABLE_DIR"
-
 extern int syn_angular_integral (double x, double *y);
 extern int syn_interp_angular_integral (void *p, double x, double *y);
 

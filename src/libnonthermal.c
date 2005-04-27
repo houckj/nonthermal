@@ -381,7 +381,6 @@ static SLang_Intrin_Fun_Type Sync_Intrinsics [] =
 
 static int sync_init_client_data (char *file) /*{{{*/
 {
-   char *path = NULL;
    int status = 0;
 
    if (file == NULL)
@@ -391,19 +390,11 @@ static int sync_init_client_data (char *file) /*{{{*/
        || (-1 == SLns_add_intrin_fun_table (NULL, Sync_Intrinsics, NULL)))
      return -1;
 
-   if (NULL != (path = getenv (SYN_TABLE_ENV)))
-     {
-        if (NULL != (path = SLpath_find_file_in_path (path, file)))
-          file = path;
-     }
-
    if (sync_client_data != NULL)
      sync_free_client_data ();
 
    if (NULL == (sync_client_data = syn_load_table (file)))
      status = -1;
-
-   SLfree (path);
 
    if (status == 0)
      Syn_Interpolate = 1;

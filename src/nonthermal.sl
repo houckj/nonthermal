@@ -111,16 +111,17 @@ private variable _NTB_Table_File_Name;
   _NTB_Table_File_Name = "ntb_ee_table.fits";
 #endif
 
-define nonthermal_init ()
+define nonthermal_init (dir)
 {
    variable lib_file = "libnonthermal.so";
-   add_compiled_function (lib_file, "sync", _SYN_Table_File_Name);
-   add_compiled_function (lib_file, "invc", _IC_Table_File_Name);
-   add_compiled_function (lib_file, "ntbrem", _NTB_Table_File_Name);
+   add_compiled_function (lib_file, "sync", path_concat (dir,_SYN_Table_File_Name));
+   add_compiled_function (lib_file, "invc", path_concat (dir,_IC_Table_File_Name));
+   add_compiled_function (lib_file, "ntbrem", path_concat (dir,_NTB_Table_File_Name));
 }
 
 import("nonthermal");
-nonthermal_init ();
+$1 = sprintf ("%s/share/isis/nonthermal/tables", _nonthermal_install_prefix);
+nonthermal_init ($1);
 
 define make_sync_table () %{{{
 {
