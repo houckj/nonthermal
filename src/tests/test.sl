@@ -143,7 +143,7 @@ define plot_comparison (index)
 define main ()
 {
    variable device, indices;
-#iffalse
+#iftrue
    device = "t.ps/cps";
    indices = [-1.8, -2.0, -2.3];
 #else

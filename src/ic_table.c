@@ -8,6 +8,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <slang.h>
 
 #include <gsl/gsl_errno.h>
@@ -253,50 +255,6 @@ static int compute_table (Inverse_Compton_Type *ic, Table_Type *t) /*{{{*/
 
 /*}}}*/
 
-static int write_table (Table_Type *t, const char *file)  /*{{{*/
-{
-   FILE *fp = NULL;
-   unsigned int i, num;
-
-   if (NULL == (fp = fopen (file, "w")))
-     return -1;
-
-   if ((1 != fwrite (&t->gamma_min, sizeof(double), 1, fp))
-       || (1 != fwrite (&t->gamma_max, sizeof(double), 1, fp))
-       || (1 != fwrite (&t->efinal_min, sizeof(double), 1, fp))
-       || (1 != fwrite (&t->efinal_max, sizeof(double), 1, fp)))
-     {
-        fclose (fp);
-        return -1;
-     }
-
-   num = t->num_gammas;
-   if ((1 != fwrite (&num, sizeof(unsigned int), 1, fp))
-       || (num != fwrite (t->gammas, sizeof (double), num, fp)))
-     {
-        fclose (fp);
-        return -1;
-     }
-
-   for (i = 0; i < t->num_gammas; i++)
-     {
-        num = t->num_efinals[i];
-        if ((1 != fwrite (&num, sizeof(unsigned int), 1, fp))
-            || (num != fwrite (t->efinals[i], sizeof (double), num, fp))
-            || (num != fwrite (t->y[i], sizeof (double), num, fp)))
-          {
-             fclose (fp);
-             return -1;
-          }
-     }
-
-   fclose (fp);
-
-   return 0;
-}
-
-/*}}}*/
-
 static int alloc_table (Table_Type *t, unsigned int num) /*{{{*/
 {
    t->num_gammas = num;
@@ -346,65 +304,168 @@ static void compute_logs (double *x, unsigned int n) /*{{{*/
 
 /*}}}*/
 
+typedef struct
+{
+   SLang_Array_Type *gamma_range;
+   SLang_Array_Type *efinal_range;
+   SLang_Array_Type *gammas;
+   SLang_Array_Type *efinals;
+   SLang_Array_Type *y;
+}
+Table_CStruct_Type;
+
+static SLang_CStruct_Field_Type Table_Type_Layout [] =
+{
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, gamma_range, "gamma_range", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, efinal_range, "efinal_range", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, gammas, "gammas", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, efinals, "efinals", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, y, "y", SLANG_ARRAY_TYPE, 0),
+   SLANG_END_CSTRUCT_TABLE
+};
+
 static int read_table (const char *file, Table_Type *t)  /*{{{*/
 {
-   FILE *fp = NULL;
-   unsigned int i, num;
-   int status = 1;
+   Table_CStruct_Type tc;
+   double *gamma_range, *efinal_range;
+   int i, num;
+   int status = -1;
 
-   if (NULL == (fp = fopen (file, "r")))
-     {
-        fprintf (stderr, "Couldn't open file: %s\n", file);
-        return -1;
-     }
+   (void) SLang_run_hooks ("ic_read_table_hook", 1, file);
 
-   memset ((char *)t, 0, sizeof *t);
+   if (-1 == SLang_pop_cstruct ((VOID_STAR)&tc, Table_Type_Layout))
+     return -1;
 
-   if ((1 != fread (&t->gamma_min, sizeof(double), 1, fp))
-       || (1 != fread (&t->gamma_max, sizeof(double), 1, fp))
-       || (1 != fread (&t->efinal_min, sizeof(double), 1, fp))
-       || (1 != fread (&t->efinal_max, sizeof(double), 1, fp)))
-     {
-        fclose (fp);
-        return -1;
-     }
+   gamma_range = (double *)tc.gamma_range->data;
+   efinal_range = (double *)tc.efinal_range->data;
 
-   if (1 != fread (&num, sizeof(unsigned int), 1, fp))
-     goto return_error;
+   t->gamma_min = gamma_range[0];
+   t->gamma_max = gamma_range[1];
+   t->efinal_min = efinal_range[0];
+   t->efinal_max = efinal_range[1];
+
+   t->num_gammas = tc.gammas->num_elements;
+   num = t->num_gammas;
 
    if (-1 == alloc_table (t, num))
      goto return_error;
 
-   if (num != fread (t->gammas, sizeof (double), num, fp))
-     goto return_error;
+   memcpy ((char *)t->gammas, (char *)tc.gammas->data, num * sizeof(double));
    compute_logs (t->gammas, num);
 
-   for (i = 0; i < t->num_gammas; i++)
+   for (i = 0; i < num; i++)
      {
-        if (1 != fread (&num, sizeof(unsigned int), 1, fp))
+        SLang_Array_Type *pe, *py;
+        unsigned int ne, size;
+
+        if (-1 == SLang_get_array_element (tc.efinals, &i, (VOID_STAR)&pe))
+          goto return_error;
+        if (-1 == SLang_get_array_element (tc.y, &i, (VOID_STAR)&py))
           goto return_error;
 
-        t->num_efinals[i] = num;
+        ne = pe->num_elements;
+        size = ne * sizeof(double);
 
-        if ((NULL == (t->efinals[i] = malloc (num * sizeof(double))))
-            || (NULL == (t->y[i] = malloc (num * sizeof(double)))))
+        t->num_efinals[i] = ne;
+
+        if ((NULL == (t->efinals[i] = malloc (size)))
+            || (NULL == (t->y[i] = malloc (size))))
           goto return_error;
 
-        if ((num != fread (t->efinals[i], sizeof (double), num, fp))
-            || (num != fread (t->y[i], sizeof (double), num, fp)))
-          goto return_error;
+        memcpy ((char *)t->efinals[i], (char *)pe->data, size);
+        memcpy ((char *)t->y[i], (char *)py->data, size);
 
-        compute_logs (t->efinals[i], num);
-        compute_logs (t->y[i], num);
+        compute_logs (t->efinals[i], ne);
+        compute_logs (t->y[i], ne);
+
+        SLang_free_array (pe);
+        SLang_free_array (py);
      }
 
    status = 0;
    return_error:
 
-   fclose (fp);
-   if (status) free_table (t);
+   if (status)
+     free_table (t);
+
+   SLang_free_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
 
    return 0;
+}
+
+/*}}}*/
+
+static int push_table (Table_Type *t)  /*{{{*/
+{
+   Table_CStruct_Type tc;
+   double *gamma_range, *efinal_range;
+   int i, num, status=-1, two=2;
+
+   memset ((char *)&tc, 0, sizeof (Table_CStruct_Type));
+
+   tc.gamma_range = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &two, 1);
+   if (tc.gamma_range == NULL)
+     goto push_result;
+
+   tc.efinal_range = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &two, 1);
+   if (tc.efinal_range == NULL)
+     goto push_result;
+
+   gamma_range = (double *)tc.gamma_range->data;
+   efinal_range = (double *)tc.efinal_range->data;
+
+   gamma_range[0] = t->gamma_min;
+   gamma_range[1] = t->gamma_max;
+   efinal_range[0] = t->efinal_min;
+   efinal_range[1] = t->efinal_max;
+
+   num = t->num_gammas;
+
+   tc.gammas = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &num, 1);
+   if (tc.gammas == NULL)
+     goto push_result;
+   memcpy ((char *)tc.gammas->data, (char *)t->gammas, num*sizeof(double));
+
+   tc.efinals = SLang_create_array (SLANG_ARRAY_TYPE, 1, NULL, &num, 1);
+   if (tc.efinals == NULL)
+     goto push_result;
+   tc.y = SLang_create_array (SLANG_ARRAY_TYPE, 1, NULL, &num, 1);
+   if (tc.y == NULL)
+     goto push_result;
+
+   for (i = 0; i < num; i++)
+     {
+        SLang_Array_Type *pe;
+        SLang_Array_Type *py;
+        int ne = t->num_efinals[i];
+
+        pe = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &ne, 1);
+        if (pe == NULL)
+          goto push_result;
+
+        py = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &ne, 1);
+        if (py == NULL)
+          goto push_result;
+
+        memcpy ((char *)pe->data, (char *)t->efinals[i], ne*sizeof(double));
+        memcpy ((char *)py->data, (char *)t->y[i], ne*sizeof(double));
+
+        ((SLang_Array_Type **)tc.efinals->data)[i] = pe;
+        ((SLang_Array_Type **)tc.y->data)[i] = py;
+     }
+
+   status = 0;
+   push_result:
+
+   if (status)
+     {
+        SLang_free_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
+        memset ((char *)&tc, 0, sizeof (Table_CStruct_Type));
+     }
+
+   SLang_push_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
+
+   return status;
 }
 
 /*}}}*/
@@ -429,7 +490,7 @@ static void make_log_grid (double *x, double xmin, double xmax, unsigned int n) 
 
 /*}}}*/
 
-int ic_make_table (Inverse_Compton_Type *ic, const char *file) /*{{{*/
+int ic_push_table (Inverse_Compton_Type *ic) /*{{{*/
 {
    Table_Type t;
    unsigned int num;
@@ -450,7 +511,7 @@ int ic_make_table (Inverse_Compton_Type *ic, const char *file) /*{{{*/
    if (-1 == compute_table (ic, &t))
      goto return_error;
 
-   if (-1 == write_table (&t, file))
+   if (-1 == push_table (&t))
      goto return_error;
 
    status = 0;
@@ -683,7 +744,7 @@ void *ic_init_client_data (const char *file) /*{{{*/
      }
 
    SLang_free_array (sl_fs);
-   
+
    for (f = fs; *f != NULL; f++)
      {
         IC_Spline_Type *s;
@@ -704,7 +765,7 @@ void *ic_init_client_data (const char *file) /*{{{*/
      }
 
    free (fs);
-   
+
    return sa;
 
    error_return:

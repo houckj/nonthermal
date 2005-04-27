@@ -4,4 +4,4 @@ require ("nonthermal");
 
 %make_sync_table;
 %make_invc_table;
-make_ntbrem_table ("ntb_ee_table.dat", "ee");
+make_ntbrem_table ("ntb_ee_table.fits", "ee");

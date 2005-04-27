@@ -8,11 +8,14 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_synchrotron.h>
 #include <gsl/gsl_spline.h>
+
+#include <slang.h>
 
 #include "_nonthermal.h"
 #include "syn_table.h"
@@ -126,79 +129,80 @@ void *syn_alloc_table (unsigned int n) /*{{{*/
 
 /*}}}*/
 
+typedef struct
+{
+   SLang_Array_Type *x;
+   SLang_Array_Type *y;
+}
+Table_CStruct_Type;
+
+static SLang_CStruct_Field_Type Table_Type_Layout [] =
+{
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, x, "x", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, y, "y", SLANG_ARRAY_TYPE, 0),
+   SLANG_END_CSTRUCT_TABLE
+};
+
 void *syn_load_table (char *file) /*{{{*/
 {
-   FILE *fp;
-   Table_Type *t;
-   unsigned int n;
+   Table_CStruct_Type tc;
+   Table_Type *t = NULL;
 
-   if (NULL == (fp = fopen (file, "r")))
+   (void) SLang_run_hooks ("fits_read_table", 1, file);
+
+   if (-1 == SLang_pop_cstruct ((VOID_STAR)&tc, Table_Type_Layout))
+     return NULL;
+
+   if ((tc.x == NULL || tc.y == NULL)
+       || (tc.x->num_elements != tc.y->num_elements))
+     return NULL;
+
+   if (NULL == (t = syn_alloc_table (tc.x->num_elements)))
      {
-        fprintf (stderr, "Couldn't open file: %s\n", file);
+        SLang_free_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
         return NULL;
      }
 
-   if (1 != fread (&n, sizeof (int), 1, fp))
-     {
-        fclose (fp);
-        return NULL;
-     }
-
-   if (NULL == (t = syn_alloc_table (n)))
-     {
-        fclose (fp);
-        return NULL;
-     }
-
-   if ((t->n != fread (t->x, sizeof (double), t->n, fp))
-       || (t->n != fread (t->y, sizeof (double), t->n, fp)))
-     {
-        syn_free_table (t);
-        fclose (fp);
-        return NULL;
-     }
+   memcpy ((char *)t->x, (char *)tc.x->data, t->n * sizeof(double));
+   memcpy ((char *)t->y, (char *)tc.y->data, t->n * sizeof(double));
+   SLang_free_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
 
    gsl_spline_init (t->spline, t->x, t->y, t->n);
 
-   fclose (fp);
-   
    /* fprintf (stderr, "loaded %s\n", file); */
-   
+
    return t;
 }
 
 /*}}}*/
 
-int syn_write_table (void *p, char *file) /*{{{*/
+int syn_push_table (void *p) /*{{{*/
 {
    Table_Type *t = (Table_Type *)p;
-   FILE *fp;
+   Table_CStruct_Type tc;
+   int num = t->n;
 
-   if (NULL == (fp = fopen (file, "w")))
+   tc.x = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &num, 1);
+   if (NULL == tc.x)
      return -1;
 
-   if ((1 != fwrite (&t->n, sizeof (int), 1, fp))
-       || (t->n != fwrite (t->x, sizeof (double), t->n, fp))
-       || (t->n != fwrite (t->y, sizeof (double), t->n, fp)))
+   tc.y = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &num, 1);
+   if (NULL == tc.y)
      {
-        fclose (fp);
+        SLang_free_array (tc.x);
         return -1;
      }
 
-   fclose (fp);
+   memcpy ((char *)tc.x->data, (char *)t->x, num*sizeof(double));
+   memcpy ((char *)tc.y->data, (char *)t->y, num*sizeof(double));
 
-#if 0
+   if (-1 == SLang_push_cstruct ((VOID_STAR)&tc, Table_Type_Layout))
      {
-        unsigned int i;
-        for (i = 0; i < t->n; i++)
-          {
-             double f;
-             f = gsl_sf_synchrotron_1 (pow(10.0,t->x[i]));
-             fprintf (stderr, "%15.7e  %15.7e  %15.7e\n",
-                      t->x[i], t->y[i], log10(f));
-          }
+        fprintf (stderr, "*** syn_write_table:  Error pushing cstruct\n");
+        SLang_free_array (tc.x);
+        SLang_free_array (tc.y);
+        return -1;
      }
-#endif
 
    return 0;
 }

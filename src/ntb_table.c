@@ -8,6 +8,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include <slang.h>
 
 #include <gsl/gsl_errno.h>
@@ -132,7 +134,7 @@ static double choose_next_energy (double last_e, double last_f, double e, double
           next_e = 0.5 * (e + ekinetic_max);
         else next_e = ekinetic_max;
      }
-   else next_e = e * factor;   
+   else next_e = e * factor;
 
    return next_e;
 }
@@ -275,50 +277,6 @@ static int compute_table (Table_Type *t) /*{{{*/
 
 /*}}}*/
 
-static int write_table (Table_Type *t, const char *file)  /*{{{*/
-{
-   FILE *fp = NULL;
-   unsigned int i, num;
-
-   if (NULL == (fp = fopen (file, "w")))
-     return -1;
-
-   if ((1 != fwrite (&t->ephoton_min, sizeof(double), 1, fp))
-       || (1 != fwrite (&t->ephoton_max, sizeof(double), 1, fp))
-       || (1 != fwrite (&t->ekinetic_min, sizeof(double), 1, fp))
-       || (1 != fwrite (&t->ekinetic_max, sizeof(double), 1, fp)))
-     {
-        fclose (fp);
-        return -1;
-     }
-
-   num = t->num_ephotons;
-   if ((1 != fwrite (&num, sizeof(unsigned int), 1, fp))
-       || (num != fwrite (t->ephotons, sizeof (double), num, fp)))
-     {
-        fclose (fp);
-        return -1;
-     }
-
-   for (i = 0; i < t->num_ephotons; i++)
-     {
-        num = t->num_ekinetics[i];
-        if ((1 != fwrite (&num, sizeof(unsigned int), 1, fp))
-            || (num != fwrite (t->ekinetics[i], sizeof (double), num, fp))
-            || (num != fwrite (t->y[i], sizeof (double), num, fp)))
-          {
-             fclose (fp);
-             return -1;
-          }
-     }
-
-   fclose (fp);
-
-   return 0;
-}
-
-/*}}}*/
-
 static int alloc_table (Table_Type *t, unsigned int num) /*{{{*/
 {
    t->num_ephotons = num;
@@ -368,65 +326,168 @@ static void compute_logs (double *x, unsigned int n) /*{{{*/
 
 /*}}}*/
 
+typedef struct
+{
+   SLang_Array_Type *ephoton_range;
+   SLang_Array_Type *ekinetic_range;
+   SLang_Array_Type *ephotons;
+   SLang_Array_Type *ekinetics;
+   SLang_Array_Type *y;
+}
+Table_CStruct_Type;
+
+static SLang_CStruct_Field_Type Table_Type_Layout [] =
+{
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, ephoton_range, "ephoton_range", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, ekinetic_range, "ekinetic_range", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, ephotons, "ephotons", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, ekinetics, "ekinetics", SLANG_ARRAY_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Table_CStruct_Type, y, "y", SLANG_ARRAY_TYPE, 0),
+   SLANG_END_CSTRUCT_TABLE
+};
+
 static int read_table (const char *file, Table_Type *t)  /*{{{*/
 {
-   FILE *fp = NULL;
-   unsigned int i, num;
-   int status = 1;
+   Table_CStruct_Type tc;
+   double *ephoton_range, *ekinetic_range;
+   int i, num;
+   int status = -1;
 
-   if (NULL == (fp = fopen (file, "r")))
-     {
-        fprintf (stderr, "Couldn't open file: %s\n", file);
-        return -1;
-     }
+   (void) SLang_run_hooks ("ntb_read_table_hook", 1, file);
 
-   memset ((char *)t, 0, sizeof *t);
+   if (-1 == SLang_pop_cstruct ((VOID_STAR)&tc, Table_Type_Layout))
+     return -1;
 
-   if ((1 != fread (&t->ephoton_min, sizeof(double), 1, fp))
-       || (1 != fread (&t->ephoton_max, sizeof(double), 1, fp))
-       || (1 != fread (&t->ekinetic_min, sizeof(double), 1, fp))
-       || (1 != fread (&t->ekinetic_max, sizeof(double), 1, fp)))
-     {
-        fclose (fp);
-        return -1;
-     }
+   ephoton_range = (double *)tc.ephoton_range->data;
+   ekinetic_range = (double *)tc.ekinetic_range->data;
 
-   if (1 != fread (&num, sizeof(unsigned int), 1, fp))
-     goto return_error;
+   t->ephoton_min = ephoton_range[0];
+   t->ephoton_max = ephoton_range[1];
+   t->ekinetic_min = ekinetic_range[0];
+   t->ekinetic_max = ekinetic_range[1];
+
+   t->num_ephotons = tc.ephotons->num_elements;
+   num = t->num_ephotons;
 
    if (-1 == alloc_table (t, num))
      goto return_error;
 
-   if (num != fread (t->ephotons, sizeof (double), num, fp))
-     goto return_error;
+   memcpy ((char *)t->ephotons, (char *)tc.ephotons->data, num * sizeof(double));
    compute_logs (t->ephotons, num);
 
-   for (i = 0; i < t->num_ephotons; i++)
+   for (i = 0; i < num; i++)
      {
-        if (1 != fread (&num, sizeof(unsigned int), 1, fp))
+        SLang_Array_Type *pe, *py;
+        unsigned int ne, size;
+
+        if (-1 == SLang_get_array_element (tc.ekinetics, &i, (VOID_STAR)&pe))
+          goto return_error;
+        if (-1 == SLang_get_array_element (tc.y, &i, (VOID_STAR)&py))
           goto return_error;
 
-        t->num_ekinetics[i] = num;
+        ne = pe->num_elements;
+        size = ne * sizeof(double);
 
-        if ((NULL == (t->ekinetics[i] = malloc (num * sizeof(double))))
-            || (NULL == (t->y[i] = malloc (num * sizeof(double)))))
+        t->num_ekinetics[i] = ne;
+
+        if ((NULL == (t->ekinetics[i] = malloc (size)))
+            || (NULL == (t->y[i] = malloc (size))))
           goto return_error;
 
-        if ((num != fread (t->ekinetics[i], sizeof (double), num, fp))
-            || (num != fread (t->y[i], sizeof (double), num, fp)))
-          goto return_error;
+        memcpy ((char *)t->ekinetics[i], (char *)pe->data, size);
+        memcpy ((char *)t->y[i], (char *)py->data, size);
 
-        compute_logs (t->ekinetics[i], num);
-        compute_logs (t->y[i], num);
+        compute_logs (t->ekinetics[i], ne);
+        compute_logs (t->y[i], ne);
+
+        SLang_free_array (pe);
+        SLang_free_array (py);
      }
 
    status = 0;
    return_error:
 
-   fclose (fp);
-   if (status) free_table (t);
+   if (status)
+     free_table (t);
+
+   SLang_free_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
 
    return 0;
+}
+
+/*}}}*/
+
+static int push_table (Table_Type *t)  /*{{{*/
+{
+   Table_CStruct_Type tc;
+   double *ephoton_range, *ekinetic_range;
+   int i, num, status=-1, two=2;
+
+   memset ((char *)&tc, 0, sizeof (Table_CStruct_Type));
+
+   tc.ephoton_range = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &two, 1);
+   if (tc.ephoton_range == NULL)
+     goto push_result;
+
+   tc.ekinetic_range = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &two, 1);
+   if (tc.ekinetic_range == NULL)
+     goto push_result;
+
+   ephoton_range = (double *)tc.ephoton_range->data;
+   ekinetic_range = (double *)tc.ekinetic_range->data;
+
+   ephoton_range[0] = t->ephoton_min;
+   ephoton_range[1] = t->ephoton_max;
+   ekinetic_range[0] = t->ekinetic_min;
+   ekinetic_range[1] = t->ekinetic_max;
+
+   num = t->num_ephotons;
+
+   tc.ephotons = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &num, 1);
+   if (tc.ephotons == NULL)
+     goto push_result;
+   memcpy ((char *)tc.ephotons->data, (char *)t->ephotons, num*sizeof(double));
+
+   tc.ekinetics = SLang_create_array (SLANG_ARRAY_TYPE, 1, NULL, &num, 1);
+   if (tc.ekinetics == NULL)
+     goto push_result;
+   tc.y = SLang_create_array (SLANG_ARRAY_TYPE, 1, NULL, &num, 1);
+   if (tc.y == NULL)
+     goto push_result;
+
+   for (i = 0; i < num; i++)
+     {
+        SLang_Array_Type *pe;
+        SLang_Array_Type *py;
+        int ne = t->num_ekinetics[i];
+
+        pe = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &ne, 1);
+        if (pe == NULL)
+          goto push_result;
+
+        py = SLang_create_array (SLANG_DOUBLE_TYPE, 1, NULL, &ne, 1);
+        if (py == NULL)
+          goto push_result;
+
+        memcpy ((char *)pe->data, (char *)t->ekinetics[i], ne*sizeof(double));
+        memcpy ((char *)py->data, (char *)t->y[i], ne*sizeof(double));
+
+        ((SLang_Array_Type **)tc.ekinetics->data)[i] = pe;
+        ((SLang_Array_Type **)tc.y->data)[i] = py;
+     }
+
+   status = 0;
+   push_result:
+
+   if (status)
+     {
+        SLang_free_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
+        memset ((char *)&tc, 0, sizeof (Table_CStruct_Type));
+     }
+
+   SLang_push_cstruct ((VOID_STAR)&tc, Table_Type_Layout);
+
+   return status;
 }
 
 /*}}}*/
@@ -451,7 +512,7 @@ static void make_log_grid (double *x, double xmin, double xmax, unsigned int n) 
 
 /*}}}*/
 
-int ntb_make_table (const char *file, int process) /*{{{*/
+int ntb_push_table (int process) /*{{{*/
 {
    Table_Type t;
    unsigned int num;
@@ -474,7 +535,7 @@ int ntb_make_table (const char *file, int process) /*{{{*/
    if (-1 == compute_table (&t))
      goto return_error;
 
-   if (-1 == write_table (&t, file))
+   if (-1 == push_table (&t))
      goto return_error;
 
    status = 0;

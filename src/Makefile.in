@@ -3,7 +3,7 @@
 #---------------------------------------------------------------------------
 # List of modules and associated .sl files to install
 #---------------------------------------------------------------------------
-MODULES = nonthermal-module.so libnonthermal.so
+MODULES = libnonthermal.so nonthermal-module.so 
 SL_FILES = nonthermal.sl 
 
 #---------------------------------------------------------------------------

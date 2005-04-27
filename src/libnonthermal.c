@@ -210,27 +210,22 @@ static int _nt_contin (void *cl, /*{{{*/
 
 /*}}}*/
 
-static int _sync_make_table (char *file) /*{{{*/
+static void _sync_make_table (void) /*{{{*/
 {
    enum {TABLE_SIZE = 2048};
    void *t;
 
-   if (*file == 0) file = SYN_TABLE_FILE_DEFAULT;
-
-   fprintf (stdout, "Generating synchrotron table => %s\n", file);
-   fflush (stdout);
+   fprintf (stdout, "Generating synchrotron table:\n");
 
    if ((NULL == (t = syn_alloc_table (TABLE_SIZE)))
         || (-1 == syn_create_table (t))
-        || (-1 == syn_write_table (t, file)))
+        || (-1 == syn_push_table (t)))
      {
-        fprintf (stderr, "*** failed generating synchrotron table: %s\n", file);
-        return -1;
+        fprintf (stderr, "*** failed generating synchrotron table\n");
+        return;
      }
 
    syn_free_table (t);
-
-   return 0;
 }
 
 /*}}}*/
@@ -280,16 +275,14 @@ static int unbinned_sync (double *val, Isis_User_Grid_t *g, double *par, unsigne
 
 /*}}}*/
 
-static int _invc_make_table (double *t, char *file) /*{{{*/
+static void _invc_make_table (double *t) /*{{{*/
 {
    Inverse_Compton_Type ic = NULL_INVERSE_COMPTON_TYPE;
-
    int status;
 
-   if (*file == 0) file = IC_TABLE_FILE_DEFAULT;
    if (*t <= 0) *t = CBR_TEMPERATURE;
 
-   fprintf (stdout, "Generating IC table for T = %g K => %s\n", *t, file);
+   fprintf (stdout, "Generating IC table for T = %g K\n", *t);
    fflush (stdout);
 
    set_incident_photon_kelvin_temperature (*t);
@@ -298,12 +291,10 @@ static int _invc_make_table (double *t, char *file) /*{{{*/
    ic.incident_photons = &incident_photon_spectrum;
    ic.incident_photon_max_energy = incident_photon_max_energy ();
 
-   status = ic_make_table (&ic, file);
+   status = ic_push_table (&ic);
 
    if (status)
      fprintf (stderr, "*** failed computing IC table for T = %g K\n", *t);
-
-   return status;
 }
 
 /*}}}*/
@@ -379,7 +370,7 @@ static SLang_Intrin_Var_Type Sync_Intrin_Vars [] =
 
 static SLang_Intrin_Fun_Type Sync_Intrinsics [] =
 {
-   MAKE_INTRINSIC_1("_sync_make_table", _sync_make_table, I, S),
+   MAKE_INTRINSIC("_sync_make_table", _sync_make_table, V, 0),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -497,7 +488,7 @@ static SLang_Intrin_Var_Type Invc_Intrin_Vars [] =
 static SLang_Intrin_Fun_Type Invc_Intrinsics [] =
 {
    MAKE_INTRINSIC("_invc_set_dilution_factors", _invc_set_dilution_factors, V, 0),
-   MAKE_INTRINSIC_2("_invc_make_table", _invc_make_table, I, D, S),
+   MAKE_INTRINSIC_1("_invc_make_table", _invc_make_table, V, D),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -615,21 +606,17 @@ static int unbinned_brem (double *val, Isis_User_Grid_t *g, double *par, unsigne
 
 /*}}}*/
 
-static int _ntb_make_table (char *file, int *process) /*{{{*/
+static void _ntb_make_table (int *process) /*{{{*/
 {
    int status;
 
-   if (*file == 0) file = NTB_TABLE_FILE_DEFAULT;
-
-   fprintf (stdout, "Generating nonthermal bremsstrahlung cross-section table => %s\n", file);
+   fprintf (stdout, "Generating nonthermal bremsstrahlung cross-section table\n");
    fflush (stdout);
 
-   status = ntb_make_table (file, *process);
+   status = ntb_push_table (*process);
 
    if (status)
      fprintf (stderr, "*** failed computing table\n");
-
-   return status;
 }
 
 /*}}}*/
@@ -765,7 +752,7 @@ static SLang_Intrin_Var_Type Ntb_Intrin_Vars [] =
 
 static SLang_Intrin_Fun_Type Ntb_Intrinsics [] =
 {
-   MAKE_INTRINSIC_2("_ntb_make_table", _ntb_make_table, I, S,I),
+   MAKE_INTRINSIC_1("_ntb_make_table", _ntb_make_table, V, I),
    MAKE_INTRINSIC_2("_ntb_set_process_weights", _ntb_set_process_weights, V, D,D),
    MAKE_INTRINSIC("_ep_heitler", _ep_heitler, V, 0),
    MAKE_INTRINSIC("_ee_haug", _ee_haug, V, 0),
