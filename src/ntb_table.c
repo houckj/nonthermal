@@ -182,10 +182,6 @@ static int map_vs_ekinetic (double (*f)(double, double), double ephoton, /*{{{*/
         do
           {
              s = (*f)(e, ephoton);
-#if 0
-             fprintf (stderr, "k=%2d: s(%15.8e, %15.8e) = %15.8e (last_s = %15.8e)\n",
-                      k, e, ephoton, s, last_s);
-#endif
              if ((last_s == 0.0)
                  && ((s > 0.0)
                      || ((s == 0.0) && (k > 1))))
@@ -216,10 +212,6 @@ static int map_vs_ekinetic (double (*f)(double, double), double ephoton, /*{{{*/
         last_s = s;
 
         e = next_e;
-#if 0
-        fprintf (stderr, "ephoton=%12.4e: %12.4e   e=%12.4e s=%12.4e\r",
-                 ephoton, 1.0 - e/ekinetic_max, e, s);
-#endif
      }
    while (e < ekinetic_max);
 
