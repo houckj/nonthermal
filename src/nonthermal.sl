@@ -95,28 +95,34 @@ public define ntb_get_table_names (file)
    return _get_table_names (file, "NTB_TABLE_DIR");
 }
 
-private variable _SYN_Table_File_Name = "syn_table.fits";
-private variable _IC_Table_File_Name;
-private variable _NTB_Table_File_Name;
+public variable _sync_table_file;
+public variable _invc_table_file;
+public variable _ntbrem_table_file;
+
+#ifexists SYN_Table_File
+   _sync_table_file = SYN_Table_File;
+#else
+   _sync_table_file = "syn_table.fits";
+#endif
 
 #ifexists IC_Table_File
-  _IC_Table_File_Name = IC_Table_File;
+  _invc_table_file = IC_Table_File;
 #else
-  _IC_Table_File_Name = "ic_table.fits";
+  _invc_table_file = "ic_table.fits";
 #endif
 
 #ifexists NTB_Table_File
-  _NTB_Table_File_Name = NTB_Table_File;
+  _ntbrem_table_file = NTB_Table_File;
 #else
-  _NTB_Table_File_Name = "ntb_ee_table.fits";
+  _ntbrem_table_file = "ntb_ee_table.fits";
 #endif
 
 define nonthermal_init (dir)
 {
    variable lib_file = "libnonthermal.so";
-   add_compiled_function (lib_file, "sync", path_concat (dir,_SYN_Table_File_Name));
-   add_compiled_function (lib_file, "invc", path_concat (dir,_IC_Table_File_Name));
-   add_compiled_function (lib_file, "ntbrem", path_concat (dir,_NTB_Table_File_Name));
+   add_compiled_function (lib_file, "sync", path_concat (dir,_sync_table_file));
+   add_compiled_function (lib_file, "invc", path_concat (dir,_invc_table_file));
+   add_compiled_function (lib_file, "ntbrem", path_concat (dir,_ntbrem_table_file));
 }
 
 import("nonthermal");
@@ -125,7 +131,7 @@ nonthermal_init ($1);
 
 define make_sync_table () %{{{
 {
-   variable file = _SYN_Table_File_Name;
+   variable file = _sync_table_file;
 
    switch (_NARGS)
      {
@@ -196,7 +202,7 @@ static define ic_make_table (t, file) %{{{
 
 define make_invc_table () %{{{
 {
-   variable file = _IC_Table_File_Name;
+   variable file = _invc_table_file;
    variable t = 0.0;
 
    switch (_NARGS)
@@ -293,7 +299,7 @@ static define ntb_make_table (process, file) %{{{
 
 define make_ntbrem_table () %{{{
 {
-   variable file = _NTB_Table_File_Name;
+   variable file = _ntbrem_table_file;
    variable process = NTB_ee;
 
    switch (_NARGS)

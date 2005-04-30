@@ -12,6 +12,7 @@
  *   Baring, M.G., et al, 1999, ApJ, 513, 311
 */
 
+#include "config.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

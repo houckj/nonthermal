@@ -8,6 +8,7 @@
  *   Blumenthal, G.R. & Gould, R.J., 1970, Rev. Mod. Phys., 43, 237
  */
 
+#include "config.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

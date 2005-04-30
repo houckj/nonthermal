@@ -4,6 +4,7 @@
  * written:  Aug 2002
  */
 
+#include "config.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

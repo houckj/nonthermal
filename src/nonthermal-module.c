@@ -4,6 +4,7 @@
  * written:  Aug 2002
  */
 
+#include "config.h"
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
