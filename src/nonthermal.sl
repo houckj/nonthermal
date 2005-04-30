@@ -1,5 +1,10 @@
 % -*- mode: SLang; mode: fold -*-
 
+import("nonthermal");
+
+private variable Table_Path = sprintf ("%s/share/isis/nonthermal/tables",
+                                       _nonthermal_install_prefix);
+
 static define _get_table_names (file, env) %{{{
 {
    variable list;
@@ -85,53 +90,77 @@ define ntb_read_table_hook (file) %{{{
 
 %}}}
 
-public define ic_get_table_names (file)
+public define ic_get_table_names (file) %{{{
 {
    return _get_table_names (file, "IC_TABLE_DIR");
 }
 
-public define ntb_get_table_names (file)
+%}}}
+
+public define ntb_get_table_names (file) %{{{
 {
    return _get_table_names (file, "NTB_TABLE_DIR");
 }
 
-public variable _sync_table_file;
-public variable _invc_table_file;
-public variable _ntbrem_table_file;
+%}}}
 
-#ifexists SYN_Table_File
-   _sync_table_file = SYN_Table_File;
-#else
-   _sync_table_file = "syn_table.fits";
-#endif
-
-#ifexists IC_Table_File
-  _invc_table_file = IC_Table_File;
-#else
-  _invc_table_file = "ic_table.fits";
-#endif
-
-#ifexists NTB_Table_File
-  _ntbrem_table_file = NTB_Table_File;
-#else
-  _ntbrem_table_file = "ntb_ee_table.fits";
-#endif
-
-define nonthermal_init (dir)
+public define _sync_table_file () %{{{
 {
-   variable lib_file = "libnonthermal.so";
-   add_compiled_function (lib_file, "sync", path_concat (dir,_sync_table_file));
-   add_compiled_function (lib_file, "invc", path_concat (dir,_invc_table_file));
-   add_compiled_function (lib_file, "ntbrem", path_concat (dir,_ntbrem_table_file));
+   variable file;
+#ifexists SYN_Table_File
+   file = SYN_Table_File;
+#else
+   file = "syn_table.fits";
+#endif
+
+   return path_concat (Table_Path, file);
 }
 
-import("nonthermal");
-$1 = sprintf ("%s/share/isis/nonthermal/tables", _nonthermal_install_prefix);
-nonthermal_init ($1);
+%}}}
+
+public define _invc_table_file () %{{{
+{
+   variable file;
+#ifexists IC_Table_File
+  file = IC_Table_File;
+#else
+  file = "ic_table.fits";
+#endif
+
+   return path_concat (Table_Path, file);
+}
+
+%}}}
+
+public define _ntbrem_table_file () %{{{
+{
+   variable file;
+#ifexists NTB_Table_File
+  file = NTB_Table_File;
+#else
+  file = "ntb_ee_table.fits";
+#endif
+
+   return path_concat (Table_Path, file);
+}
+
+%}}}
+
+define nonthermal_init () %{{{
+{
+   variable lib_file = "libnonthermal.so";
+   add_compiled_function (lib_file, "sync", _sync_table_file());
+   add_compiled_function (lib_file, "invc", _invc_table_file());
+   add_compiled_function (lib_file, "ntbrem", _ntbrem_table_file());
+}
+
+%}}}
+
+nonthermal_init ();
 
 define make_sync_table () %{{{
 {
-   variable file = _sync_table_file;
+   variable file = _sync_table_file();
 
    switch (_NARGS)
      {
@@ -202,7 +231,7 @@ static define ic_make_table (t, file) %{{{
 
 define make_invc_table () %{{{
 {
-   variable file = _invc_table_file;
+   variable file = _invc_table_file();
    variable t = 0.0;
 
    switch (_NARGS)
@@ -299,7 +328,7 @@ static define ntb_make_table (process, file) %{{{
 
 define make_ntbrem_table () %{{{
 {
-   variable file = _ntbrem_table_file;
+   variable file = _ntbrem_table_file();
    variable process = NTB_ee;
 
    switch (_NARGS)
