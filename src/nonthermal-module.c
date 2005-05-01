@@ -514,7 +514,7 @@ static double gamma_function (double *x) /*{{{*/
 
 static SLang_Intrin_Fun_Type Intrinsics [] =
 {
-   MAKE_INTRINSIC_1("gamma", gamma_function, D, D),
+   MAKE_INTRINSIC_1("_gamma", gamma_function, D, D),
    MAKE_INTRINSIC("sync_F", synchrotron1, V, 0),
    MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
    MAKE_INTRINSIC_5("particle_distrib", particle_distrib, D, D, D, D, D, D),

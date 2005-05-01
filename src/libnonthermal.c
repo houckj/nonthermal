@@ -231,6 +231,18 @@ static void _sync_make_table (void) /*{{{*/
 
 /*}}}*/
 
+static double _sync_angular_integral (double *x, int *interpolate)
+{
+   double y;
+
+   if (*interpolate)
+     (void) syn_interp_angular_integral (sync_client_data, *x, &y);
+   else
+     (void) syn_angular_integral (*x, &y);
+   
+   return y;
+}
+
 static void init_sync (double *par, Synchrotron_Type *s, Particle_Type *elec) /*{{{*/
 {
    (void) init_particle_spectrum (elec);
@@ -299,6 +311,30 @@ static void _invc_make_table (double *t) /*{{{*/
 }
 
 /*}}}*/
+
+static double _invc_photon_integral (double *gamma, double *energy_final_photon,
+                                    double *t, int *interpolate)
+{
+   Inverse_Compton_Type ic = NULL_INVERSE_COMPTON_TYPE;
+   double x;
+
+   if (*t <= 0) *t = CBR_TEMPERATURE;   
+   set_incident_photon_kelvin_temperature (*t);
+   
+   ic.energy_final_photon = *energy_final_photon;  /* E/(mc^2) */
+   ic.gamma_electron = *gamma;
+   ic.electrons = NULL;   
+   ic.incident_photons = &incident_photon_spectrum;
+   ic.incident_photon_max_energy = incident_photon_max_energy();
+   ic.client_data = ic_client_data;   
+   
+   if (*interpolate)
+     (void) ic_interp_photon_integral (&ic, &x);
+   else
+     (void) ic_integral_over_incident_photons (&ic, &x);
+   
+   return x;
+}
 
 static void init_invc (double *par, Inverse_Compton_Type *ic, Particle_Type *elec) /*{{{*/
 {
@@ -372,6 +408,7 @@ static SLang_Intrin_Var_Type Sync_Intrin_Vars [] =
 static SLang_Intrin_Fun_Type Sync_Intrinsics [] =
 {
    MAKE_INTRINSIC("_sync_make_table", _sync_make_table, V, 0),
+   MAKE_INTRINSIC_2("_sync_angular_integral", _sync_angular_integral, D, D,I),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -481,6 +518,7 @@ static SLang_Intrin_Fun_Type Invc_Intrinsics [] =
 {
    MAKE_INTRINSIC("_invc_set_dilution_factors", _invc_set_dilution_factors, V, 0),
    MAKE_INTRINSIC_1("_invc_make_table", _invc_make_table, V, D),
+   MAKE_INTRINSIC_4("_invc_photon_integral", _invc_photon_integral, D, D,D,D,I),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -554,6 +592,7 @@ static void _ntb_free_client_data (void) /*{{{*/
 }
 
 /*}}}*/
+
 static void init_brem (double *par, Brems_Type *b, Particle_Type *elec) /*{{{*/
 {
    (void) init_particle_spectrum (elec);
