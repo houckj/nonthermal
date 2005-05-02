@@ -49,7 +49,7 @@ MKINSDIR = ../autoconf/mkinsdir.sh
 DESTDIR =
 DEST_MODULE_INSTALL_DIR = $(DESTDIR)$(MODULE_INSTALL_DIR)
 DEST_SL_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)
-DEST_DATA_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)/nonthermal/tables
+DEST_DATA_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)/nonthermal/data
 
 #---------------------------------------------------------------------------
 LIBS = $(MODULE_LIBS) $(RPATH) $(DL_LIB) -lm
@@ -114,7 +114,8 @@ install_slfiles:
 		fi; \
 	done
 install_datafiles:
-	@for X in $(DATA_FILES); \
+	@cd ../data ;\
+	for X in $(DATA_FILES); \
 	do \
 		echo $(INSTALL_DATA) $$X $(DEST_DATA_FILES_INSTALL_DIR); \
 		$(INSTALL_DATA) $$X $(DEST_DATA_FILES_INSTALL_DIR); \

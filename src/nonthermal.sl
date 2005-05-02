@@ -2,7 +2,7 @@
 
 import("nonthermal");
 
-private variable Table_Path = sprintf ("%s/share/isis/nonthermal/tables",
+private variable Data_Path = sprintf ("%s/share/isis/nonthermal/data",
                                        _nonthermal_install_prefix);
 
 static define _get_table_names (file, env) %{{{
@@ -113,7 +113,7 @@ public define _sync_table_file () %{{{
    file = "syn_table.fits";
 #endif
 
-   return path_concat (Table_Path, file);
+   return path_concat (Data_Path, file);
 }
 
 %}}}
@@ -127,7 +127,7 @@ public define _invc_table_file () %{{{
   file = "ic_table.fits";
 #endif
 
-   return path_concat (Table_Path, file);
+   return path_concat (Data_Path, file);
 }
 
 %}}}
@@ -141,7 +141,7 @@ public define _ntbrem_table_file () %{{{
   file = "ntb_ee_table.fits";
 #endif
 
-   return path_concat (Table_Path, file);
+   return path_concat (Data_Path, file);
 }
 
 %}}}
