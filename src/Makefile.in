@@ -55,8 +55,9 @@ DEST_DATA_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)/nonthermal/data
 LIBS = $(MODULE_LIBS) $(RPATH) $(DL_LIB) -lm
 INCS = $(SLANG_INC) $(ISIS_INC) $(GSL_INC) 
 
-OBJDIR = .
-SRCDIR = .
+config_dir = @CONFIG_DIR@
+SRCDIR = $(config_dir)/src
+OBJDIR = $(config_dir)/src/$(ARCH)objs
 OBJS = @PROGRAM_OBJECTS@
 
 MODULE_OBJS = $(OBJDIR)/bisect.o $(OBJDIR)/particle_spectrum.o
@@ -64,7 +65,7 @@ MODULE_OBJS = $(OBJDIR)/bisect.o $(OBJDIR)/particle_spectrum.o
 ALL_CFLAGS = $(CFLAGS) -Dunix $(INCS)
 COMPILE_CMD = $(CC) -c $(ALL_CFLAGS)
 
-all: $(MODULES)
+all: object-dir $(MODULES)
 
 #---------------------------------------------------------------------------
 # Put Rules to create the modules here
@@ -73,11 +74,14 @@ all: $(MODULES)
 tables:
 	./make_tables
 
+object-dir:
+	-mkdir $(OBJDIR)
+
 nonthermal-module.so: nonthermal-module.c $(MODULE_OBJS)
-	$(CC_SHARED) $(INCS) nonthermal-module.c -o nonthermal-module.so -DINSTALL_PREFIX=\"${prefix}\" $(MODULE_OBJS) $(LIBS)
+	$(CC_SHARED) $(INCS) nonthermal-module.c -o $(OBJDIR)/nonthermal-module.so -DINSTALL_PREFIX=\"${prefix}\" $(MODULE_OBJS) $(LIBS)
 
 libnonthermal.so: libnonthermal.c $(OBJS) 
-	$(CC_SHARED) $(INCS) libnonthermal.c -o libnonthermal.so $(OBJS) $(LIBS)
+	$(CC_SHARED) $(INCS) libnonthermal.c -o $(OBJDIR)/libnonthermal.so $(OBJS) $(LIBS)
 
 #---------------------------------------------------------------------------
 # Regression tests
@@ -96,7 +100,8 @@ install_directories:
 	$(MKINSDIR) $(DEST_DATA_FILES_INSTALL_DIR)
 
 install_modules:
-	@for X in $(MODULES); \
+	@cd $(OBJDIR) ; \
+	for X in $(MODULES); \
 	do \
 		echo $(INSTALL_DATA) $$X $(DEST_MODULE_INSTALL_DIR); \
 		$(INSTALL_DATA) $$X $(DEST_MODULE_INSTALL_DIR); \
@@ -124,12 +129,13 @@ install_datafiles:
 		fi; \
 	done
 
-install: all install_directories install_modules install_slfiles install_datafiles
+install: install_directories install_modules install_slfiles install_datafiles
 
 clean:
-	-/bin/rm -f $(MODULES) *.o *~ \#*
+	-/bin/rm -f $(OBJDIR)/*.o *~ \#*
 distclean: clean
 	-/bin/rm -f config.h Makefile
+	-/bin/rm -rf $(OBJDIR)
 
 #---------------------------------------------------------------------------
 # Everything else from configure script
