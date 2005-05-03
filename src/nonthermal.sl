@@ -104,44 +104,44 @@ public define ntb_get_table_names (file) %{{{
 
 %}}}
 
-public define _sync_table_file () %{{{
-{
-   variable file;
+public variable _sync_table_file_name;
 #ifexists SYN_Table_File
-   file = SYN_Table_File;
+_sync_table_file_name = SYN_Table_File;
 #else
-   file = "syn_table.fits";
+_sync_table_file_name = "syn_table.fits";
 #endif
 
-   return path_concat (Data_Path, file);
+public define _sync_table_file () %{{{
+{
+   return path_concat (Data_Path, _sync_table_file_name);
 }
 
 %}}}
+
+public variable _invc_table_file_name;
+#ifexists IC_Table_File
+_invc_table_file_name = IC_Table_File;
+#else
+_invc_table_file_name = "ic_table.fits";
+#endif
 
 public define _invc_table_file () %{{{
 {
-   variable file;
-#ifexists IC_Table_File
-  file = IC_Table_File;
-#else
-  file = "ic_table.fits";
-#endif
-
-   return path_concat (Data_Path, file);
+   return path_concat (Data_Path, _invc_table_file_name);
 }
 
 %}}}
 
-public define _ntbrem_table_file () %{{{
-{
-   variable file;
+public variable _ntbrem_table_file_name;
 #ifexists NTB_Table_File
-  file = NTB_Table_File;
+_ntbrem_table_file_name = NTB_Table_File;
 #else
-  file = "ntb_ee_table.fits";
+_ntbrem_table_file_name = "ntb_ee_table.fits";
 #endif
 
-   return path_concat (Data_Path, file);
+public define _ntbrem_table_file () %{{{
+{
+   return path_concat (Data_Path, _ntbrem_table_file_name);
 }
 
 %}}}
@@ -160,7 +160,7 @@ nonthermal_init ();
 
 define make_sync_table () %{{{
 {
-   variable file = _sync_table_file();
+   variable file = _sync_table_file_name;
 
    switch (_NARGS)
      {
@@ -231,7 +231,7 @@ static define ic_make_table (t, file) %{{{
 
 define make_invc_table () %{{{
 {
-   variable file = _invc_table_file();
+   variable file = _invc_table_file_name;
    variable t = 0.0;
 
    switch (_NARGS)
@@ -328,7 +328,7 @@ static define ntb_make_table (process, file) %{{{
 
 define make_ntbrem_table () %{{{
 {
-   variable file = _ntbrem_table_file();
+   variable file = _ntbrem_table_file_name;
    variable process = NTB_ee;
 
    switch (_NARGS)
