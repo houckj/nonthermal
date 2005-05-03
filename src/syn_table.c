@@ -31,59 +31,6 @@ typedef struct
 }
 Table_Type;
 
-static double angular_integrand (double t, void *p) /*{{{*/
-{
-   double x = *(double *)p;
-   double t2;
-   gsl_sf_result f;
-
-   if (t == 0.0 || t == 1.0)
-     return 0.0;
-
-   (void) gsl_sf_synchrotron_1_e (x/t, &f);
-
-   t2 = t*t;
-
-   return f.val * t2 / sqrt (1.0 - t2);
-}
-
-/*}}}*/
-
-int syn_angular_integral (double x, double *y) /*{{{*/
-{
-   double epsabs, epsrel, abserr;
-   gsl_error_handler_t *gsl_error_handler;
-   gsl_integration_workspace *work;
-   gsl_function f;
-   size_t limit;
-
-   *y = 0.0;
-
-   f.function = &angular_integrand;
-   f.params = &x;
-   epsabs = 0.0;
-   epsrel = 1.e-10;
-   limit = MAX_QAG_SUBINTERVALS;
-
-   work = gsl_integration_workspace_alloc (limit);
-   if (work == NULL)
-     return -1;
-
-   gsl_error_handler = gsl_set_error_handler_off ();
-
-   (void) gsl_integration_qag (&f, 0.0, 1.0, epsabs, epsrel, limit,
-                               GSL_INTEG_GAUSS31,
-                               work, y, &abserr);
-
-   gsl_set_error_handler (gsl_error_handler);
-
-   gsl_integration_workspace_free (work);
-
-   return 0;
-}
-
-/*}}}*/
-
 void syn_free_table (void *p) /*{{{*/
 {
    Table_Type *t = (Table_Type *)p;

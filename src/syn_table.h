@@ -3,7 +3,6 @@
 
 #include "synchrotron.h"
 
-extern int syn_angular_integral (double x, double *y);
 extern int syn_interp_angular_integral (void *p, double x, double *y);
 
 extern void *syn_alloc_table (unsigned int size);
