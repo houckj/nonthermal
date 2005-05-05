@@ -211,26 +211,6 @@ static int _nt_contin (void *cl, /*{{{*/
 
 /*}}}*/
 
-static void _sync_make_table (void) /*{{{*/
-{
-   enum {TABLE_SIZE = 2048};
-   void *t;
-
-   fprintf (stdout, "Generating synchrotron table:\n");
-
-   if ((NULL == (t = syn_alloc_table (TABLE_SIZE)))
-        || (-1 == syn_create_table (t))
-        || (-1 == syn_push_table (t)))
-     {
-        fprintf (stderr, "*** failed generating synchrotron table\n");
-        return;
-     }
-
-   syn_free_table (t);
-}
-
-/*}}}*/
-
 static double _sync_angular_integral (double *x, int *interpolate)
 {
    double y;
@@ -407,7 +387,6 @@ static SLang_Intrin_Var_Type Sync_Intrin_Vars [] =
 
 static SLang_Intrin_Fun_Type Sync_Intrinsics [] =
 {
-   MAKE_INTRINSIC("_sync_make_table", _sync_make_table, V, 0),
    MAKE_INTRINSIC_2("_sync_angular_integral", _sync_angular_integral, D, D,I),
    SLANG_END_INTRIN_FUN_TABLE
 };

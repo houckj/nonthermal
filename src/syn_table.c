@@ -64,7 +64,7 @@ void *syn_alloc_table (unsigned int n) /*{{{*/
 
    t->y = t->x + n;
 
-   t->spline = gsl_spline_alloc (gsl_interp_akima, t->n);
+   t->spline = gsl_spline_alloc (gsl_interp_cspline, t->n);
    t->accel = gsl_interp_accel_alloc ();
    if (t->spline == NULL || t->accel == NULL)
      {
@@ -151,29 +151,6 @@ int syn_push_table (void *p) /*{{{*/
         SLang_free_array (tc.y);
         return -1;
      }
-
-   return 0;
-}
-
-/*}}}*/
-
-int syn_create_table (void *p) /*{{{*/
-{
-   Table_Type *t = (Table_Type *)p;
-   unsigned int i;
-   double lg_xmin = -38.0;
-   double lg_xmax =   1.5;
-
-   for (i = 0; i < t->n; i++)
-     {
-        double y, lgx;
-        lgx = lg_xmin + (lg_xmax - lg_xmin) * i / (t->n - 1.0);
-        (void) syn_angular_integral (pow(10.0,lgx), &y);
-        t->x[i] = lgx;
-        t->y[i] = (y > DBL_MIN) ? log10(y) : (double) DBL_MIN_10_EXP;
-        fprintf (stderr, "%4d/%4d\r", i+1, t->n);
-     }
-   fputc ('\n', stderr);
 
    return 0;
 }
