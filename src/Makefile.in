@@ -4,7 +4,7 @@
 # List of modules and associated .sl files to install
 #---------------------------------------------------------------------------
 MODULES = libnonthermal.so nonthermal-module.so 
-SL_FILES = nonthermal.sl 
+SL_FILES = nonthermal.sl sync_make_table.sl
 DATA_FILES = syn_table.fits ic_table.fits ntb_ee_table.fits
 
 #---------------------------------------------------------------------------
@@ -14,6 +14,7 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 MODULE_INSTALL_DIR = ${exec_prefix}/lib/isis/modules
 SL_FILES_INSTALL_DIR = ${exec_prefix}/share/isis
+DATA_FILES_INSTALL_DIR = ${exec_prefix}/share/isis/nonthermal/data
 
 #---------------------------------------------------------------------------
 # C Compiler to create a shared library
@@ -49,7 +50,7 @@ MKINSDIR = ../autoconf/mkinsdir.sh
 DESTDIR =
 DEST_MODULE_INSTALL_DIR = $(DESTDIR)$(MODULE_INSTALL_DIR)
 DEST_SL_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)
-DEST_DATA_FILES_INSTALL_DIR = $(DESTDIR)$(SL_FILES_INSTALL_DIR)/nonthermal/data
+DEST_DATA_FILES_INSTALL_DIR = $(DESTDIR)$(DATA_FILES_INSTALL_DIR)
 
 #---------------------------------------------------------------------------
 LIBS = $(MODULE_LIBS) $(RPATH) $(DL_LIB) -lm
@@ -110,16 +111,18 @@ install_modules:
 		fi; \
 	done
 install_slfiles:
-	@for X in $(SL_FILES); \
+	@cd $(config_dir)/lib ; \
+	for X in $(SL_FILES); \
 	do \
-		echo $(INSTALL_DATA) $$X $(DEST_SL_FILES_INSTALL_DIR); \
-		$(INSTALL_DATA) $$X $(DEST_SL_FILES_INSTALL_DIR); \
+		echo $(INSTALL_DATA) $$X $(DEST_SL_FILES_INSTALL_DIR)/nonthermal; \
+		$(INSTALL_DATA) $$X $(DEST_SL_FILES_INSTALL_DIR)/nonthermal; \
 		if [ "$$?" != "0" ]; then \
 		  exit 1; \
 		fi; \
 	done
+	/bin/mv $(DEST_SL_FILES_INSTALL_DIR)/nonthermal/nonthermal.sl $(DEST_SL_FILES_INSTALL_DIR)         
 install_datafiles:
-	@cd ../data ;\
+	@cd $(config_dir)/data ;\
 	for X in $(DATA_FILES); \
 	do \
 		echo $(INSTALL_DATA) $$X $(DEST_DATA_FILES_INSTALL_DIR); \
