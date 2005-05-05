@@ -1,6 +1,6 @@
 static define make_entry (x)
 {
-   variable t = struct {x, y, next, prev};
+   variable t = struct {x, y, next};
    t.x = x;
    t.y = _sync_angular_integral(x, 0);
    %() = fprintf (stderr, "%17.8e %17.8e\r", log10(x), log10(t.y));
@@ -17,9 +17,7 @@ static define init_list (a, b)
 static define add_entry_after (t)
 {
    variable s = make_entry (sqrt (t.x * t.next.x));
-   t.next.prev = s;
    s.next = t.next;
-   s.prev = t;
    t.next = s;
    return t;
 }
