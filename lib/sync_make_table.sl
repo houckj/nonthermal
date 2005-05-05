@@ -31,6 +31,11 @@ static define changing_too_fast (t, tol)
    return abs(t.next.y - t.y) > tol * abs(t.y);
 }
 
+static define points_not_close_enough (t, tol)
+{
+   return 1 - t.x/t.next.x > tol;
+}
+
 static define need_new_entry (list, tol)
 {
    foreach (list)
@@ -44,6 +49,9 @@ static define need_new_entry (list, tol)
 
         if (changing_too_fast (t, tol))
 	  return t;
+
+        if (points_not_close_enough (t, tol))
+          return t;
      }
 
    return NULL;
@@ -62,7 +70,7 @@ static define make_table (x_min, x_max, tol)
         if (n == NULL)
           break;
         n = add_entry_after (n);
-%        () = fprintf (stderr, "%d %17.8e %17.8e\r", num, log10(n.x), log10(n.y));
+        %() = fprintf (stderr, "%d %17.8e %17.8e\r", num, log10(n.x), log10(n.y));
         num++;
      }
 
@@ -88,7 +96,10 @@ static define make_table (x_min, x_max, tol)
 
 define _sync_make_table ()
 {
-   return make_table (1.e-38, 32.0, 1.e-2);
+   variable x_min = 1.e-38;
+   variable x_max = 32.0;
+   variable y_tol = 0.05;
+   return make_table (x_min, x_max, y_tol);
 }
 
 provide ("sync_make_table");
