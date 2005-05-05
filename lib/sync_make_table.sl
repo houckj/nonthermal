@@ -3,17 +3,15 @@ static define make_entry (x)
    variable t = struct {x, y, next, prev};
    t.x = x;
    t.y = _sync_angular_integral(x, 0);
+   %() = fprintf (stderr, "%17.8e %17.8e\r", log10(x), log10(t.y));
    return t;
 }
 
 static define init_list (a, b)
 {
-   variable ta = make_entry (a);
-   variable tb = make_entry (b);
-
-   ta.next = tb;
-
-   return ta;
+   variable t = make_entry (a);
+   t.next = make_entry (b);
+   return t;
 }
 
 static define add_entry_after (t)
@@ -24,16 +22,6 @@ static define add_entry_after (t)
    s.prev = t;
    t.next = s;
    return t;
-}
-
-static define changing_too_fast (t, tol)
-{
-   return abs(t.next.y - t.y) > tol * abs(t.y);
-}
-
-static define points_not_close_enough (t, tol)
-{
-   return 1 - t.x/t.next.x > tol;
 }
 
 static define need_new_entry (list, tol)
@@ -47,10 +35,12 @@ static define need_new_entry (list, tol)
             {t.x >= t.next.x})
 	  return NULL;
 
-        if (changing_too_fast (t, tol))
+        % don't let y change too much
+        if (abs(t.next.y - t.y) > tol * abs(t.y))
 	  return t;
 
-        if (points_not_close_enough (t, tol))
+        % don't let x change too much
+        if (abs(t.next.x - t.x) > tol * abs(t.next.x))
           return t;
      }
 
@@ -60,17 +50,15 @@ static define need_new_entry (list, tol)
 static define make_table (x_min, x_max, tol)
 {
    variable t = init_list (x_min, x_max);
-   variable n = t;
-
    variable num = 2;
 
+   variable n = t;
    forever
      {
         n = need_new_entry (n, tol);
         if (n == NULL)
           break;
         n = add_entry_after (n);
-        %() = fprintf (stderr, "%d %17.8e %17.8e\r", num, log10(n.x), log10(n.y));
         num++;
      }
 
