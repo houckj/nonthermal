@@ -2,8 +2,11 @@
 
 import("nonthermal");
 
-private variable Data_Path = sprintf ("%s/share/isis/nonthermal/data",
-                                       _nonthermal_install_prefix);
+$1 = path_concat (path_dirname (__FILE__), "nonthermal");
+prepend_to_isis_load_path ($1);
+
+private variable Data_Path;
+Data_Path = path_concat (path_dirname(__FILE__), "nonthermal/data");
 
 static define _get_table_names (file, env) %{{{
 {
@@ -157,6 +160,8 @@ define nonthermal_init () %{{{
 %}}}
 
 nonthermal_init ();
+
+require ("sync_make_table");
 
 define make_sync_table () %{{{
 {
