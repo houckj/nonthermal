@@ -2,11 +2,10 @@
 
 import("nonthermal");
 
-$1 = path_concat (path_dirname (__FILE__), "nonthermal");
+$1 = path_concat (_nonthermal_install_prefix, "share/isis/nonthermal");
 prepend_to_isis_load_path ($1);
 
-private variable Data_Path;
-Data_Path = path_concat (path_dirname(__FILE__), "nonthermal/data");
+private variable Data_Path = path_concat ($1, "data");
 
 static define _get_table_names (file, env) %{{{
 {
@@ -47,7 +46,7 @@ static define push_array_values (a) %{{{
 
 private variable IC_Keys = ["GAMMIN", "GAMMAX", "EFNMIN", "EFNMAX"];
 
-define ic_read_table_hook (file) %{{{
+public define ic_read_table_hook (file) %{{{
 {
    variable t = struct
      {
@@ -71,7 +70,7 @@ define ic_read_table_hook (file) %{{{
 
 private variable NTB_Keys = ["EPHMIN", "EPHMAX", "EKNMIN", "EKNMAX"];
 
-define ntb_read_table_hook (file) %{{{
+public define ntb_read_table_hook (file) %{{{
 {
    variable t = struct
      {
@@ -107,42 +106,42 @@ public define ntb_get_table_names (file) %{{{
 
 %}}}
 
-public variable _sync_table_file_name;
+variable _sync_table_file_name;
 #ifexists SYN_Table_File
 _sync_table_file_name = SYN_Table_File;
 #else
 _sync_table_file_name = "syn_table.fits";
 #endif
 
-public define _sync_table_file () %{{{
+define _sync_table_file () %{{{
 {
    return path_concat (Data_Path, _sync_table_file_name);
 }
 
 %}}}
 
-public variable _invc_table_file_name;
+variable _invc_table_file_name;
 #ifexists IC_Table_File
 _invc_table_file_name = IC_Table_File;
 #else
 _invc_table_file_name = "ic_table.fits";
 #endif
 
-public define _invc_table_file () %{{{
+define _invc_table_file () %{{{
 {
    return path_concat (Data_Path, _invc_table_file_name);
 }
 
 %}}}
 
-public variable _ntbrem_table_file_name;
+variable _ntbrem_table_file_name;
 #ifexists NTB_Table_File
 _ntbrem_table_file_name = NTB_Table_File;
 #else
 _ntbrem_table_file_name = "ntb_ee_table.fits";
 #endif
 
-public define _ntbrem_table_file () %{{{
+define _ntbrem_table_file () %{{{
 {
    return path_concat (Data_Path, _ntbrem_table_file_name);
 }
