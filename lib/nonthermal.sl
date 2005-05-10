@@ -148,7 +148,7 @@ define _ntbrem_table_file () %{{{
 
 %}}}
 
-define nonthermal_init () %{{{
+private define nonthermal_init () %{{{
 {
    variable lib_file = "libnonthermal.so";
    add_compiled_function (lib_file, "sync", _sync_table_file());
@@ -390,7 +390,7 @@ define particle_info_struct () %{{{
 
 define particle_type (t);  % declare
 
-define struct_args (s) %{{{
+private define struct_args (s) %{{{
 {
    variable t = @s;
    t.particle_type = particle_type(s.particle_type);
