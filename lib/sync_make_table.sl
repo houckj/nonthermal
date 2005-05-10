@@ -1,4 +1,4 @@
-static define make_entry (x)
+private define make_entry (x)
 {
    variable t = struct {x, y, next};
    t.x = x;
@@ -7,14 +7,14 @@ static define make_entry (x)
    return t;
 }
 
-static define init_list (a, b)
+private define init_list (a, b)
 {
    variable t = make_entry (a);
    t.next = make_entry (b);
    return t;
 }
 
-static define add_entry_after (t)
+private define add_entry_after (t)
 {
    variable s = make_entry (sqrt (t.x * t.next.x));
    s.next = t.next;
@@ -22,7 +22,7 @@ static define add_entry_after (t)
    return t;
 }
 
-static define need_new_entry (list, tol)
+private define need_new_entry (list, tol)
 {
    foreach (list)
      {
@@ -45,7 +45,7 @@ static define need_new_entry (list, tol)
    return NULL;
 }
 
-static define make_table (x_min, x_max, tol)
+private define make_table (x_min, x_max, tol)
 {
    variable t = init_list (x_min, x_max);
    variable num = 2;

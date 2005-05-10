@@ -7,7 +7,7 @@ prepend_to_isis_load_path ($1);
 
 private variable Data_Path = path_concat ($1, "data");
 
-static define _get_table_names (file, env) %{{{
+private define _get_table_names (file, env) %{{{
 {
    variable list;
 
@@ -34,7 +34,7 @@ static define _get_table_names (file, env) %{{{
 
 %}}}
 
-static define push_array_values (a) %{{{
+private define push_array_values (a) %{{{
 {
    foreach (a)
      {
@@ -189,7 +189,7 @@ define make_sync_table () %{{{
 
 %}}}
 
-static define ic_write_table_row (i, t, fptr) %{{{
+private define ic_write_table_row (i, t, fptr) %{{{
 {
    variable firstrow = i;
    variable firstelem = 1;
@@ -202,7 +202,7 @@ static define ic_write_table_row (i, t, fptr) %{{{
 
 %}}}
 
-static define ic_write_table (t, file) %{{{
+private define ic_write_table (t, file) %{{{
 {
    variable fp = fits_open_file (file, "c");
 
@@ -226,7 +226,7 @@ static define ic_write_table (t, file) %{{{
 
 %}}}
 
-static define ic_make_table (t, file) %{{{
+private define ic_make_table (t, file) %{{{
 {
    ic_write_table (_invc_make_table (t), file);
 }
@@ -270,7 +270,7 @@ private variable NTB_Process_Type = Assoc_Type[];
 NTB_Process_Type ["ee"] = NTB_ee;
 NTB_Process_Type ["ep"] = NTB_ep;
 
-static define ntb_parse_process_type (type) %{{{
+private define ntb_parse_process_type (type) %{{{
 {
    if (typeof(type) == Int_Type)
      return type;
@@ -285,7 +285,7 @@ static define ntb_parse_process_type (type) %{{{
 
 %}}}
 
-static define ntb_write_table_row (i, t, fptr) %{{{
+private define ntb_write_table_row (i, t, fptr) %{{{
 {
    variable firstrow = i;
    variable firstelem = 1;
@@ -298,7 +298,7 @@ static define ntb_write_table_row (i, t, fptr) %{{{
 
 %}}}
 
-static define ntb_write_table (t, file) %{{{
+private define ntb_write_table (t, file) %{{{
 {
    variable fp = fits_open_file (file, "c");
 
@@ -322,7 +322,7 @@ static define ntb_write_table (t, file) %{{{
 
 %}}}
 
-static define ntb_make_table (process, file) %{{{
+private define ntb_make_table (process, file) %{{{
 {
    variable t = _ntb_make_table (ntb_parse_process_type(process));
    ntb_write_table (t, file);
