@@ -64,7 +64,7 @@ define plot_comparison (index)
    set_par ("invc(1).curvature", 0);
    set_par ("invc(1).cutoff", 10.0);
    set_par ("invc(1).T_photon[K]", 2.725);
-   oplot (fixup_units (e_s, index), 1);
+   oplot (fixup_units (e_ic, index), 1);
    oplot(e_ic, abs(ic_t), red);
 
    fit_fun ("ntbrem(1)");

@@ -65,77 +65,58 @@ static int pop_density_info (Density_Info *di) /*{{{*/
 }
 /*}}}*/
 
-static double dgamma_dPc (double gamma) /*{{{*/
+static double thermal_distrib (double *mv, double *pkT_keV, double *pmass) /*{{{*/
 {
-   if (gamma <= 1.0)
-     return DBL_MAX;
-
-   /* I'm assuming that the mc^2 factor is accounted
-    * for elsewhere
-    */
-   return sqrt ((gamma + 1.0) * (gamma - 1.0)) / gamma;
-}
-
-/*}}}*/
-
-static double thermal_distrib (double *pgamma, double *pkT_keV, double *pmass) /*{{{*/
-{ /* Maxwellian momentum distribution */
-   double gamma = *pgamma;
-   double kT = *pkT_keV * KEV;
+   /* Maxwellian momentum distribution */
+   double p = *mv;
    double m = *pmass;
-   double a, mc, p2, x, f;
+   double kT = *pkT_keV * KEV;
+   double a, x, f;
 
-   if (kT <= 0.0 || gamma <= 1.0 || m <= 0.0)
+   if (kT <= 0.0 || p <= 0.0 || m <= 0.0)
      return 0.0;
 
-   mc = m * GSL_CONST_CGSM_SPEED_OF_LIGHT;
-
    /* p is non-relativistic momentum, p = m*v */
-   p2 = mc * mc * (1.0 - 1.0/(gamma * gamma));
-   a  = 2 * m * kT;
-   x  = p2 / a;
+   a = 2 * m * kT;
+   x = (p*p) / a;
 
    if (x < 0.0 || 500.0 < x)
      return 0.0;
 
    f = 2 * M_2_SQRTPI * x * exp (-x) / sqrt (a);
-   f *= GEV / GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   /* probability per GeV */
-   return f;
+   /* match units of nonthermal electron distribution function */
+   return f * (GEV / GSL_CONST_CGSM_SPEED_OF_LIGHT);
 }
 
 /*}}}*/
 
-static double particle_distrib (double *gamma, double *index, /*{{{*/
-                                  double *curvature, double *cutoff_energy,
-                                  double *mass)
+static double particle_distrib (double *pc, double *index, /*{{{*/
+                                double *curvature, double *cutoff_energy,
+                                double *mass)
 {
-   Particle_Type p;
+   Particle_Type pt;
    double f;
 
-   (void) init_particle_spectrum (&p);
+   (void) init_particle_spectrum (&pt);
 
-   p.index = *index;
-   p.curvature = *curvature;
-   p.cutoff_energy = *cutoff_energy;
-   p.mass = *mass;
+   pt.index = *index;
+   pt.curvature = *curvature;
+   pt.cutoff_energy = *cutoff_energy;
+   pt.mass = *mass;
 
-   /* dn/d\gamma */
-   (void) (*p.spectrum)(&p, *gamma, &f);
-
-   /* dn/d(Pc) = dn/d\gamma * d\gamma/d(Pc) */
-   f *= dgamma_dPc (*gamma);
+   /* dn/d(Pc) */
+   (void) (*pt.spectrum)(&pt, *pc, &f);
 
    return f;
 }
 /*}}}*/
 
-static double root_func (double p, void *cd) /*{{{*/
+static double root_func (double mv, void *cd) /*{{{*/
 {
    Density_Info *di = (Density_Info *)cd;
    Particle_Type *pt = &di->particle;
-   double f_th, f_nth, gamma, x;
+   double f_th, f_nth, gamma, gamma2, beta, pc;
 
    if (di->n_th <= 0.0 || di->n_GeV <= 0.0)
      {
@@ -145,36 +126,37 @@ static double root_func (double p, void *cd) /*{{{*/
         return 0.0;
      }
 
-   /* p is non-relativistic momentum, p = m*v */
-   x = p / (pt->mass * GSL_CONST_CGSM_SPEED_OF_LIGHT);
-   if (x >= 1.0)
+   /* non-relativistic momentum, p = m*v */
+   beta = mv / (pt->mass * GSL_CONST_CGSM_SPEED_OF_LIGHT);
+   if (beta >= 1.0)
      {
-        fprintf (stderr, "crazy momentum value:  x = %e\n", x);
+        fprintf (stderr, "crazy momentum value:  beta = %e\n", beta);
         SLang_set_error (SL_INTRINSIC_ERROR);
         return 0.0;
      }
 
-   gamma = 1.0 / sqrt (1.0 - x * x);
-
-   f_th = thermal_distrib (&gamma, &di->kT, &pt->mass);
+   f_th = thermal_distrib (&mv, &di->kT, &pt->mass);
    f_th *= di->n_th;
 
-   /* dn/d\gamma */
-   (void) (*pt->spectrum) (pt, gamma, &f_nth);
-   f_nth *= di->n_GeV;
+   gamma2 = 1.0 /((1.0 + beta) * (1.0 - beta));
+   gamma = sqrt(gamma2);
+   pc = gamma * mv * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   /* dn/dp = dn/d\gamma * d\gamma/dp;   p = m*v */
-   f_nth *= gamma * gamma * gamma * x;
+   /* dn/d(Pc) */
+   (void) (*pt->spectrum) (pt, pc, &f_nth);
+   f_nth *= di->n_GeV;
+   /* dn/dp = d(Pc)/dp * dn/d(Pc);   p = m*v, P = gamma*mv */
+   f_nth *= gamma2 * gamma;
 
    return f_th - f_nth;
 }
 
 /*}}}*/
 
-static int find_gamma_min (Density_Info *di, double *gamma) /*{{{*/
+static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 {
    Particle_Type *pt = &di->particle;
-   double mc, p_th, pmax, p, x;
+   double mc, p_th, pmax, p;
    unsigned int n = 8;
    int status = 1;
 
@@ -198,20 +180,22 @@ static int find_gamma_min (Density_Info *di, double *gamma) /*{{{*/
 
    /* No solution, use thermal peak */
    if (status || p > mc)
-     p = p_th;
+     {
+        fprintf (stderr, "find_momentum_min: no solution -- using thermal peak momentum\n");
+        p = p_th;
+     }
 
-   x = p / mc;
-   *gamma = 1.0 / sqrt (1.0 - x * x);
+   *momentum = p;
 
    return 0;
 }
 
 /*}}}*/
 
-static double _find_gamma_min (void) /*{{{*/
+static double _find_momentum_min (void) /*{{{*/
 {
    Density_Info di;
-   double gamma;
+   double p;
 
    if (-1 == pop_density_info (&di))
      {
@@ -219,23 +203,23 @@ static double _find_gamma_min (void) /*{{{*/
         return 0.0;
      }
 
-   (void) find_gamma_min (&di, &gamma);
+   (void) find_momentum_min (&di, &p);
 
-   return gamma;
+   return p;
 }
 
 /*}}}*/
 
-static int Failed_Finding_Gamma_Min;
+static int Failed_Finding_Momentum_Min;
 
 static int eval_nontherm_integral (gsl_function *f, double *value) /*{{{*/
 {
    Density_Info *di = (Density_Info *)f->params;
-   Particle_Type *p = &di->particle;
+   Particle_Type *pt = &di->particle;
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
-   double epsabs, epsrel, abserr, gamma_min, gamma_max;
-   double pc_min, pc_max, mc2;
+   double epsabs, epsrel, abserr;
+   double p_min, beta, gamma, pc_min, pc_max;
    size_t limit;
    int status;
 
@@ -245,27 +229,21 @@ static int eval_nontherm_integral (gsl_function *f, double *value) /*{{{*/
    epsrel = 1.e-7;
    limit = MAX_QAG_SUBINTERVALS;
 
-   Failed_Finding_Gamma_Min = 0;
-   if (-1 == find_gamma_min (di, &gamma_min))
+   Failed_Finding_Momentum_Min = 0;
+   if (-1 == find_momentum_min (di, &p_min))
      {
-        Failed_Finding_Gamma_Min = 1;
-        /* fprintf (stderr, "couldn't find gamma_min\n"); */
-        /* return -1; */
+        Failed_Finding_Momentum_Min = 1;
      }
-   gamma_max = (*p->gamma_max) (p);
+   beta = (p_min / pt->mass) / GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   gamma = 1.0 / sqrt ((1.0 + beta)*(1.0 - beta));
+   pc_min = gamma * p_min * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   /* Because the lower limit of the integral is in the
-    * non-relativistic regime, its clearer to use momentum
-    * rather than gamma as the variable of integration.
-    *
-    * For simpler continuity into the relativistic regime,
+   /* For simpler continuity into the relativistic regime,
     * we use the relativistic momentum,
     *    Pc = gamma * pc
     * where p = mv.
     */
-   mc2 = p->mass * C_SQUARED;
-   pc_min = mc2 * sqrt (gamma_min * gamma_min - 1.0);
-   pc_max = mc2 * sqrt (gamma_max * gamma_max - 1.0);
+   pc_max = (*pt->momentum_max)(pt);
 
    work = gsl_integration_workspace_alloc (limit);
    if (work == NULL)
@@ -314,21 +292,18 @@ static int nontherm_integral (Density_Info *di, double (*func)(double, void *), 
 static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
 {
    Density_Info *di = (Density_Info *)cd;
-   Particle_Type *p = &di->particle;
-   double ne, gamma, e_kinetic, x;
-   double mc2 = p->mass * C_SQUARED;
+   Particle_Type *pt = &di->particle;
+   double mc2 = pt->mass * C_SQUARED;
+   double ne, x, gamma, e_kinetic;
+
+   /* dn/d(Pc) */
+   (void) (*pt->spectrum)(pt, pc, &ne);
 
    /* relativistic momentum = Pc = gamma * m * v */
    x = pc / mc2;
    gamma = sqrt (1.0 + x * x);
-
-   /* dn/d\gamma */
-   (void) (*p->spectrum)(p, gamma, &ne);
-
-   /* dn/d(Pc) = dn/d\gamma * d\gamma/d(Pc) */
-   ne *= dgamma_dPc (gamma);
-
    e_kinetic = (gamma - 1.0) * mc2;
+
    return ne * e_kinetic;
 }
 
@@ -337,18 +312,13 @@ static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
 static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
 {
    Density_Info *di = (Density_Info *)cd;
-   Particle_Type *p = &di->particle;
-   double ne, gamma, x;
+   Particle_Type *pt = &di->particle;
+   double ne;
 
    /* relativistic momentum = Pc = gamma * m * v */
-   x = pc / (p->mass * C_SQUARED);
-   gamma = sqrt(1.0 + x * x);
 
-   /* dn/d\gamma */
-   (void) (*p->spectrum)(p, gamma, &ne);
-
-   /* dn/d(Pc) = dn/d\gamma * d\gamma/d(Pc) */
-   ne *= dgamma_dPc (gamma);
+   /* dn/d(Pc) */
+   (void) (*pt->spectrum)(pt, pc, &ne);
 
    return ne;
 }
@@ -424,7 +394,7 @@ static double conserve_charge (void) /*{{{*/
    if (-1 == nontherm_integral (&de, &nontherm_density_integrand, &fe))
      {
         char *msg = "";
-        if (Failed_Finding_Gamma_Min) msg = ":  failed finding gamma_min";
+        if (Failed_Finding_Momentum_Min) msg = ":  failed finding min momentum";
         fprintf (stderr, "failed computing e- density%s\n", msg);
         SLang_set_error (SL_INTRINSIC_ERROR);
         return 0.0;
@@ -519,7 +489,7 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
    MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
    MAKE_INTRINSIC_5("particle_distrib", particle_distrib, D, D, D, D, D, D),
    MAKE_INTRINSIC("conserve_charge", conserve_charge, D, 0),
-   MAKE_INTRINSIC("_find_gamma_min", _find_gamma_min, D, 0),
+   MAKE_INTRINSIC("_find_momentum_min", _find_momentum_min, D, 0),
    MAKE_INTRINSIC("_nontherm_density", nontherm_density, D, 0),
    MAKE_INTRINSIC("_nontherm_energy_density", nontherm_energy_density, D, 0),
    SLANG_END_INTRIN_FUN_TABLE

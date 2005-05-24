@@ -5,7 +5,7 @@ typedef struct
 {
    Particle_Type *electrons;
    int (*incident_photons) (double, double *);
-   double gamma_electron;
+   double electron_gamma;
    double energy_final_photon;            /* eV */
    double incident_photon_max_energy;     /* eV */
    int interpolate;

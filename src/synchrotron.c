@@ -94,21 +94,10 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 
 /*}}}*/
 
-static double eval_x (double gamma, Synchrotron_Type *s) /*{{{*/
+static int eval_angular_integral (double x, void *pt, double *y) /*{{{*/
 {
-   /* x = (photon energy) / (critical energy) */
-   return (s->photon_energy
-           / (SYNCHROTRON_CRIT_ENERGY_COEF * s->B_tot * gamma * gamma));
-}
-
-/*}}}*/
-
-static int eval_angular_integral (double gamma, void *p, double *y) /*{{{*/
-{
-   Synchrotron_Type *s = (Synchrotron_Type *)p;
-   double x, yx;
-
-   x = eval_x (gamma, s);
+   Synchrotron_Type *s = (Synchrotron_Type *)pt;
+   double yx;
 
    if (s->interpolate)
      (void) syn_interp_angular_integral (s->client_data, x, &yx);
@@ -122,29 +111,34 @@ static int eval_angular_integral (double gamma, void *p, double *y) /*{{{*/
 
 /*}}}*/
 
-static double synchrotron_integrand (double gamma, void *p) /*{{{*/
+static double synchrotron_integrand (double pc, void *pt) /*{{{*/
 {
-   Synchrotron_Type *s = (Synchrotron_Type *)p;
+   Synchrotron_Type *s = (Synchrotron_Type *)pt;
    Particle_Type *elec = s->electrons;
-   double y, ne_gamma;
+   double pcomc2, gamma2, x, y, ne;
 
-   (void) eval_angular_integral (gamma, p, &y);
-   (void) (*elec->spectrum) (elec, gamma, &ne_gamma);
+   pcomc2 = pc / (elec->mass * C_SQUARED);
+   gamma2 = 1.0 + pcomc2*pcomc2;
+   /* x = (photon energy) / (critical energy) */
+   x = (s->photon_energy
+           / (SYNCHROTRON_CRIT_ENERGY_COEF * s->B_tot * gamma2));
 
-   return ne_gamma * y;
+   (void) eval_angular_integral (x, pt, &y);
+   (void) (*elec->spectrum) (elec, pc, &ne);
+
+   return ne * y;
 }
 
 /*}}}*/
 
-int syn_calc_synchrotron (void *vs, /*{{{*/
-                          double photon_energy, double *emissivity)
+int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{{{*/
 {
    Synchrotron_Type *s = (Synchrotron_Type *)vs;
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
    gsl_function f;
-   double epsabs, epsrel, abserr, integral, eomc2;
-   double gamma_min, gamma_max;
+   double epsabs, epsrel, abserr, integral, eph;
+   double pc_min, pc_max;
    size_t limit;
    int status;
 
@@ -156,17 +150,16 @@ int syn_calc_synchrotron (void *vs, /*{{{*/
    epsabs = 0.0;
    epsrel = 1.e-9;
    limit = MAX_QAG_SUBINTERVALS;
-   
-   gamma_min = (*s->electrons->gamma_min) (s->electrons);
-   gamma_max = (*s->electrons->gamma_max) (s->electrons);
 
-   work = gsl_integration_workspace_alloc (limit);
-   if (work == NULL)
+   pc_min = (*s->electrons->momentum_min) (s->electrons);
+   pc_max = (*s->electrons->momentum_max) (s->electrons);
+
+   if (NULL == (work = gsl_integration_workspace_alloc (limit)))
      return -1;
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qag (&f, gamma_min, gamma_max, epsabs, epsrel,
+   status = gsl_integration_qag (&f, pc_min, pc_max, epsabs, epsrel,
                                  limit, GSL_INTEG_GAUSS31, work,
                                  &integral, &abserr);
 
@@ -181,11 +174,8 @@ int syn_calc_synchrotron (void *vs, /*{{{*/
                    gsl_strerror (status));
      }
 
-   /* E/(m c^2) */
-   eomc2 = ((photon_energy * GSL_CONST_CGSM_ELECTRON_VOLT)
-        / ELECTRON_REST_ENERGY);
-
-   *emissivity = (SYNCHROTRON_COEF * s->B_tot * integral) / eomc2;
+   eph = photon_energy * GSL_CONST_CGSM_ELECTRON_VOLT;
+   *emissivity = (SYNCHROTRON_COEF * s->B_tot * integral) / eph;
 
 #if 0
    fprintf (stdout, "%15.7e  %15.7e\n", photon_energy, *emissivity);

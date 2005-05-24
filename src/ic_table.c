@@ -159,7 +159,7 @@ static int map_vs_efinal (Inverse_Compton_Type *ic, double gamma, /*{{{*/
    e = efinal_min;
 
    ic->energy_final_photon = e;
-   ic->gamma_electron = gamma;
+   ic->electron_gamma = gamma;
    if (-1 == ic_integral_over_incident_photons (ic, &f))
      goto return_error;
 
@@ -851,7 +851,7 @@ int ic_interp_photon_integral (Inverse_Compton_Type *ic, double *value) /*{{{*/
    int flag;
 
    efinal = ic->energy_final_photon;
-   gamma = ic->gamma_electron;
+   gamma = ic->electron_gamma;
    flag = ic->complain_on_extrapolate;
 
    *value = 0.0;

@@ -59,8 +59,8 @@ typedef struct Particle_Type Particle_Type;
 struct Particle_Type
 {
    int (*spectrum)(Particle_Type *, double, double *);
-   double (*gamma_min)(Particle_Type *);
-   double (*gamma_max)(Particle_Type *);
+   double (*momentum_min)(Particle_Type *);
+   double (*momentum_max)(Particle_Type *);
    double index;
    double curvature;
    double cutoff_energy;

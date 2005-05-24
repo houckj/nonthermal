@@ -536,17 +536,19 @@ double _ntb_ee_sigma_haug (double gm1, double e_ph) /*{{{*/
 
 /*}}}*/
 
-static double ntb_integrand (double gamma, void *p) /*{{{*/
+static double ntb_integrand (double pc, void *pt) /*{{{*/
 {
-   Brems_Type *b = (Brems_Type *)p;
+   Brems_Type *b = (Brems_Type *)pt;
    Particle_Type *elec = b->electrons;
-   double ne, gm1, beta, v, s;
+   double ne, pcomc2, gamma, gm1, beta, v, s;
 
    s = 0.0;
 
-   if (gamma <= 1.0)
+   if (pc <= 0.0)
      return s;
 
+   pcomc2 = pc / ELECTRON_REST_ENERGY;
+   gamma = sqrt (1.0 + pcomc2 * pcomc2);
    gm1 = gamma - 1.0;
 
    if (b->ee_weight != 0.0)
@@ -571,9 +573,9 @@ static double ntb_integrand (double gamma, void *p) /*{{{*/
         s += b->ep_weight * s_ep;
      }
 
-   (void)(*elec->spectrum) (elec, gamma, &ne);
+   (void)(*elec->spectrum) (elec, pc, &ne);
 
-   beta = sqrt (1.0 - 1.0/(gamma*gamma));
+   beta = sqrt ((gamma + 1.0)*(gamma-1.0))/gamma;
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    return v * ne * s;
@@ -587,12 +589,12 @@ static int integral_over_electrons (Brems_Type *b, double *val) /*{{{*/
    gsl_integration_workspace *work;
    gsl_function f;
    double epsabs, epsrel, abserr;
-   double gamma_min, gamma_max;
+   double pc_min, pc_max;
    size_t limit;
    int status;
 
-   gamma_min = 1.0 + b->photon_energy;
-   gamma_max = GAMMA_MAX_DEFAULT;
+   pc_min = b->photon_energy * ELECTRON_REST_ENERGY;
+   pc_max = GAMMA_MAX_DEFAULT * ELECTRON_REST_ENERGY;
 
    f.function = &ntb_integrand;
    f.params = b;
@@ -605,7 +607,7 @@ static int integral_over_electrons (Brems_Type *b, double *val) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qag (&f, gamma_min, gamma_max, epsabs, epsrel,
+   status = gsl_integration_qag (&f, pc_min, pc_max, epsabs, epsrel,
                                  limit, GSL_INTEG_GAUSS31, work,
                                  val, &abserr);
 
@@ -633,7 +635,9 @@ int ntb_brems (void *vb, double photon_energy, double *emissivity)
 
    if (-1 == integral_over_electrons (b, emissivity))
      return -1;
-
+   
+   *emissivity /= ELECTRON_REST_ENERGY;
+   
    return 0;
 }
 
