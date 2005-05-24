@@ -421,9 +421,9 @@ define particle_type (t) %{{{
 
 %}}}
 
-define find_gamma_min (s) %{{{
+define find_momentum_min (s) %{{{
 {
-   return _find_gamma_min (struct_args (s));
+   return _find_momentum_min (struct_args (s));
 }
 
 %}}}
