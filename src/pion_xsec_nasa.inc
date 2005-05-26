@@ -1,4 +1,3 @@
-#define MILLIBARNS_PER_GEV (1.e-27/GEV)
 
 #define PROTON_E1   (0.3)  /* GeV */
 #define PROTON_E2   (2.0)  /* GeV */

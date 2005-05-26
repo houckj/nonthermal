@@ -58,8 +58,9 @@ static int pion_min_energy (double photon_energy, double *epion) /*{{{*/
 
 static int pion_max_energy (Particle_Type *proton, double *pion_kinetic_energy) /*{{{*/
 {
-   double gamma_max = (*proton->gamma_max)(proton);
-   double root_s = 2 * gamma_max * PROTON_REST_ENERGY;
+   double pc_max = (*proton->momentum_max)(proton);
+   double ep_max = sqrt (pc_max*pc_max + PROTON_REST_ENERGY*PROTON_REST_ENERGY);
+   double root_s = 2 * ep_max;
    double epion;
 
    /* From Blattnig et al (2000), Appendix A */
@@ -122,18 +123,17 @@ static double proton_integrand (double proton_kinetic_energy, void *x) /*{{{*/
 {
    Pion_Type *p = (Pion_Type *)x;
    Particle_Type *protons = p->protons;
-   double pion_flux, dn_dgamma, dn_dE, gamma;
+   double pion_flux, np, pc;
 
    p->proton_kinetic_energy = proton_kinetic_energy;
+   pc = sqrt (proton_kinetic_energy
+              * (proton_kinetic_energy + 2*PROTON_REST_ENERGY));
 
-   gamma = 1.0 + proton_kinetic_energy / PROTON_REST_ENERGY;
-   (void)(*protons->spectrum) (protons, gamma, &dn_dgamma);
-   dn_dE = dn_dgamma / PROTON_REST_ENERGY;
-
+   (void)(*protons->spectrum) (protons, pc, &np);
    if (-1 == integral_over_pion_energies (p, &pion_flux))
      return 0.0;
 
-   return dn_dE * pion_flux;
+   return np * pion_flux;
 }
 /*}}}*/
 
@@ -145,8 +145,8 @@ static double lg_proton_integrand (double t, void *x)
 
 static int proton_min_energy (Particle_Type *proton, double *ep_min) /*{{{*/
 {
-   double gamma_min = (*proton->gamma_min)(proton);
-   *ep_min = (gamma_min - 1.0) * PROTON_REST_ENERGY;
+   double pc_min = (*proton->momentum_min)(proton);
+   *ep_min = sqrt (pc_min * pc_min + PROTON_REST_ENERGY*PROTON_REST_ENERGY);
    return 0;
 }
 
@@ -154,8 +154,8 @@ static int proton_min_energy (Particle_Type *proton, double *ep_min) /*{{{*/
 
 static int proton_max_energy (Particle_Type *proton, double *ep_max) /*{{{*/
 {
-   double gamma_max = (*proton->gamma_max)(proton);
-   *ep_max = (gamma_max - 1) * PROTON_REST_ENERGY;
+   double pc_max = (*proton->momentum_max)(proton);
+   *ep_max = sqrt (pc_max * pc_max + PROTON_REST_ENERGY*PROTON_REST_ENERGY);
    return 0;
 }
 
@@ -212,16 +212,17 @@ int pi_calc_pion_decay (Pion_Type *p, double photon_energy, double *val)
    return integral_over_proton_energies (p, val);
 }
 
-#if 0
+#if 1
+#define MILLIBARNS_PER_GEV  (1.e-27/GEV)
 int main (void) /*{{{*/
 {
 #if 1
    double lg_epi, lg_epi_min, lg_epi_max, dlg_epi, ep;
 
-   ep = 1.0;
+   ep = 1.0e2;
 
-   lg_epi_min = -3.0;
-   lg_epi_max = 1.0;
+   lg_epi_min = log10(ep)-3.0;
+   lg_epi_max = log10(ep);
    dlg_epi = 0.1;
 
    for (lg_epi = lg_epi_min; lg_epi < lg_epi_max; lg_epi += dlg_epi)
