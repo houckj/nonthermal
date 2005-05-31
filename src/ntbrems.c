@@ -401,7 +401,7 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    gsl_function f;
    struct EE_Type s;
    double epsabs, epsrel, abserr;
-   double k, gamma, beta, mu_min, eps;
+   double k, kmax, gamma, beta, mu_min, eps;
    double mcq = ELECTRON_REST_ENERGY / KEV;
    size_t limit;
    int status;
@@ -417,22 +417,23 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    if ((een <= 0.0) || (pen <= 0.0))
      return -1;
 
-   /* mu = cos(theta) */
-
-   /* beaming limits emission to narrow cone in the forward direction */
    k = pen / mcq;
    gamma = 1.0 + een / mcq;
    beta = sqrt (1.0 - 1.0/(gamma*gamma));
-   if (k < (gamma - 1.0)/(gamma *(1.0 + beta) + 1.0))
+
+   /* quick return if photon energy exceeds absolute maximum attainable */
+   kmax = (gamma - 1.0)/(gamma *(1.0 - beta) + 1.0);
+   if (k > kmax)
+     return 0;
+
+   /* beaming limits emission to narrow cone in the forward direction
+    * mu = cos(theta)
+    */
+   mu_min = ((gamma + 1.0)*k - (gamma - 1.0)) / (k * gamma * beta);
+   if (mu_min > 1.0)
+     return 0;
+   else if (mu_min < -1.0)
      mu_min = -1.0;
-   else
-     {
-        mu_min = ((gamma + 1.0)*k - (gamma - 1.0)) / (k * gamma * beta);
-        if (mu_min > 1.0)
-          return 0;
-        else if (mu_min < -1.0)
-          mu_min = -1.0;
-     }
 
    f.params = &s;
    epsabs = 0.0;
