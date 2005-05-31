@@ -434,7 +434,6 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
           mu_min = -1.0;
      }
 
-   f.function = &mu_integrand;
    f.params = &s;
    epsabs = 0.0;
    epsrel = 1.e-13;
@@ -463,6 +462,7 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    if (mu_min < 1.0 - eps)
      {
         /* This piece is straightforward. */
+        f.function = &mu_integrand;
         status = gsl_integration_qag (&f, mu_min, 1.0-eps, epsabs, epsrel,
                                       limit, GSL_INTEG_GAUSS61,
                                       work, val, &abserr);
@@ -472,13 +472,15 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    if (eps > 0.0)
      {
         double eps_val, tmax;
-
+        
+        /* This piece requires special handling.
+         * A change of variables and a Taylor series does the trick. 
+         */
+        
         if (mu_min < (1.0 - eps))
           tmax = eps;
         else tmax = 1.0 - mu_min;
 
-        /* This piece requires special handling.
-         * A change of variables and a Taylor series does the trick. */
         f.function = &delta_mu_integrand;
         status = gsl_integration_qag (&f, 0.0, tmax, epsabs, epsrel,
                                       limit, GSL_INTEG_GAUSS61,
