@@ -126,7 +126,9 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    double x2, epizero2, eproton_thresh2, pc_thresh, pc_min, pc_max;
    size_t limit;
    int status;
-
+   
+   *val = 0.0;
+   
    if (p->energy > 100.0 * GEV)
      {
         *val = delta_function_approximation (p);
@@ -148,7 +150,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
         fprintf (stderr, "ERROR:  pizero production threshold falls below proton momentum distribution lower bound\n");
         fprintf (stderr, "        threshold pc = %g   lower bound pc = %g\n",
                  pc_thresh, pc_min);
-        return -1;
+        return 0;
      }
 
    f.function = &proton_integrand;
@@ -273,8 +275,9 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
 
 /*}}}*/
 
-int pizero_decay (Pizero_Type *p, double photon_energy, double *emissivity)
+int pizero_decay (void *x, double photon_energy, double *emissivity)
 {
+   Pizero_Type *p = (Pizero_Type *)x;
    photon_energy *= GSL_CONST_CGSM_ELECTRON_VOLT;
    return integral_over_pizero_energies (p, photon_energy, emissivity);
 }
