@@ -829,7 +829,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 /*}}}*/
 
-static void init_pizero (double *par, Pion_Type *p, Particle_Type *proton) /*{{{*/
+static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{{{*/
 {
    (void) init_particle_spectrum (proton);
 
@@ -845,7 +845,7 @@ static void init_pizero (double *par, Pion_Type *p, Particle_Type *proton) /*{{{
 
 static int binned_pizero (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
 {
-   Pion_Type p = NULL_PION_TYPE;
+   Pizero_Type p = NULL_PIZERO_TYPE;
    Particle_Type proton = NULL_PARTICLE_TYPE;
 
    init_pizero (par, &p, &proton);
@@ -858,7 +858,7 @@ static int binned_pizero (double *val, Isis_Hist_t *g, double *par, unsigned int
 
 static int unbinned_pizero (double *val, Isis_User_Grid_t *g, double *par, unsigned int npar) /*{{{*/
 {
-   Pion_Type p = NULL_PION_TYPE;
+   Pizero_Type p = NULL_PIZERO_TYPE;
    Particle_Type proton = NULL_PARTICLE_TYPE;
 
    init_pizero (par, &p, &proton);
