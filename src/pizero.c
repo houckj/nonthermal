@@ -140,7 +140,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
    if (p->energy > 100.0 * GEV)
      {
-        *val = 0.0; /* delta_function_approximation (p); */          /* FIXME */
+        *val = delta_function_approximation (p);
         return 0;
      }
 
