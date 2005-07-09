@@ -5,9 +5,11 @@
  *
  * Neutral pion production cross-sections from
  *   Blattnig et al, NASA Technical Report, NASA/TP-2000-210640
+ *   Aharonian and Atoyan, 2000, A&A, 362, 937
  *
  * See also
- * Dermer, C.D., 1986, A&A, 157, 223.
+ *   Domingo-Santamaria & Torres, 2005, astro-ph/0506240
+ *   Dermer, C.D., 1986, A&A, 157, 223.
  *
 */
 
@@ -29,11 +31,10 @@
 
 #define SQR_PIZERO_MASS_FACTOR   (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
 
-static double pizero_total_xsec (double proton_kinetic)
+static double pizero_total_xsec (double proton_kinetic) /*{{{*/
 {
    double sigma;
 
-   /* Aharonian and Atoyan, 2000, A&A, 362, 937 */
    if (proton_kinetic < GEV)
      return 0.0;
    sigma = 30.0 * (0.95 + 0.06 * log (proton_kinetic/GEV));
@@ -41,7 +42,9 @@ static double pizero_total_xsec (double proton_kinetic)
    return sigma * MILLIBARN;
 }
 
-static double pizero_differential_xsec (double proton_kinetic, double pizero_kinetic)
+/*}}}*/
+
+static double pizero_differential_xsec (double proton_kinetic, double pizero_kinetic) /*{{{*/
 {
    double a, sigma;
 
@@ -59,11 +62,13 @@ static double pizero_differential_xsec (double proton_kinetic, double pizero_kin
    return sigma;
 }
 
+/*}}}*/
+
 static double proton_integrand (double pc, void *x) /*{{{*/
 {
    Pizero_Type *p = (Pizero_Type *)x;
    Particle_Type *proton = p->protons;
-   double r_proton, gamma, gm1, beta, v, np, xsec;
+   double r_proton, gamma, beta, v, np, xsec;
    double pizero_kinetic, proton_kinetic, result;
 
    (void)(*proton->spectrum) (proton, pc, &np);
@@ -90,7 +95,7 @@ static double proton_integrand (double pc, void *x) /*{{{*/
 /*}}}*/
 
 /* delta-function approximation: see Aharonian and Atoyan (2000) */
-static double delta_function_approximation (Pizero_Type *p)
+static double delta_function_approximation (Pizero_Type *p) /*{{{*/
 {
    Particle_Type *protons = p->protons;
    double eproton_delta, proton_pc, proton_kinetic;
@@ -116,6 +121,10 @@ static double delta_function_approximation (Pizero_Type *p)
    return val;
 }
 
+/*}}}*/
+
+static int Threshold_Flag;
+
 static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 {
    Particle_Type *protons = p->protons;
@@ -123,33 +132,33 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    gsl_integration_workspace *work;
    gsl_function f;
    double epsabs, epsrel, abserr;
-   double x2, epizero2, eproton_thresh2, pc_thresh, pc_min, pc_max;
+   double pc_min, pc_max, x0, eproton_thresh, pc_thresh;
    size_t limit;
    int status;
-   
+
    *val = 0.0;
-   
+
    if (p->energy > 100.0 * GEV)
      {
-        *val = delta_function_approximation (p);
+        *val = 0.0; /* delta_function_approximation (p); */          /* FIXME */
         return 0;
      }
+
+   if (p->energy < 100.0 * MEV)
+     return 0;
 
    pc_max = (*protons->momentum_max)(protons);
    pc_min = (*protons->momentum_min)(protons);
 
    /* threshold proton momentum to produce the given pi-zero */
-   epizero2 = p->energy * p->energy;
-   x2 = SQR_PIZERO_MASS_FACTOR / epizero2;
-   eproton_thresh2 = (0.25 * SQR_PIZERO_MASS_FACTOR
-                      * (1.0 + (2/x2) * (1.0 + /*+/-*/ sqrt(1.0 + x2))));
-   pc_thresh = sqrt (eproton_thresh2 - SQR_PROTON_REST_ENERGY);
+   x0 = (2*(p->energy * p->energy) - PIZERO_MASS_FACTOR) / (2 * PROTON_REST_ENERGY);
+   eproton_thresh = (x0 * (1.0 + sqrt (1.0 - SQR_PIZERO_MASS_FACTOR / (x0*x0)))
+                     - PROTON_REST_ENERGY);
+   pc_thresh = sqrt (eproton_thresh*eproton_thresh - SQR_PROTON_REST_ENERGY);
 
    if (pc_thresh < pc_min)
      {
-        fprintf (stderr, "ERROR:  pizero production threshold falls below proton momentum distribution lower bound\n");
-        fprintf (stderr, "        threshold pc = %g   lower bound pc = %g\n",
-                 pc_thresh, pc_min);
+        Threshold_Flag = 1;
         return 0;
      }
 
@@ -173,7 +182,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    gsl_integration_workspace_free (work);
 
    if (status)
-     fprintf (stderr, "*** %s\n", gsl_strerror (status));
+     fprintf (stderr, "*** pizero: proton integral:  %s\n", gsl_strerror (status));
 
    return 0;
 }
@@ -183,7 +192,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 static double pizero_integrand (double epizero, void *x) /*{{{*/
 {
    Pizero_Type *p = (Pizero_Type *)x;
-   double pizero_pc, y;
+   double pizero_pc, y, s;
 
    p->energy = epizero;
 
@@ -194,8 +203,9 @@ static double pizero_integrand (double epizero, void *x) /*{{{*/
      return 0.0;
 
    pizero_pc = sqrt (epizero * epizero - SQR_PIZERO_REST_ENERGY);
+   s = y / pizero_pc;
 
-   return y / pizero_pc;
+   return s;
 }
 
 /*}}}*/
@@ -268,7 +278,7 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    gsl_integration_workspace_free (work);
 
    if (status)
-     fprintf (stderr, "*** %s\n", gsl_strerror (status));
+     fprintf (stderr, "*** pizero: pizero integral: %s\n", gsl_strerror (status));
 
    return 0;
 }
@@ -278,8 +288,19 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
 int pizero_decay (void *x, double photon_energy, double *emissivity)
 {
    Pizero_Type *p = (Pizero_Type *)x;
-   photon_energy *= GSL_CONST_CGSM_ELECTRON_VOLT;
-   return integral_over_pizero_energies (p, photon_energy, emissivity);
-}
+   int status;
 
+   *emissivity = 0.0;
+   photon_energy *= GSL_CONST_CGSM_ELECTRON_VOLT;
+
+   Threshold_Flag = 0;
+   status = integral_over_pizero_energies (p, photon_energy, emissivity);
+   if (Threshold_Flag)
+     {
+        fprintf (stderr, "WARNING:  Underestimated pizero rate for %g GeV photons (proton distribution doesn't extend to low enough momenta)\n",
+                 photon_energy / GEV);
+     }
+
+   return status;
+}
 

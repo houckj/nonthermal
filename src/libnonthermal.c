@@ -879,6 +879,8 @@ ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
    static double default_min[]   = { 0.0, -3.0, -1.0,  1.0};
    static unsigned int default_freeze[] = {0, 0, 1, 0};
    static unsigned int norm_indexes[] = {0};
+   
+   (void) options;
 
    p->function_exit = NULL;
    p->binned = binned_pizero;
