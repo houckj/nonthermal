@@ -24,6 +24,7 @@ ISIS_USER_SOURCE_MODULE_VERSION;
 #include "ic_table.h"
 #include "ntbrems.h"
 #include "ntb_table.h"
+#include "pizero.h"
 
 #define EV_ANGSTROM \
    ((GSL_CONST_CGSM_PLANCKS_CONSTANT_H * GSL_CONST_CGSM_SPEED_OF_LIGHT) \

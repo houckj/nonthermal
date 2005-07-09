@@ -154,6 +154,7 @@ private define nonthermal_init () %{{{
    add_compiled_function (lib_file, "sync", _sync_table_file());
    add_compiled_function (lib_file, "invc", _invc_table_file());
    add_compiled_function (lib_file, "ntbrem", _ntbrem_table_file());
+   add_compiled_function (lib_file, "pizero");
 }
 
 %}}}
