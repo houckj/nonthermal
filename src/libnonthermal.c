@@ -211,7 +211,7 @@ static int _nt_contin (void *cl, /*{{{*/
 
 /*}}}*/
 
-static double _sync_angular_integral (double *x, int *interpolate)
+static double _sync_angular_integral (double *x, int *interpolate) /*{{{*/
 {
    double y;
 
@@ -222,6 +222,8 @@ static double _sync_angular_integral (double *x, int *interpolate)
    
    return y;
 }
+
+/*}}}*/
 
 static void init_sync (double *par, Synchrotron_Type *s, Particle_Type *elec) /*{{{*/
 {
@@ -292,7 +294,7 @@ static void _invc_make_table (double *t) /*{{{*/
 
 /*}}}*/
 
-static double _invc_photon_integral (double *gamma, double *energy_final_photon,
+static double _invc_photon_integral (double *gamma, double *energy_final_photon, /*{{{*/
                                     double *t, int *interpolate)
 {
    Inverse_Compton_Type ic = NULL_INVERSE_COMPTON_TYPE;
@@ -315,6 +317,8 @@ static double _invc_photon_integral (double *gamma, double *energy_final_photon,
    
    return x;
 }
+
+/*}}}*/
 
 static void init_invc (double *par, Inverse_Compton_Type *ic, Particle_Type *elec) /*{{{*/
 {
@@ -819,6 +823,73 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
    p->num_norms = 1;
 
    _ntb_init_client_data (options);
+
+   return 0;
+}
+
+/*}}}*/
+
+static void init_pizero (double *par, Pion_Type *p, Particle_Type *proton) /*{{{*/
+{
+   (void) init_particle_spectrum (proton);
+
+   proton->index = par[1];
+   proton->curvature = par[2];
+   proton->cutoff_energy = par[3];
+   proton->mass = GSL_CONST_CGSM_MASS_PROTON;
+
+   p->protons = proton;
+}
+
+/*}}}*/
+
+static int binned_pizero (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
+{
+   Pion_Type p = NULL_PION_TYPE;
+   Particle_Type proton = NULL_PARTICLE_TYPE;
+
+   init_pizero (par, &p, &proton);
+
+   return _nt_binned_contin ((void *)&p, &pizero_decay,
+                             val, g, par, npar);
+}
+
+/*}}}*/
+
+static int unbinned_pizero (double *val, Isis_User_Grid_t *g, double *par, unsigned int npar) /*{{{*/
+{
+   Pion_Type p = NULL_PION_TYPE;
+   Particle_Type proton = NULL_PARTICLE_TYPE;
+
+   init_pizero (par, &p, &proton);
+
+   return _nt_contin ((void *)&p, &pizero_decay,
+                      val, g, par, npar);
+}
+
+/*}}}*/
+
+ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
+{
+   static const char *parameter_names[] = {"norm", "index", "curvature", "cutoff", NULL};
+   static const char *parameter_units[] = {"cm^-2 GeV^-1", "",       "",    "TeV", NULL};
+   static double default_max[]   = {10.0, -1.0,  1.0, 100.0};
+   static double default_value[] = { 1.0, -2.0,  0.0, 10.0};
+   static double default_min[]   = { 0.0, -3.0, -1.0,  1.0};
+   static unsigned int default_freeze[] = {0, 0, 1, 0};
+   static unsigned int norm_indexes[] = {0};
+
+   p->function_exit = NULL;
+   p->binned = binned_pizero;
+   p->unbinned = unbinned_pizero;
+   p->parameter_names = (char **)parameter_names;
+   p->parameter_units = (char **) parameter_units;
+   p->default_max = default_max;
+   p->default_value = default_value;
+   p->default_min = default_min;
+   p->default_freeze = default_freeze;
+   p->norm_indexes = norm_indexes;
+   p->num_norms = 1;
 
    return 0;
 }

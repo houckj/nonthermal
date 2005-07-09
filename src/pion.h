@@ -4,14 +4,12 @@
 typedef struct
 {
    Particle_Type *protons;
-   double proton_kinetic_energy;
-   double photon_energy;
-   double density;
+   double energy;
 }
 Pion_Type;
 
-#define NULL_PION_TYPE {NULL,0.0,0.0,0.0}
+#define NULL_PION_TYPE {NULL,0.0}
    
-extern int pi_calc_pion_decay (Pion_Type *p, double photon_energy, double *val);
+extern int pizero_decay (Pion_Type *p, double photon_energy, double *emissivity);
 
 #endif

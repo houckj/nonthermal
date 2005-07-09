@@ -5,9 +5,6 @@
  *
  * Neutral pion production cross-sections from
  *   Blattnig et al, NASA Technical Report, NASA/TP-2000-210640
- *      Equations 23 and 24, page 10.  See also Fig 105 on page 76.
- *      (Note that the curves in the figure are labeled
- *      in the wrong order!)
  *
  * See also
  * Dermer, C.D., 1986, A&A, 157, 223.
@@ -25,54 +22,206 @@
 #include "_nonthermal.h"
 #include "pion.h"
 
-#define SQR_PION_MASS_ENERGY   (PI_ZERO_REST_ENERGY * PI_ZERO_REST_ENERGY)
-#define PION_MASS_FACTOR       (4*PROTON_REST_ENERGY * PROTON_REST_ENERGY \
-                               - SQR_PION_MASS_ENERGY)
+#define SQR_PROTON_REST_ENERGY (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
 
-#if 0
-#include "pion_xsec_nasa.inc"
-#else
-#include "pion_xsec_dermer.inc"
-#endif
+#define SQR_PIZERO_REST_ENERGY   (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
+#define PIZERO_MASS_FACTOR       (SQR_PIZERO_REST_ENERGY - 4*SQR_PROTON_REST_ENERGY)
+
+#define SQR_PIZERO_MASS_FACTOR   (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
+
+static double pizero_total_xsec (double proton_kinetic)
+{
+   double sigma;
+
+   /* Aharonian and Atoyan, 2000, A&A, 362, 937 */
+   if (proton_kinetic < GEV)
+     return 0.0;
+   sigma = 30.0 * (0.95 + 0.06 * log (proton_kinetic/GEV));
+
+   return sigma * MILLIBARN;
+}
+
+static double pizero_differential_xsec (double proton_kinetic, double pion_kinetic)
+{
+   double a, sigma;
+
+   /* Blattnig, et al, 2000 Lab-frame differential cross-section
+    * parameterization (their equation 32)
+    */
+   a = (-5.8
+        - 1.82/pow(proton_kinetic, 0.4)
+        + 13.5/pow(pion_kinetic, 0.2)
+        - 4.5/pow(pion_kinetic, 0.4));
+
+   /* d(sigma)/dE_pizero */
+   sigma = exp(a) * (MILLIBARN / GEV);
+
+   return sigma;
+}
+
+static double proton_integrand (double pc, void *x) /*{{{*/
+{
+   Pion_Type *p = (Pion_Type *)x;
+   Particle_Type *proton = p->protons;
+   double r_proton, gamma, gm1, beta, v, np, xsec;
+   double pion_kinetic, proton_kinetic, result;
+
+   (void)(*proton->spectrum) (proton, pc, &np);
+
+   r_proton = pc / PROTON_REST_ENERGY;
+   gamma = sqrt (r_proton * r_proton + 1.0);
+   beta = sqrt ((gamma + 1.0)*(gamma - 1.0))/gamma;
+   proton_kinetic = (gamma - 1.0) * PROTON_REST_ENERGY;
+
+   pion_kinetic = p->energy - PIZERO_REST_ENERGY;
+
+   /* cross-section per unit proton energy */
+   xsec = pizero_differential_xsec (pion_kinetic, proton_kinetic);
+
+   v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   result = np * v * xsec;
+
+   /* We're integrating over momentum (pc, really), not energy, so:
+    * dE = d(pc) (pc/E) = d(pc) * beta */
+   result *= beta;
+
+   return result;
+}
+/*}}}*/
+
+/* delta-function approximation: see Aharonian and Atoyan (2000) */
+static double delta_function_approximation (Pion_Type *p)
+{
+   Particle_Type *protons = p->protons;
+   double eproton_delta, proton_pc, proton_kinetic;
+   double np, gamma, beta, sigma, v, val;
+
+   /* kappa = mean fraction of proton kinetic energy transferred
+    *         to the secondary meson per collision. */
+   double kappa = 0.17;
+
+   eproton_delta = (p->energy /kappa + PROTON_REST_ENERGY);
+   proton_pc = sqrt (eproton_delta * eproton_delta - SQR_PROTON_REST_ENERGY);
+   (void)(*protons->spectrum)(protons, proton_pc, &np);
+
+   gamma = eproton_delta /PROTON_REST_ENERGY;
+   beta = sqrt ((gamma + 1.0)*(gamma - 1.0))/gamma;
+   v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   proton_kinetic = eproton_delta - PROTON_REST_ENERGY;
+   sigma = pizero_total_xsec (proton_kinetic);
+
+   val = np * v * sigma /kappa;
+
+   return val;
+}
+
+static int integral_over_proton_momenta (Pion_Type *p, double *val) /*{{{*/
+{
+   Particle_Type *protons = p->protons;
+   gsl_error_handler_t *gsl_error_handler;
+   gsl_integration_workspace *work;
+   gsl_function f;
+   double epsabs, epsrel, abserr;
+   double x2, epion2, eproton_thresh2, pc_thresh, pc_min, pc_max;
+   size_t limit;
+   int status;
+
+   if (p->energy > 100.0 * GEV)
+     {
+        *val = delta_function_approximation (p);
+        return 0;
+     }
+
+   pc_max = (*protons->momentum_max)(protons);
+   pc_min = (*protons->momentum_min)(protons);
+
+   /* threshold proton momentum to produce the given pi-zero */
+   epion2 = p->energy * p->energy;
+   x2 = SQR_PIZERO_MASS_FACTOR / epion2;
+   eproton_thresh2 = (0.25 * SQR_PIZERO_MASS_FACTOR
+                      * (1.0 + (2/x2) * (1.0 + /*+/-*/ sqrt(1.0 + x2))));
+   pc_thresh = sqrt (eproton_thresh2 - SQR_PROTON_REST_ENERGY);
+
+   if (pc_thresh < pc_min)
+     {
+        fprintf (stderr, "ERROR:  pion production threshold falls below proton momentum distribution lower bound\n");
+        fprintf (stderr, "        threshold pc = %g   lower bound pc = %g\n",
+                 pc_thresh, pc_min);
+        return -1;
+     }
+
+   f.function = &proton_integrand;
+   f.params = p;
+   epsabs = 0.0;
+   epsrel = 1.e-9;
+   limit = MAX_QAG_SUBINTERVALS;
+
+   work = gsl_integration_workspace_alloc (limit);
+   if (work == NULL)
+     return -1;
+
+   gsl_error_handler = gsl_set_error_handler_off ();
+
+   status = gsl_integration_qag (&f, pc_thresh, pc_max, epsabs, epsrel, limit,
+                                 GSL_INTEG_GAUSS61,
+                                 work, val, &abserr);
+
+   gsl_set_error_handler (gsl_error_handler);
+   gsl_integration_workspace_free (work);
+
+   if (status)
+     fprintf (stderr, "*** %s\n", gsl_strerror (status));
+
+   return 0;
+}
+
+/*}}}*/
 
 static double pion_integrand (double epion, void *x) /*{{{*/
 {
    Pion_Type *p = (Pion_Type *)x;
-   double val;
+   double pion_pc, y;
 
-   (void) npxsec (epion, p->proton_kinetic_energy, &val);
-   val /= sqrt (epion * epion - SQR_PION_MASS_ENERGY);
+   p->energy = epion;
 
-   return val;
+   /* FIXME!!!  far better to pre-compute pion distribution,
+    * and then interpolate on the saved table here.
+    */
+   if (-1 == integral_over_proton_momenta (p, &y))
+     return 0.0;
+
+   pion_pc = sqrt (epion * epion - SQR_PIZERO_REST_ENERGY);
+
+   return y / pion_pc;
 }
 
 /*}}}*/
 
 static int pion_min_energy (double photon_energy, double *epion) /*{{{*/
 {
-   *epion = photon_energy + 0.25 * SQR_PION_MASS_ENERGY / photon_energy;
+   *epion = photon_energy + 0.25 * SQR_PIZERO_REST_ENERGY / photon_energy;
+
    return 0;
 }
 
 /*}}}*/
 
-static int pion_max_energy (Particle_Type *proton, double *pion_kinetic_energy) /*{{{*/
+static int pion_max_energy (Particle_Type *protons, double *epion) /*{{{*/
 {
-   double pc_max = (*proton->momentum_max)(proton);
-   double ep_max = sqrt (pc_max*pc_max + PROTON_REST_ENERGY*PROTON_REST_ENERGY);
+   double pc_max = (*protons->momentum_max)(protons);
+   double ep_max = sqrt (pc_max*pc_max + SQR_PROTON_REST_ENERGY);
    double root_s = 2 * ep_max;
-   double epion;
 
-   /* From Blattnig et al (2000), Appendix A */
-   epion = 0.5 * (root_s - PION_MASS_FACTOR / root_s);
-   *pion_kinetic_energy = epion - PI_ZERO_REST_ENERGY;
+   /* See Blattnig et al (2000), Appendix A */
+   *epion = 0.5 * (root_s + PIZERO_MASS_FACTOR / root_s);
 
    return 0;
 }
 
 /*}}}*/
 
-static int integral_over_pion_energies (Pion_Type *p, double *val) /*{{{*/
+static int integral_over_pion_energies (Pion_Type *p, double photon_energy, double *val) /*{{{*/
 {
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
@@ -84,13 +233,18 @@ static int integral_over_pion_energies (Pion_Type *p, double *val) /*{{{*/
 
    *val = 0.0;
 
-   if (-1 == pion_min_energy (p->photon_energy, &epi_min))
+   if (-1 == pion_min_energy (photon_energy, &epi_min))
      return -1;
    if (-1 == pion_max_energy (p->protons, &epi_max))
      return -1;
 
    if (epi_min >= epi_max)
      return 0;
+
+   /* FIXME:
+    * At this point, should pre-compute pion distribution over
+    * the energy range [epi_min, epi_max]
+    */
 
    f.function = &pion_integrand;
    f.params = p;
@@ -119,134 +273,10 @@ static int integral_over_pion_energies (Pion_Type *p, double *val) /*{{{*/
 
 /*}}}*/
 
-static double proton_integrand (double proton_kinetic_energy, void *x) /*{{{*/
+int pizero_decay (Pion_Type *p, double photon_energy, double *emissivity)
 {
-   Pion_Type *p = (Pion_Type *)x;
-   Particle_Type *protons = p->protons;
-   double pion_flux, np, pc;
-
-   p->proton_kinetic_energy = proton_kinetic_energy;
-   pc = sqrt (proton_kinetic_energy
-              * (proton_kinetic_energy + 2*PROTON_REST_ENERGY));
-
-   (void)(*protons->spectrum) (protons, pc, &np);
-   if (-1 == integral_over_pion_energies (p, &pion_flux))
-     return 0.0;
-
-   return np * pion_flux;
-}
-/*}}}*/
-
-static double lg_proton_integrand (double t, void *x)
-{
-   /* change of variables yields better result */
-   return exp(t) * proton_integrand (exp(t), x);
+   photon_energy *= GSL_CONST_CGSM_ELECTRON_VOLT;
+   return integral_over_pion_energies (p, photon_energy, emissivity);
 }
 
-static int proton_min_energy (Particle_Type *proton, double *ep_min) /*{{{*/
-{
-   double pc_min = (*proton->momentum_min)(proton);
-   *ep_min = sqrt (pc_min * pc_min + PROTON_REST_ENERGY*PROTON_REST_ENERGY);
-   return 0;
-}
 
-/*}}}*/
-
-static int proton_max_energy (Particle_Type *proton, double *ep_max) /*{{{*/
-{
-   double pc_max = (*proton->momentum_max)(proton);
-   *ep_max = sqrt (pc_max * pc_max + PROTON_REST_ENERGY*PROTON_REST_ENERGY);
-   return 0;
-}
-
-/*}}}*/
-
-static int integral_over_proton_energies (Pion_Type *p, double *val) /*{{{*/
-{
-   Particle_Type *proton = p->protons;
-   gsl_error_handler_t *gsl_error_handler;
-   gsl_integration_workspace *work;
-   gsl_function f;
-   double epsabs, epsrel, abserr;
-   double ep_min, ep_max;
-   size_t limit;
-   int status;
-
-   if (-1 == proton_min_energy (proton, &ep_min))
-     return -1;
-   if (-1 == proton_max_energy (proton, &ep_max))
-     return -1;
-
-   f.function = &lg_proton_integrand;
-   f.params = p;
-   epsabs = 0.0;
-   epsrel = 1.e-9;
-   limit = MAX_QAG_SUBINTERVALS;
-
-   work = gsl_integration_workspace_alloc (limit);
-   if (work == NULL)
-     return -1;
-
-   gsl_error_handler = gsl_set_error_handler_off ();
-
-   status = gsl_integration_qag (&f, log(ep_min), log(ep_max), epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS61,
-                                 work, val, &abserr);
-
-   *val *= 2 * (4 * M_PI * p->density);
-
-   gsl_set_error_handler (gsl_error_handler);
-   gsl_integration_workspace_free (work);
-
-   if (status)
-     fprintf (stderr, "*** %s\n", gsl_strerror (status));
-
-   return 0;
-}
-
-/*}}}*/
-
-int pi_calc_pion_decay (Pion_Type *p, double photon_energy, double *val)
-{
-   p->photon_energy = photon_energy * GSL_CONST_CGSM_ELECTRON_VOLT;
-   return integral_over_proton_energies (p, val);
-}
-
-#if 1
-#define MILLIBARNS_PER_GEV  (1.e-27/GEV)
-int main (void) /*{{{*/
-{
-#if 1
-   double lg_epi, lg_epi_min, lg_epi_max, dlg_epi, ep;
-
-   ep = 1.0e2;
-
-   lg_epi_min = log10(ep)-3.0;
-   lg_epi_max = log10(ep);
-   dlg_epi = 0.1;
-
-   for (lg_epi = lg_epi_min; lg_epi < lg_epi_max; lg_epi += dlg_epi)
-     {
-        double xsec, epi;
-
-        epi = pow(10.0,lg_epi);
-
-        if (-1 == npxsec (epi*GEV, ep*GEV, &xsec))
-          exit(1);
-
-        xsec /= MILLIBARNS_PER_GEV;
-        fprintf (stdout, "%12.4e %12.4e %12.4e\n", ep, epi, xsec);
-     }
-#else
-   double xsec;
-   if (-1 == npxsec (0.1*GEV, 0.5*GEV, &xsec))
-     exit(1);
-   xsec /= MILLIBARNS_PER_GEV;
-   fprintf (stdout, "dsigma/dE = %g\n", xsec);
-#endif
-
-   return 0;
-}
-
-/*}}}*/
-#endif
