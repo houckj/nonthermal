@@ -74,14 +74,14 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
 static double pizero_differential_xsec (double proton_kinetic, double pizero_kinetic) /*{{{*/
 {
    double a, sigma;
-   
+
    /* Blattnig, et al, 2000 Lab-frame differential cross-section
     * parameterization (their equation 32)
     */
-   
+
    proton_kinetic /= GEV;
    pizero_kinetic /= GEV;
-   
+
    a = (-5.8 - 1.82/pow(proton_kinetic, 0.4)
         + 13.5/pow(pizero_kinetic, 0.2) - 4.5/pow(pizero_kinetic, 0.4));
 
