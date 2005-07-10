@@ -42,6 +42,35 @@ static double pizero_total_xsec (double proton_kinetic) /*{{{*/
 
 /*}}}*/
 
+/* delta-function approximation: see Aharonian and Atoyan (2000) */
+static double delta_function_approximation (Pizero_Type *p) /*{{{*/
+{
+   Particle_Type *protons = p->protons;
+   double eproton_delta, proton_pc, proton_kinetic;
+   double np, gamma, beta, sigma, v, val;
+
+   /* kappa = mean fraction of proton kinetic energy transferred
+    *         to the secondary meson per collision. */
+   double kappa = 0.17;
+
+   eproton_delta = PROTON_REST_ENERGY + p->energy /kappa;
+   proton_pc = sqrt (eproton_delta * eproton_delta - SQR_PROTON_REST_ENERGY);
+   (void)(*protons->spectrum)(protons, proton_pc, &np);
+
+   gamma = eproton_delta /PROTON_REST_ENERGY;
+   beta = sqrt ((gamma + 1.0)*(gamma - 1.0))/gamma;
+   v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   proton_kinetic = eproton_delta - PROTON_REST_ENERGY;
+   sigma = pizero_total_xsec (proton_kinetic);
+
+   val = np * v * sigma /kappa;
+
+   return val;
+}
+
+/*}}}*/
+
 static double pizero_differential_xsec (double proton_kinetic, double pizero_kinetic) /*{{{*/
 {
    double a, sigma;
@@ -90,31 +119,17 @@ static double proton_integrand (double pc, void *x) /*{{{*/
 }
 /*}}}*/
 
-/* delta-function approximation: see Aharonian and Atoyan (2000) */
-static double delta_function_approximation (Pizero_Type *p) /*{{{*/
+static double proton_momentum_threshold (double e_pizero) /*{{{*/
 {
-   Particle_Type *protons = p->protons;
-   double eproton_delta, proton_pc, proton_kinetic;
-   double np, gamma, beta, sigma, v, val;
+   double x0, eproton_thresh, pc;
 
-   /* kappa = mean fraction of proton kinetic energy transferred
-    *         to the secondary meson per collision. */
-   double kappa = 0.17;
+   /* threshold proton momentum to produce the given pi-zero */
+   x0 = (e_pizero * e_pizero - 0.5*PIZERO_MASS_FACTOR) / PROTON_REST_ENERGY;
+   eproton_thresh = (x0 * (1.0 + sqrt (1.0 - SQR_PIZERO_MASS_FACTOR / (x0*x0)))
+                     - PROTON_REST_ENERGY);
+   pc = sqrt (eproton_thresh*eproton_thresh - SQR_PROTON_REST_ENERGY);
 
-   eproton_delta = PROTON_REST_ENERGY + p->energy /kappa;
-   proton_pc = sqrt (eproton_delta * eproton_delta - SQR_PROTON_REST_ENERGY);
-   (void)(*protons->spectrum)(protons, proton_pc, &np);
-
-   gamma = eproton_delta /PROTON_REST_ENERGY;
-   beta = sqrt ((gamma + 1.0)*(gamma - 1.0))/gamma;
-   v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
-
-   proton_kinetic = eproton_delta - PROTON_REST_ENERGY;
-   sigma = pizero_total_xsec (proton_kinetic);
-
-   val = np * v * sigma /kappa;
-
-   return val;
+   return pc;
 }
 
 /*}}}*/
@@ -134,28 +149,23 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
    *val = 0.0;
 
-   if (p->energy > 100.0 * GEV)
+   if (p->energy < 100.0 * MEV)
+     return 0;
+
+   if (p->energy > 50.0 * GEV)
      {
         *val = delta_function_approximation (p);
         return 0;
      }
 
-   if (p->energy < 100.0 * MEV)
-     return 0;
-
    pc_max = (*protons->momentum_max)(protons);
    pc_min = (*protons->momentum_min)(protons);
 
-   /* threshold proton momentum to produce the given pi-zero */
-   x0 = (p->energy * p->energy - 0.5*PIZERO_MASS_FACTOR) / PROTON_REST_ENERGY;
-   eproton_thresh = (x0 * (1.0 + sqrt (1.0 - SQR_PIZERO_MASS_FACTOR / (x0*x0)))
-                     - PROTON_REST_ENERGY);
-   pc_thresh = sqrt (eproton_thresh*eproton_thresh - SQR_PROTON_REST_ENERGY);
-
+   pc_thresh = proton_momentum_threshold (p->energy);
    if (pc_thresh < pc_min)
      {
         Threshold_Flag = 1;
-        return 0;
+        pc_thresh = pc_min;
      }
 
    f.function = &proton_integrand;
@@ -184,37 +194,37 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
 /*}}}*/
 
-static double pizero_integrand (double epizero, void *x) /*{{{*/
+static double pizero_integrand (double e_pizero, void *x) /*{{{*/
 {
    Pizero_Type *p = (Pizero_Type *)x;
-   double pizero_pc, y, s;
+   double pc_pizero, q, s;
 
-   p->energy = epizero;
+   p->energy = e_pizero;
 
    /* FIXME!!!  far better to pre-compute pizero distribution,
     * and then interpolate on the saved table here.
     */
-   if (-1 == integral_over_proton_momenta (p, &y))
+   if (-1 == integral_over_proton_momenta (p, &q))
      return 0.0;
 
-   pizero_pc = sqrt (epizero * epizero - SQR_PIZERO_REST_ENERGY);
-   s = y / pizero_pc;
+   pc_pizero = sqrt (e_pizero * e_pizero - SQR_PIZERO_REST_ENERGY);
+   s = q / pc_pizero;
 
    return s;
 }
 
 /*}}}*/
 
-static int pizero_min_energy (double photon_energy, double *epizero) /*{{{*/
+static int pizero_min_energy (double photon_energy, double *e_pizero) /*{{{*/
 {
-   *epizero = photon_energy + 0.25 * SQR_PIZERO_REST_ENERGY / photon_energy;
+   *e_pizero = photon_energy + 0.25 * SQR_PIZERO_REST_ENERGY / photon_energy;
 
    return 0;
 }
 
 /*}}}*/
 
-static int pizero_max_energy (Particle_Type *protons, double *epizero) /*{{{*/
+static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
 {
    double pc_max, ep_max, root_s;
 
@@ -223,7 +233,7 @@ static int pizero_max_energy (Particle_Type *protons, double *epizero) /*{{{*/
    root_s = sqrt (2*PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max));
 
    /* See Blattnig et al (2000), Appendix A */
-   *epizero = 0.5 * (root_s + PIZERO_MASS_FACTOR / root_s);
+   *e_pizero = 0.5 * (root_s + PIZERO_MASS_FACTOR / root_s);
 
    return 0;
 }
