@@ -168,14 +168,13 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    epsrel = 1.e-9;
    limit = MAX_QAG_SUBINTERVALS;
 
-   work = gsl_integration_workspace_alloc (limit);
-   if (work == NULL)
+   if (NULL == (work = gsl_integration_workspace_alloc (limit)))
      return -1;
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
    status = gsl_integration_qag (&f, pc_thresh, pc_max, epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS61,
+                                 GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
@@ -264,14 +263,13 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    epsrel = 1.e-9;
    limit = MAX_QAG_SUBINTERVALS;
 
-   work = gsl_integration_workspace_alloc (limit);
-   if (work == NULL)
+   if (NULL == (work = gsl_integration_workspace_alloc (limit)))
      return -1;
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
    status = gsl_integration_qag (&f, epi_min, epi_max, epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS61,
+                                 GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
