@@ -24,20 +24,18 @@
 #include "_nonthermal.h"
 #include "pizero.h"
 
-#define SQR_PROTON_REST_ENERGY (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
-
-#define SQR_PIZERO_REST_ENERGY   (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
-#define PIZERO_MASS_FACTOR       (SQR_PIZERO_REST_ENERGY - 4*SQR_PROTON_REST_ENERGY)
-
-#define SQR_PIZERO_MASS_FACTOR   (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
+#define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
+#define SQR_PIZERO_REST_ENERGY  (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
+#define PIZERO_MASS_FACTOR      (SQR_PIZERO_REST_ENERGY - 4*SQR_PROTON_REST_ENERGY)
+#define SQR_PIZERO_MASS_FACTOR  (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
 
 static double pizero_total_xsec (double proton_kinetic) /*{{{*/
 {
    double sigma;
 
-   if (proton_kinetic < GEV)
-     return 0.0;
-   sigma = 30.0 * (0.95 + 0.06 * log (proton_kinetic/GEV));
+   if (proton_kinetic > GEV)
+     sigma = 30.0 * (0.95 + 0.06 * log (proton_kinetic/GEV));
+   else return 0.0;
 
    return sigma * MILLIBARN;
 }
@@ -51,10 +49,8 @@ static double pizero_differential_xsec (double proton_kinetic, double pizero_kin
    /* Blattnig, et al, 2000 Lab-frame differential cross-section
     * parameterization (their equation 32)
     */
-   a = (-5.8
-        - 1.82/pow(proton_kinetic, 0.4)
-        + 13.5/pow(pizero_kinetic, 0.2)
-        - 4.5/pow(pizero_kinetic, 0.4));
+   a = (-5.8 - 1.82/pow(proton_kinetic, 0.4)
+        + 13.5/pow(pizero_kinetic, 0.2) - 4.5/pow(pizero_kinetic, 0.4));
 
    /* d(sigma)/dE_pizero */
    sigma = exp(a) * (MILLIBARN / GEV);
@@ -105,7 +101,7 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
     *         to the secondary meson per collision. */
    double kappa = 0.17;
 
-   eproton_delta = (p->energy /kappa + PROTON_REST_ENERGY);
+   eproton_delta = PROTON_REST_ENERGY + p->energy /kappa;
    proton_pc = sqrt (eproton_delta * eproton_delta - SQR_PROTON_REST_ENERGY);
    (void)(*protons->spectrum)(protons, proton_pc, &np);
 
@@ -151,7 +147,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    pc_min = (*protons->momentum_min)(protons);
 
    /* threshold proton momentum to produce the given pi-zero */
-   x0 = (2*(p->energy * p->energy) - PIZERO_MASS_FACTOR) / (2 * PROTON_REST_ENERGY);
+   x0 = (p->energy * p->energy - 0.5*PIZERO_MASS_FACTOR) / PROTON_REST_ENERGY;
    eproton_thresh = (x0 * (1.0 + sqrt (1.0 - SQR_PIZERO_MASS_FACTOR / (x0*x0)))
                      - PROTON_REST_ENERGY);
    pc_thresh = sqrt (eproton_thresh*eproton_thresh - SQR_PROTON_REST_ENERGY);
@@ -220,9 +216,11 @@ static int pizero_min_energy (double photon_energy, double *epizero) /*{{{*/
 
 static int pizero_max_energy (Particle_Type *protons, double *epizero) /*{{{*/
 {
-   double pc_max = (*protons->momentum_max)(protons);
-   double ep_max = sqrt (pc_max*pc_max + SQR_PROTON_REST_ENERGY);
-   double root_s = 2 * ep_max;
+   double pc_max, ep_max, root_s;
+
+   pc_max = (*protons->momentum_max)(protons);
+   ep_max = sqrt (pc_max*pc_max + SQR_PROTON_REST_ENERGY);
+   root_s = sqrt (2*PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max));
 
    /* See Blattnig et al (2000), Appendix A */
    *epizero = 0.5 * (root_s + PIZERO_MASS_FACTOR / root_s);
@@ -271,6 +269,8 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    status = gsl_integration_qag (&f, epi_min, epi_max, epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
+   /* two photons per pion */
+   *val *= 2.0;
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
