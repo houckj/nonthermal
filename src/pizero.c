@@ -138,7 +138,12 @@ static double proton_momentum_threshold (double e_pizero) /*{{{*/
 
 /*}}}*/
 
-static int Threshold_Flag;
+struct
+{
+   int flag;
+   double value;
+}
+Threshold;
 
 static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 {
@@ -168,7 +173,12 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    pc_thresh = proton_momentum_threshold (p->energy);
    if (pc_thresh < pc_min)
      {
-        Threshold_Flag = 1;
+        if ((Threshold.flag == 0)
+            || (pc_thresh < Threshold.value))
+          {
+             Threshold.value = pc_thresh;
+          }
+        Threshold.flag = 1;
         pc_thresh = pc_min;
      }
 
@@ -305,12 +315,14 @@ int pizero_decay (void *x, double photon_energy, double *emissivity)
    *emissivity = 0.0;
    photon_energy *= GSL_CONST_CGSM_ELECTRON_VOLT;
 
-   Threshold_Flag = 0;
+   Threshold.flag = 0;
    status = integral_over_pizero_energies (p, photon_energy, emissivity);
-   if (Threshold_Flag)
+   if (Threshold.flag)
      {
-        fprintf (stderr, "WARNING:  Underestimated pizero rate for %g GeV photons (proton distribution doesn't extend to low enough momenta)\n",
-                 photon_energy / GEV);
+        fprintf (stderr,
+                 "WARNING: pizero: underestimated %g GeV photon rate;  needed %g GeV proton threshold\n",
+                 photon_energy / GEV,
+                 Threshold.value / GEV);
      }
 
    return status;
