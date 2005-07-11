@@ -138,7 +138,7 @@ static double proton_momentum_threshold (double e_pizero) /*{{{*/
 
 /*}}}*/
 
-struct
+static struct
 {
    int flag;
    double value;
