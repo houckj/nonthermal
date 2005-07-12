@@ -47,7 +47,7 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
 {
    Particle_Type *protons = p->protons;
    double eproton_delta, proton_pc, proton_kinetic;
-   double np, gamma, beta, sigma, v, val;
+   double np, beta, sigma, v, val;
 
    /* kappa = mean fraction of proton kinetic energy transferred
     *         to the secondary meson per collision. */
@@ -57,8 +57,7 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
    proton_pc = sqrt (eproton_delta * eproton_delta - SQR_PROTON_REST_ENERGY);
    (void)(*protons->spectrum)(protons, proton_pc, &np);
 
-   gamma = eproton_delta /PROTON_REST_ENERGY;
-   beta = sqrt ((gamma + 1.0)*(gamma - 1.0))/gamma;
+   beta = proton_pc / eproton_delta;
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    proton_kinetic = eproton_delta - PROTON_REST_ENERGY;
@@ -97,21 +96,19 @@ static double proton_integrand (double pc, void *x) /*{{{*/
 {
    Pizero_Type *p = (Pizero_Type *)x;
    Particle_Type *proton = p->protons;
-   double r_proton, gamma, beta, v, np, xsec;
+   double e_proton, beta, v, np, xsec;
    double pizero_kinetic, proton_kinetic, result;
 
    (void)(*proton->spectrum) (proton, pc, &np);
 
-   r_proton = pc / PROTON_REST_ENERGY;
-   gamma = sqrt (r_proton * r_proton + 1.0);
-   beta = sqrt ((gamma + 1.0)*(gamma - 1.0))/gamma;
-   proton_kinetic = (gamma - 1.0) * PROTON_REST_ENERGY;
-
+   e_proton = sqrt (pc*pc + SQR_PROTON_REST_ENERGY);
+   proton_kinetic = e_proton - PROTON_REST_ENERGY;
    pizero_kinetic = p->energy - PIZERO_REST_ENERGY;
 
    /* cross-section per unit proton energy */
    xsec = pizero_differential_xsec (pizero_kinetic, proton_kinetic);
 
+   beta = pc / e_proton;
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
    result = np * v * xsec;
 
