@@ -68,7 +68,11 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
      g += pt->curvature * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
+#if 1
    f = pow (x, g) * exp ((GEV-e_k)/e0);
+#else
+   f = pow ((e_k + mc2)/GEV, g);
+#endif   
 
    if (!finite(f))
      f = 0.0;
