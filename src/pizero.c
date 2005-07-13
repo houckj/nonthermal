@@ -39,42 +39,10 @@ static double pizero_total_xsec (double proton_kinetic) /*{{{*/
 {
    double sigma;
 
-#if 1
    /* Aharonian and Atoyan (2000) */
    if (proton_kinetic > GEV)
      sigma = 30.0 * (0.95 + 0.06 * log (proton_kinetic/GEV));
    else return 0.0;
-#else
-   /* Dermer (1986) */
-   double ep, pc;
-   
-   ep = proton_kinetic + PROTON_REST_ENERGY;
-   pc = sqrt (ep*ep - SQR_PROTON_REST_ENERGY);
-   pc /= GEV;
-   
-   if (0.78 <= pc && pc < 0.96)
-     {
-        double s, mchi, eta2;
-        s = 2*PROTON_REST_ENERGY*(proton_kinetic + 2*PROTON_REST_ENERGY);
-        mchi = 2*PROTON_REST_ENERGY;
-        eta2 = (((s - SQR_PIZERO_REST_ENERGY - mchi*mchi)
-                 - 4 * SQR_PIZERO_REST_ENERGY * mchi*mchi)
-                /(4*SQR_PIZERO_REST_ENERGY*s));
-        sigma = eta2 * (0.032 + eta2 * (0.040 + eta2 * 0.047));
-     }
-   else if (0.96 <= pc && pc < 1.27)
-     {
-        sigma = 32.6 * pow(pc - 0.8, 3.21);
-     }
-   else if (1.27 <= pc && pc < 8.0)
-     {
-        sigma = 5.40 * pow(pc-0.8, 0.81);
-     }
-   else if (8.0 <= pc)
-     {
-        sigma = 32.0*log(pc) + 48.5/sqrt(pc) - 59.5;
-     }
-#endif
 
    return sigma * MILLIBARN;
 }
