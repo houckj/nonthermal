@@ -211,7 +211,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
 /*}}}*/
 
-static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s)
+static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s) /*{{{*/
 {
    double pc_pizero, q;
 
@@ -226,7 +226,9 @@ static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s)
    return 0;
 }
 
-static int pizero_build_table (Pizero_Type *p, double epi_min, double epi_max)
+/*}}}*/
+
+static int pizero_build_table (Pizero_Type *p, double epi_min, double epi_max) /*{{{*/
 {
    double lg_min, lg_max, dlg, lg;
    double *x, *y;
@@ -262,6 +264,8 @@ static int pizero_build_table (Pizero_Type *p, double epi_min, double epi_max)
 
    return status;
 }
+
+/*}}}*/
 
 static double pizero_integrand (double e_pizero, void *x) /*{{{*/
 {
@@ -326,9 +330,7 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    if (epi_min >= epi_max)
      return 0;
 
-   /* FIXME
-    *  1) can re-use table as long as proton distribution is fixed
-    */
+   /* FIXME(?) can re-use table as long as proton distribution is fixed */
    if (p->interpolate == 1)
      {
         double min_epi_min;
@@ -381,12 +383,13 @@ int pizero_decay (void *x, double photon_energy, double *emissivity)
 
    Threshold.flag = 0;
    status = integral_over_pizero_energies (p, photon_energy, emissivity);
+
    if (Threshold.flag)
      {
-#if 0        
+#if 0
         fprintf (stderr, "WARNING: pizero: underestimated photon rate < %g GeV;  needed %g GeV proton threshold\n",
                  photon_energy / GEV, Threshold.max / GEV);
-#endif        
+#endif
      }
 
    return status;
