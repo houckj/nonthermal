@@ -278,7 +278,9 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
         status = pizero_interp_pizero_integral (p->client_data, e_pizero, &s);
      }
    else
-     status = _pizero_integrand (p, e_pizero, &s);
+     {        
+        status = _pizero_integrand (p, e_pizero, &s);
+     }   
 
    return status ? 0.0 : s;
 }
