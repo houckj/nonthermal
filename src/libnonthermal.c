@@ -220,7 +220,7 @@ static double _sync_angular_integral (double *x, int *interpolate) /*{{{*/
      (void) syn_interp_angular_integral (sync_client_data, *x, &y);
    else
      (void) syn_angular_integral (*x, &y);
-   
+
    return y;
 }
 
@@ -301,21 +301,21 @@ static double _invc_photon_integral (double *gamma, double *energy_final_photon,
    Inverse_Compton_Type ic = NULL_INVERSE_COMPTON_TYPE;
    double x;
 
-   if (*t <= 0) *t = CBR_TEMPERATURE;   
+   if (*t <= 0) *t = CBR_TEMPERATURE;
    set_incident_photon_kelvin_temperature (*t);
-   
+
    ic.energy_final_photon = *energy_final_photon;  /* E/(mc^2) */
    ic.electron_gamma = *gamma;
-   ic.electrons = NULL;   
+   ic.electrons = NULL;
    ic.incident_photons = &incident_photon_spectrum;
    ic.incident_photon_max_energy = incident_photon_max_energy();
-   ic.client_data = ic_client_data;   
-   
+   ic.client_data = ic_client_data;
+
    if (*interpolate)
      (void) ic_interp_photon_integral (&ic, &x);
    else
      (void) ic_integral_over_incident_photons (&ic, &x);
-   
+
    return x;
 }
 
@@ -830,6 +830,23 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 /*}}}*/
 
+#define D SLANG_DOUBLE_TYPE
+
+static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
+{
+   MAKE_VARIABLE("Pizero_Approx_Min_Energy", &Pizero_Approx_Min_Energy, D, 0),
+   SLANG_END_INTRIN_VAR_TABLE
+};
+
+#undef D
+
+static int pizero_init_client_data (void) /*{{{*/
+{
+   if (-1 == SLns_add_intrin_var_table (NULL, Pizero_Intrin_Vars, NULL))
+     return -1;
+}
+/*}}}*/
+
 static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{{{*/
 {
    (void) init_particle_spectrum (proton);
@@ -879,7 +896,7 @@ ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
    static double default_min[]   = { 0.0, -3.0, -1.0,  1.0};
    static unsigned int default_freeze[] = {0, 0, 1, 0};
    static unsigned int norm_indexes[] = {0};
-   
+
    (void) options;
 
    p->function_exit = NULL;
@@ -893,6 +910,8 @@ ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
    p->default_freeze = default_freeze;
    p->norm_indexes = norm_indexes;
    p->num_norms = 1;
+
+   pizero_init_client_data ();
 
    return 0;
 }

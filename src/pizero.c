@@ -24,6 +24,8 @@
 #include "_nonthermal.h"
 #include "pizero.h"
 
+double Pizero_Approx_Min_Energy = 50.0;  /* GeV */
+
 #define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
 #define SQR_PIZERO_REST_ENERGY  (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
 #define PIZERO_MASS_FACTOR      (SQR_PIZERO_REST_ENERGY - 4*SQR_PROTON_REST_ENERGY)
@@ -80,9 +82,9 @@ static double pizero_differential_xsec (double proton_kinetic, double pizero_kin
 
    proton_kinetic /= GEV;
    pizero_kinetic /= GEV;
-   
+
    xpi = pow(pizero_kinetic, 0.2);
-   a = (-5.8 - 1.82/pow(proton_kinetic, 0.4) + (13.5 - 4.5/xpi)/xpi);
+   a = -5.8 - 1.82/pow(proton_kinetic, 0.4) + (13.5 - 4.5/xpi)/xpi;
 
    /* d(sigma)/dE_pizero */
    sigma = exp(a) * (MILLIBARN / GEV);
@@ -122,12 +124,12 @@ static double proton_integrand (double pc, void *x) /*{{{*/
 
 static double proton_momentum_threshold (double e_pizero) /*{{{*/
 {
-   double x0, eproton_thresh, pc;
+   double eproton_thresh, pc;
 
    /* threshold proton momentum to produce the given pi-zero */
-   x0 = (e_pizero * e_pizero - 0.5*PIZERO_MASS_FACTOR) / PROTON_REST_ENERGY;
-   eproton_thresh = (x0 * (1.0 + sqrt (1.0 - SQR_PIZERO_MASS_FACTOR / (x0*x0)))
-                     - PROTON_REST_ENERGY);
+
+   eproton_thresh = 2*e_pizero + PROTON_REST_ENERGY
+     + 0.5 * SQR_PIZERO_REST_ENERGY / PROTON_REST_ENERGY;
    pc = sqrt (eproton_thresh*eproton_thresh - SQR_PROTON_REST_ENERGY);
 
    return pc;
@@ -158,7 +160,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    if (p->energy < 100.0 * MEV)
      return 0;
 
-   if (p->energy > 50.0 * GEV)
+   if (p->energy > Pizero_Approx_Min_Energy * GEV)
      {
         *val = delta_function_approximation (p);
         return 0;
@@ -290,8 +292,12 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    status = gsl_integration_qag (&f, epi_min, epi_max, epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
-   /* two photons per pion */
+
+   /* two photons per pion
+    * (but we only ever see one of them...)*/
+#if 0
    *val *= 2.0;
+#endif
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
