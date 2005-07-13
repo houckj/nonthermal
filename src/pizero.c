@@ -359,11 +359,8 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
                                  GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
 
-   /* two photons per pion
-    * (but we only ever see one of them...)*/
-#if 0
+   /* two photons per pion */
    *val *= 2.0;
-#endif
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
