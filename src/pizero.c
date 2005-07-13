@@ -25,7 +25,7 @@
 #include "pizero.h"
 #include "pizero_table.h"
 
-#define PIZERO_MIN_ENERGY (100.0)  /* MeV */
+#define PIZERO_MIN_ENERGY (100.0 * MEV)
 
 double Pizero_Approx_Min_Energy = 50.0;  /* GeV */
 
