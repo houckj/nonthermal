@@ -25,14 +25,15 @@
 #include "pizero.h"
 #include "pizero_table.h"
 
-#define PIZERO_MIN_ENERGY (100.0 * MEV)
-
-double Pizero_Approx_Min_Energy = 50.0;  /* GeV */
-
 #define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
 #define SQR_PIZERO_REST_ENERGY  (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
 #define PIZERO_MASS_FACTOR      (SQR_PIZERO_REST_ENERGY - 4*SQR_PROTON_REST_ENERGY)
 #define SQR_PIZERO_MASS_FACTOR  (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
+
+#define PIZERO_MIN_ENERGY (100.0 * MEV)
+#define MIN_PHOTON_ENERGY (100.0 * MEV)
+
+double Pizero_Approx_Min_Energy = 50.0;  /* GeV */
 
 static double pizero_total_xsec (double proton_kinetic) /*{{{*/
 {
@@ -143,7 +144,7 @@ static double proton_momentum_threshold (double e_pizero) /*{{{*/
 static struct
 {
    int flag;
-   double value;
+   double max;
 }
 Threshold;
 
@@ -176,9 +177,9 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    if (pc_thresh < pc_min)
      {
         if ((Threshold.flag == 0)
-            || (pc_thresh < Threshold.value))
+            || (pc_thresh > Threshold.max))
           {
-             Threshold.value = pc_thresh;
+             Threshold.max = pc_thresh;
           }
         Threshold.flag = 1;
         pc_thresh = pc_min;
@@ -331,7 +332,7 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    if (p->interpolate == 1)
      {
         double min_epi_min;
-        if (-1 == pizero_min_energy (PIZERO_MIN_ENERGY, &min_epi_min))
+        if (-1 == pizero_min_energy (MIN_PHOTON_ENERGY, &min_epi_min))
           return -1;
         if (-1 == pizero_build_table (p, min_epi_min, epi_max))
           return -1;
@@ -382,10 +383,10 @@ int pizero_decay (void *x, double photon_energy, double *emissivity)
    status = integral_over_pizero_energies (p, photon_energy, emissivity);
    if (Threshold.flag)
      {
-        fprintf (stderr,
-                 "WARNING: pizero: underestimated %g GeV photon rate;  needed %g GeV proton threshold\n",
-                 photon_energy / GEV,
-                 Threshold.value / GEV);
+#if 0        
+        fprintf (stderr, "WARNING: pizero: underestimated photon rate < %g GeV;  needed %g GeV proton threshold\n",
+                 photon_energy / GEV, Threshold.max / GEV);
+#endif        
      }
 
    return status;
