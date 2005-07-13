@@ -39,10 +39,46 @@ static double pizero_total_xsec (double proton_kinetic) /*{{{*/
 {
    double sigma;
 
+#if 1
    /* Aharonian and Atoyan (2000) */
    if (proton_kinetic > GEV)
      sigma = 30.0 * (0.95 + 0.06 * log (proton_kinetic/GEV));
    else return 0.0;
+#else
+   double ep = proton_kinetic + PROTON_REST_ENERGY;
+   double pc = sqrt (ep*ep - SQR_PROTON_REST_ENERGY);
+   double s;
+
+   pc /= GEV;
+
+   /* Dermer, C.D., 1986, A&A, 157, 223. */
+   if (pc < 0.78)
+     sigma = 0.0;
+   else if (0.78 <= pc && pc < 0.96)
+     {
+        double mx2, eta2, eta4;
+        s = 2*PROTON_REST_ENERGY * (proton_kinetic + 2*PROTON_REST_ENERGY);
+        mx2 = 4*SQR_PROTON_REST_ENERGY;
+        eta2 = (((s - SQR_PIZERO_REST_ENERGY - mx2)
+                 - 4*SQR_PIZERO_REST_ENERGY*mx2)
+                /(4*SQR_PIZERO_REST_ENERGY*s));
+        eta4 = eta2 * eta2;
+        sigma = eta2 * (0.032 + eta4 * (0.040 + eta2 * 0.047));
+     }
+   else if (0.96 <= pc && pc < 1.27)
+     sigma = 32.6 * pow(pc - 0.8, 3.21);
+   else if (1.27 <= pc && pc < 8.0)
+     sigma = 5.40 * pow(pc - 0.8, 0.81);
+   else if (8.0 <= pc && pc < 1.e3)
+     sigma = 32.0 * log(pc) + 48.5/sqrt(pc) - 59.5;
+   else if (1.e3 <= pc)
+     {
+        /* Mori (1997), ApJ, 478, 225 */
+        s = 2*PROTON_REST_ENERGY * (proton_kinetic + 2*PROTON_REST_ENERGY);
+        sigma = 163.0 * pow(s/1876.0, 0.21);
+     }
+
+#endif
 
    return sigma * MILLIBARN;
 }
