@@ -56,11 +56,11 @@ static double pizero_total_xsec (double proton_kinetic) /*{{{*/
      sigma = 0.0;
    else if (0.78 <= pc && pc < 0.96)
      {
-        double mx2, eta2, eta4;
+        double mx2, x, eta2, eta4;
         s = 2*PROTON_REST_ENERGY * (proton_kinetic + 2*PROTON_REST_ENERGY);
         mx2 = 4*SQR_PROTON_REST_ENERGY;
-        eta2 = (((s - SQR_PIZERO_REST_ENERGY - mx2)
-                 - 4*SQR_PIZERO_REST_ENERGY*mx2)
+        x = s - SQR_PIZERO_REST_ENERGY - mx2;
+        eta2 = ((x*x - 4*SQR_PIZERO_REST_ENERGY*mx2)
                 /(4*SQR_PIZERO_REST_ENERGY*s));
         eta4 = eta2 * eta2;
         sigma = eta2 * (0.032 + eta4 * (0.040 + eta2 * 0.047));
