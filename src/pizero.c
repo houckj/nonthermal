@@ -25,6 +25,8 @@
 #include "pizero.h"
 #include "pizero_table.h"
 
+#define PIZERO_MIN_ENERGY (100.0)  /* MeV */
+
 double Pizero_Approx_Min_Energy = 50.0;  /* GeV */
 
 #define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
@@ -158,7 +160,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
    *val = 0.0;
 
-   if (p->energy < 100.0 * MEV)
+   if (p->energy < PIZERO_MIN_ENERGY)
      return 0;
 
    if (p->energy > Pizero_Approx_Min_Energy * GEV)
@@ -328,8 +330,8 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
     */
    if (p->interpolate == 1)
      {
-        double min_epi_min;
-        if (-1 == pizero_min_energy (100.0*MEV, &min_epi_min))
+        double min_epi_min
+        if (-1 == pizero_min_energy (PIZERO_MIN_ENERGY, &min_epi_min))
           return -1;
         if (-1 == pizero_build_table (p, min_epi_min, epi_max))
           return -1;
