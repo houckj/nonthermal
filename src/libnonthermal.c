@@ -875,11 +875,15 @@ static int binned_pizero (double *val, Isis_Hist_t *g, double *par, unsigned int
 {
    Pizero_Type p = NULL_PIZERO_TYPE;
    Particle_Type proton = NULL_PARTICLE_TYPE;
+   int status;
 
    init_pizero (par, &p, &proton);
 
-   return _nt_binned_contin ((void *)&p, &pizero_decay,
-                             val, g, par, npar);
+   status = _nt_binned_contin ((void *)&p, &pizero_decay,
+                               val, g, par, npar);
+   pizero_free_table (p.client_data);
+
+   return status;
 }
 
 /*}}}*/
@@ -888,11 +892,15 @@ static int unbinned_pizero (double *val, Isis_User_Grid_t *g, double *par, unsig
 {
    Pizero_Type p = NULL_PIZERO_TYPE;
    Particle_Type proton = NULL_PARTICLE_TYPE;
+   int status;
 
    init_pizero (par, &p, &proton);
 
-   return _nt_contin ((void *)&p, &pizero_decay,
-                      val, g, par, npar);
+   status = _nt_contin ((void *)&p, &pizero_decay,
+                        val, g, par, npar);
+   pizero_free_table (p.client_data);
+
+   return status;
 }
 
 /*}}}*/
