@@ -155,8 +155,8 @@ static void set_bin_integral_method (int method) /*{{{*/
 /*}}}*/
 
 static int _nt_binned_contin (void *cl, /*{{{*/
-                               int (*eval_contin)(void *, double, double *),
-                               double *val, Isis_Hist_t *g, double *par, unsigned int npar)
+                              int (*eval_contin)(void *, double, double *),
+                              double *val, Isis_Hist_t *g, double *par, unsigned int npar)
 {
    double norm = par[0];
    int i;
@@ -191,8 +191,8 @@ static int _nt_binned_contin (void *cl, /*{{{*/
 /*}}}*/
 
 static int _nt_contin (void *cl, /*{{{*/
-                        int (*eval_contin)(void *, double, double *),
-                        double *val, Isis_User_Grid_t *g, double *par, unsigned int npar)
+                       int (*eval_contin)(void *, double, double *),
+                       double *val, Isis_User_Grid_t *g, double *par, unsigned int npar)
 {
    double norm = par[0];
    int i;
