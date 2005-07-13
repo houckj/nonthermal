@@ -5,6 +5,8 @@ typedef struct
 {
    Particle_Type *protons;
    double energy;
+   int interpolate;
+   void *client_data;
 }
 Pizero_Type;
 

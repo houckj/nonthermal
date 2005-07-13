@@ -23,6 +23,7 @@
 
 #include "_nonthermal.h"
 #include "pizero.h"
+#include "pizero_table.h"
 
 double Pizero_Approx_Min_Energy = 50.0;  /* GeV */
 
@@ -207,23 +208,72 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
 /*}}}*/
 
-static double pizero_integrand (double e_pizero, void *x) /*{{{*/
+static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s)
 {
-   Pizero_Type *p = (Pizero_Type *)x;
-   double pc_pizero, q, s;
+   double pc_pizero, q;
 
    p->energy = e_pizero;
 
-   /* FIXME!!!  far better to pre-compute pizero distribution,
-    * and then interpolate on the saved table here.
-    */
    if (-1 == integral_over_proton_momenta (p, &q))
-     return 0.0;
+     return -1;
 
    pc_pizero = sqrt (e_pizero * e_pizero - SQR_PIZERO_REST_ENERGY);
-   s = q / pc_pizero;
+   *s = q / pc_pizero;
 
-   return s;
+   return 0;
+}
+
+static int pizero_build_table (Pizero_Type *p, double epi_min, double epi_max)
+{
+   double lg_min, lg_max, dlg, lg;
+   double *x, *y;
+   unsigned int i, n = PIZERO_TABLE_SIZE;
+   int status;
+
+   if (NULL == (x = malloc (2*n * sizeof(double))))
+     return -1;
+   y = x + n;
+
+   /* FIXME -- an adaptive grid might be better ... */
+
+   lg_min = log10(epi_min);
+   lg_max = log10(epi_max);
+   dlg = (lg_max - lg_min) / (n - 1);
+
+   for (i = 0; i < n; i++)
+     {
+        double xx, yy;
+        lg = lg_min + dlg * i;
+        xx = pow(10.0, lg);
+        if (-1 == _pizero_integrand (p, xx, &yy))
+          {
+             free(x);
+             return -1;
+          }
+        x[i] = lg;
+        y[i] = log10(yy);
+     }
+
+   status = pizero_spline_table (p->client_data, x, y, n);
+   free(x);
+
+   return status;
+}
+
+static double pizero_integrand (double e_pizero, void *x) /*{{{*/
+{
+   Pizero_Type *p = (Pizero_Type *)x;
+   double s;
+   int status;
+
+   if (p->interpolate)
+     {
+        status = pizero_interp_pizero_integral (p->client_data, e_pizero, &s);
+     }
+   else
+     status = _pizero_integrand (p, e_pizero, &s);
+
+   return status ? 0.0 : s;
 }
 
 /*}}}*/
@@ -273,10 +323,18 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    if (epi_min >= epi_max)
      return 0;
 
-   /* FIXME:
-    * At this point, should pre-compute pizero distribution over
-    * the energy range [epi_min, epi_max]
+   /* FIXME
+    *  1) can re-use table as long as proton distribution is fixed
     */
+   if (p->interpolate == 1)
+     {
+        double min_epi_min;
+        if (-1 == pizero_min_energy (100.0*MEV, &min_epi_min))
+          return -1;
+        if (-1 == pizero_build_table (p, min_epi_min, epi_max))
+          return -1;
+        p->interpolate = 2;
+     }
 
    f.function = &pizero_integrand;
    f.params = p;

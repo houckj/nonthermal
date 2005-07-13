@@ -25,6 +25,7 @@ ISIS_USER_SOURCE_MODULE_VERSION;
 #include "ntbrems.h"
 #include "ntb_table.h"
 #include "pizero.h"
+#include "pizero_table.h"
 
 #define EV_ANGSTROM \
    ((GSL_CONST_CGSM_PLANCKS_CONSTANT_H * GSL_CONST_CGSM_SPEED_OF_LIGHT) \
@@ -46,6 +47,8 @@ static int IC_Complain_On_Extrapolation;
 static int IC_Bin_Integral_Method = FAST;
 
 static int Ntb_Interpolate = 1;
+
+static int Pizero_Interpolate = 1;
 
 #define X_HE (0.1)
 #define X_H  (1.0 - X_HE)
@@ -831,19 +834,24 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 /*}}}*/
 
 #define D SLANG_DOUBLE_TYPE
+#define I SLANG_INT_TYPE
 
 static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 {
    MAKE_VARIABLE("Pizero_Approx_Min_Energy", &Pizero_Approx_Min_Energy, D, 0),
+   MAKE_VARIABLE("Pizero_Interpolate", &Pizero_Interpolate, I, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
 
 #undef D
+#undef I
 
 static int pizero_init_client_data (void) /*{{{*/
 {
    if (-1 == SLns_add_intrin_var_table (NULL, Pizero_Intrin_Vars, NULL))
      return -1;
+
+   return 0;
 }
 /*}}}*/
 
@@ -857,6 +865,8 @@ static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{
    proton->mass = GSL_CONST_CGSM_MASS_PROTON;
 
    p->protons = proton;
+   p->interpolate = Pizero_Interpolate;
+   p->client_data = pizero_alloc_table (PIZERO_TABLE_SIZE);
 }
 
 /*}}}*/
@@ -912,7 +922,6 @@ ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
    p->num_norms = 1;
 
    pizero_init_client_data ();
-
    return 0;
 }
 
