@@ -330,7 +330,7 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
     */
    if (p->interpolate == 1)
      {
-        double min_epi_min
+        double min_epi_min;
         if (-1 == pizero_min_energy (PIZERO_MIN_ENERGY, &min_epi_min))
           return -1;
         if (-1 == pizero_build_table (p, min_epi_min, epi_max))
