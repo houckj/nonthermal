@@ -192,7 +192,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    gsl_integration_workspace *work;
    gsl_function f;
    double epsabs, epsrel, abserr;
-   double pc_min, pc_max, x0, eproton_thresh, pc_thresh;
+   double pc_min, pc_max, pc_thresh;
    size_t limit;
    int status;
 
