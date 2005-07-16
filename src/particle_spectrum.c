@@ -70,8 +70,27 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
    /* dn/d(Pc) (norm factored out) */
 #if 1
    f = pow (x, g) * exp ((GEV-e_k)/e0);
-#else
+#endif
+#if 0
+   /* Dermer 1986 proton spectrum */
    f = pow ((e_k + mc2)/GEV, g);
+#endif
+#if 0
+     {
+        /* Mori 1997 proton spectrum */
+        double ep = e_k + mc2;
+        double f0 = 4*M_PI/GSL_CONST_CGSM_SPEED_OF_LIGHT;
+        if (ep >= 100.0 * GEV)
+          {
+             double t = 2.5 * GEV/ pc;
+             f = 1.67*pow(pc/GEV, -2.7) /sqrt(1.0 + t*t);             
+          }
+        else
+          {
+             f = 6.65e-6*pow(ep/(100.0*GEV), -2.75);
+          }        
+        f *= f0;
+     }   
 #endif   
 
    if (!finite(f))
