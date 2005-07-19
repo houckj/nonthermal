@@ -251,6 +251,10 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s) /*{{{*/
 {
    double pc_pizero, q;
+   
+   *s = 0.0;   
+   if (e_pizero < PIZERO_REST_ENERGY)
+     return 0;
 
    p->energy = e_pizero;
 
@@ -326,7 +330,9 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
 
 static int pizero_min_energy (double photon_energy, double *e_pizero) /*{{{*/
 {
-   *e_pizero = photon_energy + 0.25 * SQR_PIZERO_REST_ENERGY / photon_energy;
+   if (photon_energy > 0)     
+     *e_pizero = photon_energy + 0.25 * SQR_PIZERO_REST_ENERGY / photon_energy;
+   else return -1;
 
    return 0;
 }
