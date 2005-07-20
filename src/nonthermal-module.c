@@ -147,6 +147,8 @@ static double root_func (double mv, void *cd) /*{{{*/
    f_nth *= di->n_GeV;
    /* dn/dp = d(Pc)/dp * dn/d(Pc);   p = m*v, P = gamma*mv */
    f_nth *= gamma2 * gamma;
+   
+   /* fprintf (stderr, "f_th = %g  f_nth = %g\n", f_th, f_nth); */
 
    return f_th - f_nth;
 }
@@ -167,7 +169,7 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 
    p_th = sqrt (2 * pt->mass * di->kT * KEV);
    mc = pt->mass * GSL_CONST_CGSM_SPEED_OF_LIGHT;
-
+   
    pmax = p_th * 4;
 
    while (n-- > 0 && pmax < mc)
@@ -180,14 +182,11 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 
    /* No solution, use thermal peak */
    if (status || p > mc)
-     {
-        fprintf (stderr, "find_momentum_min: no solution -- using thermal peak momentum\n");
-        p = p_th;
-     }
+     p = p_th;
 
    *momentum = p;
 
-   return 0;
+   return status;
 }
 
 /*}}}*/
@@ -203,7 +202,10 @@ static double _find_momentum_min (void) /*{{{*/
         return 0.0;
      }
 
-   (void) find_momentum_min (&di, &p);
+   if (-1 == find_momentum_min (&di, &p))
+     {
+        fprintf (stderr, "find_momentum_min: no solution -- using thermal peak momentum\n");
+     }   
 
    return p;
 }
@@ -382,6 +384,7 @@ static double conserve_charge (void) /*{{{*/
    Density_Info de, dp;
    double p_norm, e_norm, fe, lo, hi;
    int k, status;
+   char *msg = "";
 
    if (-1 == pop_density_info (&dp)
        || -1 == pop_density_info (&de))
@@ -393,7 +396,6 @@ static double conserve_charge (void) /*{{{*/
    e_norm = de.n_GeV;
    if (-1 == nontherm_integral (&de, &nontherm_density_integrand, &fe))
      {
-        char *msg = "";
         if (Failed_Finding_Momentum_Min) msg = ":  failed finding min momentum";
         fprintf (stderr, "failed computing e- density%s\n", msg);
         SLang_set_error (SL_INTRINSIC_ERROR);
@@ -413,6 +415,14 @@ static double conserve_charge (void) /*{{{*/
         k++;
      }
    while (status != 0 && k < 8);
+
+   if (status || Failed_Finding_Momentum_Min)
+     {
+        if (Failed_Finding_Momentum_Min) msg = ":  failed finding min momentum";
+        fprintf (stderr, "failed computing proton density%s\n", msg);
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return 0.0;
+     }   
 
    return p_norm;
 }
