@@ -390,7 +390,7 @@ static double conserve_charge (void) /*{{{*/
        || -1 == pop_density_info (&de))
      {
         SLang_set_error (SL_INTRINSIC_ERROR);
-        return 0.0;
+        return -1.0;
      }
 
    e_norm = de.n_GeV;
@@ -399,7 +399,7 @@ static double conserve_charge (void) /*{{{*/
         if (Failed_Finding_Momentum_Min) msg = ":  failed finding min momentum";
         fprintf (stderr, "failed computing e- density%s\n", msg);
         SLang_set_error (SL_INTRINSIC_ERROR);
-        return 0.0;
+        return -1.0;
      }
 
    Electron_Density = e_norm * fe;
@@ -421,7 +421,7 @@ static double conserve_charge (void) /*{{{*/
         if (Failed_Finding_Momentum_Min) msg = ":  failed finding min momentum";
         fprintf (stderr, "failed computing proton density%s\n", msg);
         SLang_set_error (SL_INTRINSIC_ERROR);
-        return 0.0;
+        return -1.0;
      }   
 
    return p_norm;
