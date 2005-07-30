@@ -15,7 +15,6 @@
 #include <slang.h>
 
 #include "isis.h"
-ISIS_USER_SOURCE_MODULE_VERSION;
 
 #include "photons.h"
 #include "synchrotron.h"
