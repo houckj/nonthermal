@@ -243,16 +243,25 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    if (status)
      fprintf (stderr, "*** pizero: proton integral:  %s\n", gsl_strerror (status));
 
+   /* check for NaN */
+   if (*val != *val)
+     *val = 0.0;
+
    return 0;
 }
 
 /*}}}*/
 
+int pizero_distribution (Pizero_Type *p, double *val)
+{
+   return integral_over_proton_momenta (p, val);
+}
+
 static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s) /*{{{*/
 {
    double pc_pizero, q;
-   
-   *s = 0.0;   
+
+   *s = 0.0;
    if (e_pizero < PIZERO_REST_ENERGY)
      return 0;
 
@@ -330,7 +339,7 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
 
 static int pizero_min_energy (double photon_energy, double *e_pizero) /*{{{*/
 {
-   if (photon_energy > 0)     
+   if (photon_energy > 0)
      *e_pizero = photon_energy + 0.25 * SQR_PIZERO_REST_ENERGY / photon_energy;
    else return -1;
 
@@ -341,14 +350,18 @@ static int pizero_min_energy (double photon_energy, double *e_pizero) /*{{{*/
 
 static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
 {
-   double pc_max, ep_max, root_s;
+   double pc_max, ep_max, root_s, e_pizero_cm, gamma_cm;
 
    pc_max = (*protons->momentum_max)(protons);
    ep_max = sqrt (pc_max*pc_max + SQR_PROTON_REST_ENERGY);
    root_s = sqrt (2*PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max));
 
-   /* See Blattnig et al (2000), Appendix A */
-   *e_pizero = 0.5 * (root_s + PIZERO_MASS_FACTOR / root_s);
+   /* CM frame energy:  See Blattnig et al (2000), Appendix A */
+   e_pizero_cm = 0.5 * (root_s + PIZERO_MASS_FACTOR / root_s);
+
+   /* lab frame max energy */
+   gamma_cm = sqrt (0.5*(ep_max/PROTON_REST_ENERGY + 1));
+   *e_pizero = gamma_cm * e_pizero_cm;
 
    return 0;
 }

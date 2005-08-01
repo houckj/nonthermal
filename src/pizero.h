@@ -14,5 +14,6 @@ Pizero_Type;
 
 extern double Pizero_Approx_Min_Energy;
 extern int pizero_decay (void *p, double photon_energy, double *emissivity);
+extern int pizero_distribution (Pizero_Type *p, double *val);
 
 #endif

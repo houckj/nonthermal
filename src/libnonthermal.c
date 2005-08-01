@@ -832,8 +832,11 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 /*}}}*/
 
+static void pizero_distribution_intrin (void);
+
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
+#define V SLANG_VOID_TYPE
 
 static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 {
@@ -842,12 +845,20 @@ static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
    SLANG_END_INTRIN_VAR_TABLE
 };
 
+static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
+{
+   MAKE_INTRINSIC("pizero_distribution", pizero_distribution_intrin, V, 0),
+   SLANG_END_INTRIN_FUN_TABLE
+};
+
 #undef D
 #undef I
+#undef V
 
 static int pizero_init_client_data (void) /*{{{*/
 {
-   if (-1 == SLns_add_intrin_var_table (NULL, Pizero_Intrin_Vars, NULL))
+   if ((-1 == SLns_add_intrin_var_table (NULL, Pizero_Intrin_Vars, NULL))
+       || (-1 == SLns_add_intrin_fun_table (NULL, Pizero_Intrinsics, NULL)))
      return -1;
 
    return 0;
@@ -866,6 +877,62 @@ static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{
    p->protons = proton;
    p->interpolate = Pizero_Interpolate;
    p->client_data = pizero_alloc_table (PIZERO_TABLE_SIZE);
+}
+
+/*}}}*/
+
+static void pizero_distribution_intrin (void) /*{{{*/
+{
+   Pizero_Type p = NULL_PIZERO_TYPE;
+   Particle_Type proton = NULL_PARTICLE_TYPE;
+   SLang_Array_Type *sl_par = NULL;
+   SLang_Array_Type *sl_energies = NULL;
+   SLang_Array_Type *sl_qpi = NULL;
+   double *par, *energies, *qpi;
+   int i, n;
+
+   if ((-1 == SLang_pop_array_of_type (&sl_par, SLANG_DOUBLE_TYPE))
+       || (sl_par == NULL)
+       || (sl_par->num_elements != 4))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);        
+        return;
+     }   
+   
+   if ((-1 == SLang_pop_array_of_type (&sl_energies, SLANG_DOUBLE_TYPE))
+       || (sl_energies == NULL))
+     {
+        SLang_free_array (sl_par);
+        SLang_set_error (SL_INTRINSIC_ERROR);        
+        return;
+     }   
+   
+   n = sl_energies->num_elements;
+   
+   if (NULL == (sl_qpi = SLang_create_array (SLANG_DOUBLE_TYPE, 0, NULL, &n, 1)))
+     {
+        SLang_free_array (sl_energies);
+        SLang_free_array (sl_par);
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return;
+     }   
+
+   par = (double *)sl_par->data;
+   init_pizero (par, &p, &proton);
+   
+   energies = (double *)sl_energies->data;
+   qpi = (double *)sl_qpi->data;
+   
+   for (i = 0; i < n; i++)
+     {
+        p.energy = energies[i] * GSL_CONST_CGSM_ELECTRON_VOLT;
+        if (-1 == pizero_distribution (&p, &qpi[i]))
+          qpi[i] = 0.0;
+     }   
+   
+   SLang_push_array (sl_qpi, 1);   
+   SLang_free_array (sl_par);
+   SLang_free_array (sl_energies);
 }
 
 /*}}}*/
