@@ -325,6 +325,8 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    double E_p_cm, p_perp, p_parallel;
    double e_max_cm, p_max_cm, xp_perp;
 
+   /* FIXME:  potential loss of accuracy as beta->1 and/or beta->0 */
+
    m_p2 = SQR_PROTON_REST_ENERGY;
    m_pi2 = SQR_PIZERO_REST_ENERGY;
 
@@ -357,7 +359,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    e_max_cm = (s + PIZERO_MASS_FACTOR) / (2*root_s);
    p_max_cm = sqrt (e_max_cm * e_max_cm - m_pi2);
 
-   /* S&B's dumb-ass cross-section parameterization */
+   /* S&B's cross-section parameterization */
    yp = 1.0 + 4*m_p2/s;
    ym = 1.0 - 4*m_p2/s;
    f = (1.0 + 23.0 / pow(E_p_cm/GEV, 2.6)) * (ym*ym);
