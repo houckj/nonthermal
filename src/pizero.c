@@ -2,6 +2,14 @@
 
 /*  author:  John Houck <houck@space.mit.edu>
  * written:  Feb 2003
+ *
+ * Neutral pion production cross-sections from
+ *   Dermer, C.D., 1986, A&A, 157, 223.
+ *   Blattnig et al, NASA Technical Report, NASA/TP-2000-210640
+ *   Aharonian and Atoyan, 2000, A&A, 362, 937
+ *
+ * See also
+ *   Domingo-Santamaria & Torres, 2005, astro-ph/0506240
 */
 
 #include "config.h"
@@ -16,6 +24,10 @@
 #include "pizero.h"
 #include "pizero_table.h"
 
+int Pizero_Use_Dermer_Xsec = 0;
+double Pizero_Approx_Min_Energy = 0.0; /* 50.0; */  /* GeV */
+
+#define TWO_PROTON_REST_ENERGY   (2 * PROTON_REST_ENERGY)
 #define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
 #define SQR_PIZERO_REST_ENERGY  (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
 #define PIZERO_MASS_FACTOR      (SQR_PIZERO_REST_ENERGY - 4*SQR_PROTON_REST_ENERGY)
@@ -26,21 +38,22 @@
  */
 #define MIN_PHOTON_ENERGY (0.5*PIZERO_REST_ENERGY *2)
 
-int Pizero_Use_Dermer_Xsec = 0;
-double Pizero_Approx_Min_Energy = 0.0; /* 50.0; */  /* GeV */
-
-/* -*- mode: C; mode: fold -*- */
-/* Dermer 1986, A&A 157, 223 */
-
-#define H(x,a,b)  (((a) <= (x)) && ((x) < (b)))
-
 /* \Delta_{3/2}(1232) resonance width [GeV]
  * Particle Data Group (1984)
  */
 #define RESONANCE_WIDTH         ((0.115 * GEV)*0.5)
 #define RESONANCE_REST_ENERGY   (1233.0 * MEV)
 
-#define TWO_PROTON_REST_ENERGY   (2 * PROTON_REST_ENERGY);
+#define H(x,a,b) (((a) <= (x)) && ((x) < (b)))
+#define BETA(g)  sqrt(((g)+1.0)*((g)-1.0))/(g)
+
+typedef struct
+{
+   double T_pi;
+   double T_p;
+   double s;
+}
+Collision_Info_Type;
 
 static double pizero_dermer_total_xsec (double proton_kinetic) /*{{{*/
 {
@@ -82,69 +95,49 @@ static double pizero_dermer_total_xsec (double proton_kinetic) /*{{{*/
 
 /*}}}*/
 
-static double beta_fun (double g) /*{{{*/
-{
-   return sqrt ((g + 1.0)*(g - 1.0)) / g;
-}
-
-/*}}}*/
-
-static double gfun (double g1, double g2, double sgn) /*{{{*/
-{
-   double b1 = beta_fun (g1);
-   double b2 = beta_fun (g2);
-
-   return g1 * g2 * (1.0 + sgn * b1 * b2);
-}
-
-/*}}}*/
-
-static double pfun (double g) /*{{{*/
-{
-   return g * beta_fun (g);
-}
-
-/*}}}*/
-
 static int isobar_spectrum (double T_p, double T_pi, double m_d) /*{{{*/
 {
-   double two_mp, two_mpi, m_d2, m_pi2, m_p2;
-   double s, root_s, gamma_c, gamma_d_cm;
-   double a_p, b_p, a_m, b_m;
-   double gamma_d_p, gamma_d_m, gamma_pi_i, gamma_pi, f;
+   double m_d2, m_pi2, m_p2;
+   double s, root_s, g_c, b_c, g_d_cm, b_d_cm;
+   double g_d_p, b_d_p, g_d_m, b_d_m, g_pi_i, b_pi_i, g_pi;
+   double a_p, b_p, a_m, b_m, f;
 
    m_d2 = m_d * m_d;
    m_p2 = SQR_PROTON_REST_ENERGY;
    m_pi2 = SQR_PIZERO_REST_ENERGY;
 
-   two_mpi = 2 * PIZERO_REST_ENERGY;
-   two_mp = TWO_PROTON_REST_ENERGY;
-   s = two_mp * (T_p + two_mp);
+   s = TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY);
    root_s = sqrt(s);
 
-   gamma_c = root_s / two_mp;
-   gamma_d_cm = (s + m_d2 - m_pi2) / (2*root_s * m_d);
-   gamma_pi_i = (m_d2 + m_pi2 - m_p2) / (two_mpi * m_d);
-   gamma_d_p = gfun (gamma_c, gamma_d_cm, +1.0);
-   gamma_d_m = gfun (gamma_c, gamma_d_cm, -1.0);
+   g_c = root_s / TWO_PROTON_REST_ENERGY;
+   b_c = BETA(g_c);
 
-   a_p = gfun (gamma_d_p, gamma_pi_i, -1.0);
-   b_p = gfun (gamma_d_p, gamma_pi_i, +1.0);
+   g_d_cm = (s + m_d2 - m_pi2) / (2*root_s * m_d);
+   b_d_cm = BETA(g_d_cm);
 
-   a_m = gfun (gamma_d_m, gamma_pi_i, -1.0);
-   b_m = gfun (gamma_d_m, gamma_pi_i, +1.0);
+   g_pi_i = (m_d2 + m_pi2 - m_p2) / (2 * PIZERO_REST_ENERGY * m_d);
+   b_pi_i = BETA(g_pi_i);
 
-   gamma_pi = 1.0 + T_pi / PIZERO_REST_ENERGY;
+   g_d_p = g_c * g_d_cm * (1.0 + b_c * b_d_cm);
+   g_d_m = g_c * g_d_cm * (1.0 - b_c * b_d_cm);
+
+   a_p = g_d_p * g_pi_i * (1.0 - b_d_p * b_pi_i);
+   b_p = g_d_p * g_pi_i * (1.0 + b_d_p * b_pi_i);
+
+   a_m = g_d_m * g_pi_i * (1.0 - b_d_m * b_pi_i);
+   b_m = g_d_m * g_pi_i * (1.0 + b_d_m * b_pi_i);
+
+   g_pi = 1.0 + T_pi / PIZERO_REST_ENERGY;
 
    f = 0.0;
 
-   if (H(gamma_pi, a_p, b_p))
-     f += 1.0 / (2.0 * pfun (gamma_d_p) * pfun (gamma_pi_i));
+   if (H(g_pi, a_p, b_p))
+     f += 1.0 / (2.0 * b_d_p * g_d_p * b_pi_i * g_pi_i);
 
-   if (H(gamma_pi, a_m, b_m))
-     f += 1.0 / (2.0 * pfun (gamma_d_m) * pfun (gamma_pi_i));
+   if (H(g_pi, a_m, b_m))
+     f += 1.0 / (2.0 * b_d_m * g_d_m * b_pi_i * g_pi_i);
 
-   f /= two_mpi;
+   f /= 2 * PIZERO_REST_ENERGY;
 
    return f;
 }
@@ -153,101 +146,22 @@ static int isobar_spectrum (double T_p, double T_pi, double m_d) /*{{{*/
 
 static double breit_wigner (double m_d) /*{{{*/
 {
-   double w = RESONANCE_WIDTH;
    double dm = m_d - RESONANCE_REST_ENERGY;
-   return (w/M_PI) / (dm*dm + w*w);
+   return 1.0 / (dm*dm + RESONANCE_WIDTH*RESONANCE_WIDTH);
 }
 
 /*}}}*/
 
 static double bw_norm (double T_p) /*{{{*/
 {
-   double root_s, t1, t2, two_mp, x;
+   double root_s, t1, t2, w;
 
-   two_mp = TWO_PROTON_REST_ENERGY;
-   x = RESONANCE_WIDTH;
-
-   root_s = sqrt(two_mp * (T_p + two_mp));
+   root_s = sqrt(TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY));
    t1 = root_s - PROTON_REST_ENERGY - RESONANCE_REST_ENERGY;
-
    t2 = PROTON_REST_ENERGY + PIZERO_REST_ENERGY - RESONANCE_REST_ENERGY;
+   w = RESONANCE_WIDTH;
 
-   return M_PI / (atan2 (t1,x) - atan2 (t2,x));
-}
-
-/*}}}*/
-
-static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*/
-{
-   double m_p2, m_pi2, two_mp, s, root_s, y, f, q, xx_cm, xbar;
-   double E_p, E_pi, gamma_pi, p_pi, lidcs;
-   double gamma_c, beta_c, gamma_p, p_p, beta_pi;
-   double E_p_cm, p_perp, p_parallel;
-   double e_max_cm, p_max_cm;
-
-   m_p2 = PROTON_REST_ENERGY * PROTON_REST_ENERGY;
-   m_pi2 = PIZERO_REST_ENERGY * PIZERO_REST_ENERGY;
-   two_mp = TWO_PROTON_REST_ENERGY;
-
-   /* collision invariant */
-   s = two_mp * (T_p + two_mp);
-   root_s = sqrt(s);
-
-   /* Lorentz factor for center of momentum system */
-   gamma_c = root_s/two_mp;
-   beta_c = beta_fun(gamma_c);
-
-   /* Lab frame proton energy/momentum */
-   E_p = T_p + PROTON_REST_ENERGY;
-   gamma_p = E_p / PROTON_REST_ENERGY;
-   p_p = E_p * beta_fun (gamma_p);
-
-   /* Lab frame pion energy/momentum */
-   E_pi = T_pi + PIZERO_REST_ENERGY;
-   gamma_pi = E_pi / PIZERO_REST_ENERGY;
-   beta_pi = beta_fun (gamma_pi);
-   p_pi = E_pi * beta_pi;
-
-   /* CM frame proton energy */
-   E_p_cm = gamma_c * (E_p - beta_c * p_p);
-
-   /* CM frame pion momentum components */
-   p_perp = p_pi * sqrt (1.0 - mu*mu);
-   p_parallel = gamma_c * (p_pi * mu - beta_c * E_pi);
-
-   /* Max CM frame pion momentum */
-   e_max_cm = (s + PIZERO_MASS_FACTOR) / (2*root_s);
-   p_max_cm = sqrt (e_max_cm * e_max_cm - m_pi2);
-
-   /* S&B cross-section parameterization */
-   y = 1.0 + 4*m_p2/s;
-   f = (1.0 + 23.0 / pow(E_p_cm, 2.6)) / (y*y);
-   q = (6.1 + p_perp * (-3.3 + 0.6 * p_perp)) / sqrt(y);
-
-   xx_cm = p_parallel / p_max_cm;
-   xbar = sqrt (xx_cm * xx_cm + (4.0/s)*(p_perp*p_perp + m_pi2));
-
-   lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * p_perp/y);
-
-   return lidcs;
-}
-
-/*}}}*/
-
-typedef struct
-{
-   double T_pi;
-   double T_p;
-   double s;
-}
-Collision_Info_Type;
-
-static void init_collision_info (Collision_Info_Type *info, double T_p, double T_pi) /*{{{*/
-{
-   double two_mp = TWO_PROTON_REST_ENERGY;
-   info->s = two_mp * (T_p + two_mp);
-   info->T_pi = T_pi;
-   info->T_p = T_p;
+   return w / (atan(t1/w) - atan(t2/w));
 }
 
 /*}}}*/
@@ -261,6 +175,15 @@ static double isobar_integrand (double m, void *x) /*{{{*/
    b = breit_wigner (m);
 
    return b * f;
+}
+
+/*}}}*/
+
+static void init_collision_info (Collision_Info_Type *info, double T_p, double T_pi) /*{{{*/
+{
+   info->T_p = T_p;
+   info->T_pi = T_pi;
+   info->s = TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY);
 }
 
 /*}}}*/
@@ -280,7 +203,7 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
 
    init_collision_info (&info, T_p, T_pi);
 
-   m_min = PROTON_REST_ENERGY - PIZERO_REST_ENERGY;
+   m_min = PROTON_REST_ENERGY + PIZERO_REST_ENERGY;
    m_max = sqrt(info.s) - PROTON_REST_ENERGY;
 
    f.function = &isobar_integrand;
@@ -294,7 +217,7 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 0
+#if 1
    status = gsl_integration_qag (&f, m_min, m_max, epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
@@ -323,6 +246,62 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
 
 /*}}}*/
 
+static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*/
+{
+   double m_p2, m_pi2, s, root_s, yp, ym, f, q, xx_cm, xbar;
+   double E_p, E_pi, gamma_pi, p_pi, lidcs;
+   double gamma_c, beta_c, gamma_p, p_p;
+   double E_p_cm, p_perp, p_parallel;
+   double e_max_cm, p_max_cm;
+
+   m_p2 = SQR_PROTON_REST_ENERGY;
+   m_pi2 = SQR_PIZERO_REST_ENERGY;
+
+   /* collision invariant */
+   s = TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY);
+   root_s = sqrt(s);
+
+   /* Lorentz factor for center of momentum system */
+   gamma_c = root_s / TWO_PROTON_REST_ENERGY;
+   beta_c = BETA(gamma_c);
+
+   /* Lab frame proton energy/momentum */
+   E_p = T_p + PROTON_REST_ENERGY;
+   gamma_p = E_p / PROTON_REST_ENERGY;
+   p_p = E_p * BETA(gamma_p);
+
+   /* Lab frame pion energy/momentum */
+   E_pi = T_pi + PIZERO_REST_ENERGY;
+   gamma_pi = E_pi / PIZERO_REST_ENERGY;
+   p_pi = E_pi * BETA(gamma_pi);
+
+   /* CM frame proton energy */
+   E_p_cm = gamma_c * (E_p - beta_c * p_p);
+
+   /* CM frame pion momentum components */
+   p_perp = p_pi * sqrt (1.0 - mu*mu);
+   p_parallel = gamma_c * (p_pi * mu - beta_c * E_pi);
+
+   /* Max CM frame pion momentum */
+   e_max_cm = (s + PIZERO_MASS_FACTOR) / (2*root_s);
+   p_max_cm = sqrt (e_max_cm * e_max_cm - m_pi2);
+
+   /* S&B cross-section parameterization */
+   yp = 1.0 + 4*m_p2/s;
+   ym = 1.0 - 4*m_p2/s;
+   f = (1.0 + 23.0 / pow(E_p_cm, 2.6)) * (ym*ym);
+   q = (6.1 + p_perp * (-3.3 + 0.6 * p_perp)) / sqrt(yp);
+
+   xx_cm = p_parallel / p_max_cm;
+   xbar = sqrt (xx_cm * xx_cm + (4.0/s)*(p_perp*p_perp + m_pi2));
+
+   lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * p_perp/yp);
+
+   return lidcs;
+}
+
+/*}}}*/
+
 static double angular_integrand (double mu, void *x) /*{{{*/
 {
    Collision_Info_Type *info = (Collision_Info_Type *)x;
@@ -339,7 +318,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    Collision_Info_Type info;
    double epsabs, epsrel, abserr;
    double gamma_c, beta_c;
-   double E_pi, gamma_pi, beta_pi, p_pi, e_max_cm;
+   double E_pi, gamma_pi, p_pi, e_max_cm;
    double mu_min, mu_max;
    size_t limit;
    int status;
@@ -350,13 +329,12 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
 
    /* Lorentz factor for center of momentum system */
    gamma_c = sqrt(info.s) /TWO_PROTON_REST_ENERGY;
-   beta_c = beta_fun(gamma_c);
+   beta_c = BETA(gamma_c);
 
    /* Lab frame pion energy/momentum */
    E_pi = T_pi + PIZERO_REST_ENERGY;
    gamma_pi = E_pi / PIZERO_REST_ENERGY;
-   beta_pi = beta_fun (gamma_pi);
-   p_pi = E_pi * beta_pi;
+   p_pi = E_pi * BETA (gamma_pi);
 
    /* Max CM frame pion momentum */
    e_max_cm = (info.s + PIZERO_MASS_FACTOR) / (2*sqrt(info.s));
@@ -377,7 +355,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 0
+#if 1
    status = gsl_integration_qag (&f, mu_min, mu_max, epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
@@ -396,10 +374,8 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
 
-#if 0 /* FIXME */
    if (status)
      fprintf (stderr, "*** angular integral: %s\n", gsl_strerror (status));
-#endif
 
    *val *= (2*M_PI * p_pi) * (MILLIBARN/GEV);
 
@@ -452,16 +428,6 @@ static double pizero_dermer_differential_xsec (double T_p, double T_pi) /*{{{*/
 }
 
 /*}}}*/
-
-/*
- * Neutral pion production cross-sections from
- *   Blattnig et al, NASA Technical Report, NASA/TP-2000-210640
- *   Aharonian and Atoyan, 2000, A&A, 362, 937
- *
- * See also
- *   Domingo-Santamaria & Torres, 2005, astro-ph/0506240
- *   Dermer, C.D., 1986, A&A, 157, 223.
- */
 
 static double pizero_aa_total_xsec (double proton_kinetic) /*{{{*/
 {
