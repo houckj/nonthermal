@@ -55,6 +55,15 @@ typedef struct
 }
 Collision_Info_Type;
 
+static void init_collision_info (Collision_Info_Type *info, double T_p, double T_pi) /*{{{*/
+{
+   info->T_p = T_p;
+   info->T_pi = T_pi;
+   info->s = TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY);
+}
+
+/*}}}*/
+
 static double pizero_dermer_total_xsec (double proton_kinetic) /*{{{*/
 {
    double ep = proton_kinetic + PROTON_REST_ENERGY;
@@ -110,16 +119,19 @@ static int isobar_spectrum (double T_p, double T_pi, double m_d) /*{{{*/
    root_s = sqrt(s);
 
    g_c = root_s / TWO_PROTON_REST_ENERGY;
-   b_c = BETA(g_c);
-
    g_d_cm = (s + m_d2 - m_pi2) / (2*root_s * m_d);
-   b_d_cm = BETA(g_d_cm);
 
-   g_pi_i = (m_d2 + m_pi2 - m_p2) / (2 * PIZERO_REST_ENERGY * m_d);
-   b_pi_i = BETA(g_pi_i);
+   b_c = BETA(g_c);
+   b_d_cm = BETA(g_d_cm);
 
    g_d_p = g_c * g_d_cm * (1.0 + b_c * b_d_cm);
    g_d_m = g_c * g_d_cm * (1.0 - b_c * b_d_cm);
+
+   b_d_p = BETA(g_d_p);
+   b_d_m = BETA(g_d_m);
+
+   g_pi_i = (m_d2 + m_pi2 - m_p2) / (2 * PIZERO_REST_ENERGY * m_d);
+   b_pi_i = BETA(g_pi_i);
 
    a_p = g_d_p * g_pi_i * (1.0 - b_d_p * b_pi_i);
    b_p = g_d_p * g_pi_i * (1.0 + b_d_p * b_pi_i);
@@ -175,15 +187,6 @@ static double isobar_integrand (double m, void *x) /*{{{*/
    b = breit_wigner (m);
 
    return b * f;
-}
-
-/*}}}*/
-
-static void init_collision_info (Collision_Info_Type *info, double T_p, double T_pi) /*{{{*/
-{
-   info->T_p = T_p;
-   info->T_pi = T_pi;
-   info->s = TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY);
 }
 
 /*}}}*/
@@ -443,9 +446,9 @@ static double pizero_aa_total_xsec (double proton_kinetic) /*{{{*/
 
 /*}}}*/
 
-/* delta-function approximation: see Aharonian and Atoyan (2000) */
 static double delta_function_approximation (Pizero_Type *p) /*{{{*/
 {
+   /* delta-function approximation: see Aharonian and Atoyan (2000) */
    Particle_Type *protons = p->protons;
    double eproton_delta, proton_pc, proton_kinetic;
    double np, beta, sigma, v, val;
@@ -493,7 +496,7 @@ static double pizero_blattnig_differential_xsec (double proton_kinetic, double p
 
 /*}}}*/
 
-static double pizero_differential_xsec (double T_p, double T_pi)
+static double pizero_differential_xsec (double T_p, double T_pi) /*{{{*/
 {
    if (Pizero_Use_Dermer_Xsec != 0)
      return pizero_dermer_differential_xsec (T_p, T_pi);
@@ -501,10 +504,14 @@ static double pizero_differential_xsec (double T_p, double T_pi)
    return pizero_blattnig_differential_xsec (T_p, T_pi);
 }
 
-double pizero_diff_xsec (double T_p, double T_pi)
+/*}}}*/
+
+double pizero_diff_xsec (double T_p, double T_pi) /*{{{*/
 {
    return pizero_differential_xsec (T_p, T_pi);
 }
+
+/*}}}*/
 
 static double proton_integrand (double pc, void *x) /*{{{*/
 {
@@ -624,10 +631,12 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
 /*}}}*/
 
-int pizero_distribution (Pizero_Type *p, double *val)
+int pizero_distribution (Pizero_Type *p, double *val) /*{{{*/
 {
    return integral_over_proton_momenta (p, val);
 }
+
+/*}}}*/
 
 static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s) /*{{{*/
 {
