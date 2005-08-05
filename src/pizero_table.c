@@ -93,12 +93,12 @@ int pizero_spline_table (void *pt, double *x, double *y, unsigned int n) /*{{{*/
 
 /*}}}*/
 
-int pizero_interp_pizero_integral (void *p, double x, double *y) /*{{{*/
+int pizero_interp_pizero_integral (void *p, double x, double *yy) /*{{{*/
 {
    Table_Type *t = (Table_Type *)p;
-   double lgx;
+   double lgx, y;
 
-   *y = 0.0;
+   *yy = 0.0;
 
    if ((x <= 0.0) || t == NULL)
      return 0;
@@ -108,10 +108,10 @@ int pizero_interp_pizero_integral (void *p, double x, double *y) /*{{{*/
    if (lgx < t->x[0] || t->x[t->n-1] <= lgx)
      return 0;
 
-   if (-1 == gsl_spline_eval_e (t->spline, lgx, t->accel, y))
+   if (-1 == gsl_spline_eval_e (t->spline, lgx, t->accel, &y))
      return -1;
 
-   *y = pow (10.0, *y);
+   *yy = pow (10.0, y);
 
    return 0;
 }

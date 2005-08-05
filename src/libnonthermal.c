@@ -832,6 +832,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 /*}}}*/
 
+static void pizero_diff_xsec_intrin (void);
 static void pizero_distribution_intrin (void);
 
 #define D SLANG_DOUBLE_TYPE
@@ -841,6 +842,7 @@ static void pizero_distribution_intrin (void);
 static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 {
    MAKE_VARIABLE("Pizero_Approx_Min_Energy", &Pizero_Approx_Min_Energy, D, 0),
+   MAKE_VARIABLE("Pizero_Use_Dermer_Xsec", &Pizero_Use_Dermer_Xsec, I, 0),
    MAKE_VARIABLE("Pizero_Interpolate", &Pizero_Interpolate, I, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
@@ -848,6 +850,7 @@ static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
 {
    MAKE_INTRINSIC("pizero_distribution", pizero_distribution_intrin, V, 0),
+   MAKE_INTRINSIC("pizero_diff_xsec", pizero_diff_xsec_intrin, V, 0),   
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -933,6 +936,42 @@ static void pizero_distribution_intrin (void) /*{{{*/
    SLang_push_array (sl_qpi, 1);   
    SLang_free_array (sl_par);
    SLang_free_array (sl_energies);
+}
+
+/*}}}*/
+
+static void pizero_diff_xsec_intrin (void) /*{{{*/
+{
+   SLang_Array_Type *sl_tp, *sl_tpi, *sl_sig;
+   double *T_p, *T_pi, *sigma;
+   int i, n;
+
+   if (-1 == pop_2_matched_arrays (SLANG_DOUBLE_TYPE, &sl_tp, &sl_tpi))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return;
+     }
+
+   n = sl_tp->num_elements;
+
+   if (NULL == (sl_sig = SLang_create_array (SLANG_DOUBLE_TYPE, 0, NULL, &n, 1)))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return;
+     }
+
+   T_p = (double *)sl_tp->data;
+   T_pi = (double *)sl_tpi->data;
+   sigma = (double *)sl_sig->data;
+
+   for (i = 0; i < n; i++)
+     {
+        sigma[i] = pizero_diff_xsec (T_p[i], T_pi[i]);
+     }
+
+   SLang_free_array (sl_tp);
+   SLang_free_array (sl_tpi);
+   SLang_push_array (sl_sig, 1);
 }
 
 /*}}}*/
