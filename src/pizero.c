@@ -44,9 +44,6 @@ double Pizero_Approx_Min_Energy = 0.0; /* 50.0; */  /* GeV */
 #define RESONANCE_WIDTH         ((0.115 * GEV)*0.5)
 #define RESONANCE_REST_ENERGY   (1233.0 * MEV)
 
-#define H(x,a,b) (((a) <= (x)) && ((x) < (b)))
-#define BETA(g)  sqrt(((g)+1.0)*((g)-1.0))/(g)
-
 typedef struct
 {
    double T_pi;
@@ -104,54 +101,75 @@ static double pizero_dermer_total_xsec (double proton_kinetic) /*{{{*/
 
 /*}}}*/
 
-static int isobar_spectrum (double T_p, double T_pi, double m_d) /*{{{*/
+static double bta (double g) /*{{{*/
 {
-   double m_d2, m_pi2, m_p2;
-   double s, root_s, g_c, b_c, g_d_cm, b_d_cm;
-   double g_d_p, b_d_p, g_d_m, b_d_m, g_pi_i, b_pi_i, g_pi;
-   double a_p, b_p, a_m, b_m, f;
+   if (g > 1.0)
+     return sqrt((g+1.0)*(g-1.0))/g;
+   else return 0.0;
+}
 
-   m_d2 = m_d * m_d;
-   m_p2 = SQR_PROTON_REST_ENERGY;
-   m_pi2 = SQR_PIZERO_REST_ENERGY;
+/*}}}*/
 
-   s = TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY);
-   root_s = sqrt(s);
+static double gamma_fun (double g1, double g2, int sgn) /*{{{*/
+{
+   return g1 * g2 * (1.0 + sgn * bta(g1) * bta(g2));
+}
 
-   g_c = root_s / TWO_PROTON_REST_ENERGY;
-   g_d_cm = (s + m_d2 - m_pi2) / (2*root_s * m_d);
+/*}}}*/
 
-   b_c = BETA(g_c);
-   b_d_cm = BETA(g_d_cm);
-
-   g_d_p = g_c * g_d_cm * (1.0 + b_c * b_d_cm);
-   g_d_m = g_c * g_d_cm * (1.0 - b_c * b_d_cm);
-
-   b_d_p = BETA(g_d_p);
-   b_d_m = BETA(g_d_m);
-
+#define COMMON_FACTORS \
+   Collision_Info_Type *info = (Collision_Info_Type *)x; \
+   double T_pi = info->T_pi; \
+   double s = info->s; \
+   double m_d2, m_p2, m_pi2; \
+   double g_c, g_d_cm, g_pi_i, g_pi, root_s; \
+   m_d2 = m_d * m_d;  \
+   m_p2 = SQR_PROTON_REST_ENERGY; \
+   m_pi2 = SQR_PIZERO_REST_ENERGY; \
+   g_pi = 1.0 + T_pi / PIZERO_REST_ENERGY; \
+   root_s = sqrt(s); \
+   g_c = root_s / TWO_PROTON_REST_ENERGY; \
+   g_d_cm = (s + m_d2 - m_pi2) / (2*root_s * m_d); \
    g_pi_i = (m_d2 + m_pi2 - m_p2) / (2 * PIZERO_REST_ENERGY * m_d);
-   b_pi_i = BETA(g_pi_i);
 
-   a_p = g_d_p * g_pi_i * (1.0 - b_d_p * b_pi_i);
-   b_p = g_d_p * g_pi_i * (1.0 + b_d_p * b_pi_i);
+#define PLUS_COMMON \
+   double g_d_p; \
+   COMMON_FACTORS \
+   g_d_p = gamma_fun (g_c, g_d_cm, +1);
 
-   a_m = g_d_m * g_pi_i * (1.0 - b_d_m * b_pi_i);
-   b_m = g_d_m * g_pi_i * (1.0 + b_d_m * b_pi_i);
+#define MINUS_COMMON \
+   double g_d_m; \
+   COMMON_FACTORS; \
+   g_d_m = gamma_fun (g_c, g_d_cm, -1);
 
-   g_pi = 1.0 + T_pi / PIZERO_REST_ENERGY;
+static double h_plus_upper (double m_d, void *x) /*{{{*/
+{
+   PLUS_COMMON;
+   return g_pi - gamma_fun (g_d_p, g_pi_i, -1);
+}
 
-   f = 0.0;
+/*}}}*/
 
-   if (H(g_pi, a_p, b_p))
-     f += 1.0 / (2.0 * b_d_p * g_d_p * b_pi_i * g_pi_i);
+static double h_plus_lower (double m_d, void *x) /*{{{*/
+{
+   PLUS_COMMON;
+   return g_pi - gamma_fun (g_d_p, g_pi_i, +1);
+}
 
-   if (H(g_pi, a_m, b_m))
-     f += 1.0 / (2.0 * b_d_m * g_d_m * b_pi_i * g_pi_i);
+/*}}}*/
 
-   f /= 2 * PIZERO_REST_ENERGY;
+static double h_minus_upper (double m_d, void *x) /*{{{*/
+{
+   MINUS_COMMON;
+   return g_pi - gamma_fun (g_d_m, g_pi_i, -1);
+}
 
-   return f;
+/*}}}*/
+
+static double h_minus_lower (double m_d, void *x) /*{{{*/
+{
+   MINUS_COMMON;
+   return g_pi - gamma_fun (g_d_m, g_pi_i, +1);
 }
 
 /*}}}*/
@@ -160,6 +178,30 @@ static double breit_wigner (double m_d) /*{{{*/
 {
    double dm = m_d - RESONANCE_REST_ENERGY;
    return 1.0 / (dm*dm + RESONANCE_WIDTH*RESONANCE_WIDTH);
+}
+
+/*}}}*/
+
+static double minus_isobar_integrand (double m_d, void *x) /*{{{*/
+{
+   double d;
+   MINUS_COMMON;
+   d = 2.0 * bta(g_d_m) * g_d_m * bta(g_pi_i) * g_pi_i;
+   if (d > 0.0)
+     return breit_wigner (m_d) / d;
+   else return 0.0;
+}
+
+/*}}}*/
+
+static double plus_isobar_integrand (double m_d, void *x) /*{{{*/
+{
+   double d;
+   PLUS_COMMON;
+   d = 2.0 * bta(g_d_p) * g_d_p * bta(g_pi_i) * g_pi_i;
+   if (d > 0.0)
+     return breit_wigner (m_d) / d;
+   else return 0.0;
 }
 
 /*}}}*/
@@ -178,56 +220,29 @@ static double bw_norm (double T_p) /*{{{*/
 
 /*}}}*/
 
-static double isobar_integrand (double m, void *x) /*{{{*/
-{
-   Collision_Info_Type *info = (Collision_Info_Type *)x;
-   double f, b;
-
-   f = isobar_spectrum (info->T_p, info->T_pi, m);
-   b = breit_wigner (m);
-
-   return b * f;
-}
-
-/*}}}*/
-
-static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
+static int do_isobar_integral (gsl_function *f, double min, double max, double *val) /*{{{*/
 {
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
-   gsl_function f;
-   Collision_Info_Type info;
-   double epsabs, epsrel, abserr;
-   double m_min, m_max;
-   size_t limit;
+   double epsabs = 0.0;
+   double epsrel = 1.e-9;
+   size_t limit = MAX_QAG_SUBINTERVALS;
+   double abserr;
    int status;
-
-   *val = 0.0;
-
-   init_collision_info (&info, T_p, T_pi);
-
-   m_min = PROTON_REST_ENERGY + PIZERO_REST_ENERGY;
-   m_max = sqrt(info.s) - PROTON_REST_ENERGY;
-
-   f.function = &isobar_integrand;
-   f.params = &info;
-   epsabs = 0.0;
-   epsrel = 1.e-9;
-   limit = MAX_QAG_SUBINTERVALS;
 
    if (NULL == (work = gsl_integration_workspace_alloc (limit)))
      return -1;
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 1
-   status = gsl_integration_qag (&f, m_min, m_max, epsabs, epsrel, limit,
+#if 0
+   status = gsl_integration_qag (f, min, max, epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
 #else
      {
         size_t neval;
-        status = gsl_integration_qng (&f, m_min, m_max, epsabs, epsrel, val, &abserr,
+        status = gsl_integration_qng (f, min, max, epsabs, epsrel, val, &abserr,
                                       &neval);
      }
 #endif
@@ -242,7 +257,58 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
    if (status)
      fprintf (stderr, "*** isobar integral: %s\n", gsl_strerror (status));
 
-   *val *= bw_norm (T_p);
+   return status;
+}
+
+/*}}}*/
+
+static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
+{
+   gsl_function f;
+   Collision_Info_Type info;
+   double m_min, m_max;
+   double minus_lower, minus_upper, minus_val;
+   double plus_lower, plus_upper, plus_val;
+
+   *val = 0.0;
+
+   init_collision_info (&info, T_p, T_pi);
+   f.params = &info;
+
+   m_min = PROTON_REST_ENERGY + PIZERO_REST_ENERGY;
+   m_max = sqrt(info.s) - PROTON_REST_ENERGY;
+
+   if ((0 == bisection (&h_minus_lower, m_min, m_max, &info, &minus_lower))
+       && (0 == bisection (&h_minus_upper, m_min, m_max, &info, &minus_upper)))
+     {
+        f.function = &minus_isobar_integrand;
+        if (-1 == do_isobar_integral (&f, minus_lower, minus_upper, &minus_val))
+          return -1;
+     }
+   else
+     {
+#if 0
+        fprintf (stderr, "*** minus_isobar -- failed finding integral limits\n");
+#endif
+        minus_val = 0.0;
+     }
+
+   if ((0 == bisection (&h_plus_lower, m_min, m_max, &info, &plus_lower))
+       && (0 == bisection (&h_plus_upper, m_min, m_max, &info, &plus_upper)))
+     {
+        f.function = &plus_isobar_integrand;
+        if (-1 == do_isobar_integral (&f, plus_lower, plus_upper, &plus_val))
+          return -1;
+     }
+   else
+     {
+#if 0
+        fprintf (stderr, "*** plus_isobar -- failed finding integral limits\n");
+#endif
+        plus_val = 0.0;
+     }
+
+   *val = (minus_val + plus_val) * bw_norm (T_p) /(2 * PIZERO_REST_ENERGY);
 
    return 0;
 }
@@ -251,11 +317,13 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
 
 static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*/
 {
+   /* lidcs = Lorentz invariant differential cross-section */
+
    double m_p2, m_pi2, s, root_s, yp, ym, f, q, xx_cm, xbar;
    double E_p, E_pi, gamma_pi, p_pi, lidcs;
    double gamma_c, beta_c, gamma_p, p_p;
    double E_p_cm, p_perp, p_parallel;
-   double e_max_cm, p_max_cm;
+   double e_max_cm, p_max_cm, xp_perp;
 
    m_p2 = SQR_PROTON_REST_ENERGY;
    m_pi2 = SQR_PIZERO_REST_ENERGY;
@@ -266,17 +334,17 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
 
    /* Lorentz factor for center of momentum system */
    gamma_c = root_s / TWO_PROTON_REST_ENERGY;
-   beta_c = BETA(gamma_c);
+   beta_c = bta(gamma_c);
 
    /* Lab frame proton energy/momentum */
    E_p = T_p + PROTON_REST_ENERGY;
    gamma_p = E_p / PROTON_REST_ENERGY;
-   p_p = E_p * BETA(gamma_p);
+   p_p = E_p * bta(gamma_p);
 
    /* Lab frame pion energy/momentum */
    E_pi = T_pi + PIZERO_REST_ENERGY;
    gamma_pi = E_pi / PIZERO_REST_ENERGY;
-   p_pi = E_pi * BETA(gamma_pi);
+   p_pi = E_pi * bta(gamma_pi);
 
    /* CM frame proton energy */
    E_p_cm = gamma_c * (E_p - beta_c * p_p);
@@ -289,16 +357,17 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    e_max_cm = (s + PIZERO_MASS_FACTOR) / (2*root_s);
    p_max_cm = sqrt (e_max_cm * e_max_cm - m_pi2);
 
-   /* S&B cross-section parameterization */
+   /* S&B's dumb-ass cross-section parameterization */
    yp = 1.0 + 4*m_p2/s;
    ym = 1.0 - 4*m_p2/s;
-   f = (1.0 + 23.0 / pow(E_p_cm, 2.6)) * (ym*ym);
-   q = (6.1 + p_perp * (-3.3 + 0.6 * p_perp)) / sqrt(yp);
+   f = (1.0 + 23.0 / pow(E_p_cm/GEV, 2.6)) * (ym*ym);
+   xp_perp = p_perp / GEV;
+   q = (6.1 + xp_perp * (-3.3 + 0.6 * xp_perp)) / sqrt(yp);
 
    xx_cm = p_parallel / p_max_cm;
    xbar = sqrt (xx_cm * xx_cm + (4.0/s)*(p_perp*p_perp + m_pi2));
 
-   lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * p_perp/yp);
+   lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * xp_perp/yp);
 
    return lidcs;
 }
@@ -332,19 +401,21 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
 
    /* Lorentz factor for center of momentum system */
    gamma_c = sqrt(info.s) /TWO_PROTON_REST_ENERGY;
-   beta_c = BETA(gamma_c);
+   beta_c = bta(gamma_c);
 
    /* Lab frame pion energy/momentum */
    E_pi = T_pi + PIZERO_REST_ENERGY;
    gamma_pi = E_pi / PIZERO_REST_ENERGY;
-   p_pi = E_pi * BETA (gamma_pi);
+   p_pi = E_pi * bta (gamma_pi);
 
    /* Max CM frame pion momentum */
    e_max_cm = (info.s + PIZERO_MASS_FACTOR) / (2*sqrt(info.s));
 
    mu_max = 1.0;
    mu_min = (gamma_c * E_pi - e_max_cm) / (beta_c * gamma_c * p_pi);
-   if (mu_min < -1 || 1 <= mu_min)
+   if (mu_min < -1)
+     mu_min = -1.0;
+   else if (1 <= mu_min)
      return 0;
 
    f.function = &angular_integrand;
@@ -380,7 +451,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    if (status)
      fprintf (stderr, "*** angular integral: %s\n", gsl_strerror (status));
 
-   *val *= (2*M_PI * p_pi) * (MILLIBARN/GEV);
+   *val *= (2*M_PI * p_pi) * (MILLIBARN / GEV / GEV);
 
    return 0;
 }
@@ -393,7 +464,7 @@ static double pizero_dermer_differential_xsec (double T_p, double T_pi) /*{{{*/
    double e1=3.0, e2=7.0;
    double tp = T_p / GEV;
 
-#if 1
+#if 0
    if (T_pi <= 0.0)
      return 0.0;
    e_pizero = T_pi + PIZERO_REST_ENERGY;
