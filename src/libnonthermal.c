@@ -47,7 +47,7 @@ static int IC_Bin_Integral_Method = FAST;
 
 static int Ntb_Interpolate = 1;
 
-static int Pizero_Interpolate = 1;
+static int Pizero_Interpolate = 0;
 
 #define X_HE (0.1)
 #define X_H  (1.0 - X_HE)
