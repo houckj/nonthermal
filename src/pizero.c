@@ -61,9 +61,9 @@ static void init_collision_info (Collision_Info_Type *info, double T_p, double T
 
 /*}}}*/
 
-static double pizero_dermer_total_xsec (double proton_kinetic) /*{{{*/
+static double pizero_dermer_total_xsec (double T_p) /*{{{*/
 {
-   double ep = proton_kinetic + PROTON_REST_ENERGY;
+   double ep = T_p + PROTON_REST_ENERGY;
    double pc = sqrt (ep*ep - SQR_PROTON_REST_ENERGY);
    double s, sigma = 0.0;
 
@@ -75,7 +75,7 @@ static double pizero_dermer_total_xsec (double proton_kinetic) /*{{{*/
    else if (0.78 <= pc && pc < 0.96)
      {
         double mx2, x, eta2, eta4;
-        s = 2*PROTON_REST_ENERGY * (proton_kinetic + 2*PROTON_REST_ENERGY);
+        s = 2*PROTON_REST_ENERGY * (T_p + 2*PROTON_REST_ENERGY);
         mx2 = 4*SQR_PROTON_REST_ENERGY;
         x = s - SQR_PIZERO_REST_ENERGY - mx2;
         eta2 = ((x*x - 4*SQR_PIZERO_REST_ENERGY*mx2)
@@ -92,7 +92,7 @@ static double pizero_dermer_total_xsec (double proton_kinetic) /*{{{*/
    else if (1.e3 <= pc)
      {
         /* Mori (1997), ApJ, 478, 225 */
-        s = 2*PROTON_REST_ENERGY * (proton_kinetic + 2*PROTON_REST_ENERGY);
+        s = 2*PROTON_REST_ENERGY * (T_p + 2*PROTON_REST_ENERGY);
         sigma = 163.0 * pow(s/1876.0, 0.21);
      }
 
@@ -505,13 +505,13 @@ static double pizero_dermer_differential_xsec (double T_p, double T_pi) /*{{{*/
 
 /*}}}*/
 
-static double pizero_aa_total_xsec (double proton_kinetic) /*{{{*/
+static double pizero_aa_total_xsec (double T_p) /*{{{*/
 {
    double sigma;
 
    /* Aharonian and Atoyan (2000) */
-   if (proton_kinetic > GEV)
-     sigma = 30.0 * (0.95 + 0.06 * log (proton_kinetic/GEV));
+   if (T_p > GEV)
+     sigma = 30.0 * (0.95 + 0.06 * log (T_p/GEV));
    else return 0.0;
 
    return sigma * MILLIBARN;
@@ -523,7 +523,7 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
 {
    /* delta-function approximation: see Aharonian and Atoyan (2000) */
    Particle_Type *protons = p->protons;
-   double eproton_delta, proton_pc, proton_kinetic;
+   double eproton_delta, proton_pc, T_p;
    double np, beta, sigma, v, val;
 
    /* kappa = mean fraction of proton kinetic energy transferred
@@ -537,8 +537,8 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
    beta = proton_pc / eproton_delta;
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   proton_kinetic = eproton_delta - PROTON_REST_ENERGY;
-   sigma = pizero_aa_total_xsec (proton_kinetic);
+   T_p = eproton_delta - PROTON_REST_ENERGY;
+   sigma = pizero_aa_total_xsec (T_p);
 
    val = np * v * sigma /kappa;
 
@@ -547,7 +547,7 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
 
 /*}}}*/
 
-static double pizero_blattnig_differential_xsec (double proton_kinetic, double pizero_kinetic) /*{{{*/
+static double pizero_blattnig_differential_xsec (double T_p, double T_pi) /*{{{*/
 {
    double a, sigma, xpi;
 
@@ -555,11 +555,11 @@ static double pizero_blattnig_differential_xsec (double proton_kinetic, double p
     * parameterization (their equation 32)
     */
 
-   proton_kinetic /= GEV;
-   pizero_kinetic /= GEV;
+   T_p /= GEV;
+   T_pi /= GEV;
 
-   xpi = pow(pizero_kinetic, 0.2);
-   a = -5.8 - 1.82/pow(proton_kinetic, 0.4) + (13.5 - 4.5/xpi)/xpi;
+   xpi = pow(T_pi, 0.2);
+   a = -5.8 - 1.82/pow(T_p, 0.4) + (13.5 - 4.5/xpi)/xpi;
 
    /* d(sigma)/dE_pizero */
    sigma = exp(a) * (MILLIBARN / GEV);
@@ -591,16 +591,16 @@ static double proton_integrand (double pc, void *x) /*{{{*/
    Pizero_Type *p = (Pizero_Type *)x;
    Particle_Type *proton = p->protons;
    double e_proton, beta, v, np, xsec;
-   double pizero_kinetic, proton_kinetic, result;
+   double T_pi, T_p, result;
 
    (void)(*proton->spectrum) (proton, pc, &np);
 
    e_proton = sqrt (pc*pc + SQR_PROTON_REST_ENERGY);
-   proton_kinetic = e_proton - PROTON_REST_ENERGY;
-   pizero_kinetic = p->energy - PIZERO_REST_ENERGY;
+   T_p = e_proton - PROTON_REST_ENERGY;
+   T_pi = p->energy - PIZERO_REST_ENERGY;
 
    /* cross-section per unit proton energy */
-   xsec = pizero_differential_xsec (proton_kinetic, pizero_kinetic);
+   xsec = pizero_differential_xsec (T_p, T_pi);
 
    beta = pc / e_proton;
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
