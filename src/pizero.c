@@ -370,6 +370,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    xbar = sqrt (xx_cm * xx_cm + (4.0/s)*(p_perp*p_perp + m_pi2));
 
    lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * xp_perp/yp);
+   lidcs *= (MILLIBARN / GEV / GEV);
 
    return lidcs;
 }
@@ -453,7 +454,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    if (status)
      fprintf (stderr, "*** angular integral: %s\n", gsl_strerror (status));
 
-   *val *= (2*M_PI * p_pi) * (MILLIBARN / GEV / GEV);
+   *val *= (2*M_PI * p_pi);
 
    return 0;
 }
