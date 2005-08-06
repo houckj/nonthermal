@@ -653,7 +653,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    if (p->energy <= PIZERO_REST_ENERGY)
      return 0;
 
-   if ((Pizero_Use_Dermer_Xsec != 0)
+   if ((Pizero_Use_Dermer_Xsec == 0)
        && (p->energy > Pizero_Approx_Min_Energy * GEV))
      {
         *val = delta_function_approximation (p);
@@ -712,23 +712,10 @@ int pizero_distribution (Pizero_Type *p, double *val) /*{{{*/
 
 /*}}}*/
 
-static int _pizero_integrand (Pizero_Type *p, double e_pizero, double *s) /*{{{*/
+static int _pizero_distribution (Pizero_Type *p, double e_pizero, double *s) /*{{{*/
 {
-   double pc_pizero, q;
-
-   *s = 0.0;
-   if (e_pizero < PIZERO_REST_ENERGY)
-     return 0;
-
    p->energy = e_pizero;
-
-   if (-1 == integral_over_proton_momenta (p, &q))
-     return -1;
-
-   pc_pizero = sqrt (e_pizero * e_pizero - SQR_PIZERO_REST_ENERGY);
-   *s = q / pc_pizero;
-
-   return 0;
+   return integral_over_proton_momenta (p, s);
 }
 
 /*}}}*/
@@ -755,7 +742,7 @@ static int pizero_build_table (Pizero_Type *p, double epi_min, double epi_max) /
         double xx, yy;
         lg = lg_min + dlg * i;
         xx = pow(10.0, lg);
-        if (-1 == _pizero_integrand (p, xx, &yy))
+        if (-1 == _pizero_distribution (p, xx, &yy))
           {
              free(x);
              return -1;
@@ -775,17 +762,23 @@ static int pizero_build_table (Pizero_Type *p, double epi_min, double epi_max) /
 static double pizero_integrand (double e_pizero, void *x) /*{{{*/
 {
    Pizero_Type *p = (Pizero_Type *)x;
-   double s;
+   double q, s, pc_pizero;
    int status;
 
-   if (p->interpolate)
+   if (e_pizero < PIZERO_REST_ENERGY)
+     return 0.0;
+
+   if (p->interpolate && (Pizero_Approx_Min_Energy > 0.0))
      {
-        status = pizero_interp_pizero_integral (p->client_data, e_pizero, &s);
+        status = pizero_interp_pizero_distribution (p->client_data, e_pizero, &q);
      }
    else
      {
-        status = _pizero_integrand (p, e_pizero, &s);
+        status = _pizero_distribution (p, e_pizero, &q);
      }
+
+   pc_pizero = sqrt (e_pizero * e_pizero - SQR_PIZERO_REST_ENERGY);
+   s = q / pc_pizero;
 
    return status ? 0.0 : s;
 }

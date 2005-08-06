@@ -8,6 +8,6 @@
 extern void *pizero_alloc_table (unsigned int size);
 extern void pizero_free_table (void *p);
 extern int pizero_spline_table (void *p, double *x, double *y, unsigned int n);
-extern int pizero_interp_pizero_integral (void *p, double x, double *y);
+extern int pizero_interp_pizero_distribution (void *p, double x, double *y);
 
 #endif

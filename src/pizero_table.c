@@ -93,7 +93,7 @@ int pizero_spline_table (void *pt, double *x, double *y, unsigned int n) /*{{{*/
 
 /*}}}*/
 
-int pizero_interp_pizero_integral (void *p, double x, double *yy) /*{{{*/
+int pizero_interp_pizero_distribution (void *p, double x, double *yy) /*{{{*/
 {
    Table_Type *t = (Table_Type *)p;
    double lgx, y;
