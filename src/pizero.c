@@ -93,6 +93,7 @@ static double pizero_dermer_total_xsec (double T_p) /*{{{*/
      {
         /* Mori (1997), ApJ, 478, 225 */
         s = 2*PROTON_REST_ENERGY * (T_p + 2*PROTON_REST_ENERGY);
+        /* s /= GEV; */
         sigma = 163.0 * pow(s/1876.0, 0.21);
      }
 
