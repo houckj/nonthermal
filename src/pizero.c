@@ -119,15 +119,15 @@ static double gamma_fun (double g1, double g2, int sgn) /*{{{*/
 
 #define COMMON_FACTORS \
    Collision_Info_Type *info = (Collision_Info_Type *)x; \
-   double T_pi = info->T_pi; \
-   double s = info->s; \
-   double m_d2, m_p2, m_pi2; \
    double g_c, g_d_cm, g_pi_i, g_pi, root_s; \
+   double m_d2, m_p2, m_pi2, T_pi, s; \
+   T_pi = info->T_pi; \
+   s = info->s; \
+   root_s = sqrt(s); \
    m_d2 = m_d * m_d;  \
    m_p2 = SQR_PROTON_REST_ENERGY; \
    m_pi2 = SQR_PIZERO_REST_ENERGY; \
    g_pi = 1.0 + T_pi / PIZERO_REST_ENERGY; \
-   root_s = sqrt(s); \
    g_c = root_s / TWO_PROTON_REST_ENERGY; \
    g_d_cm = (s + m_d2 - m_pi2) / (2*root_s * m_d); \
    g_pi_i = (m_d2 + m_pi2 - m_p2) / (2 * PIZERO_REST_ENERGY * m_d);
@@ -285,13 +285,7 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
         if (-1 == do_isobar_integral (&f, minus_lower, minus_upper, &minus_val))
           return -1;
      }
-   else
-     {
-#if 0
-        fprintf (stderr, "*** minus_isobar -- failed finding integral limits\n");
-#endif
-        minus_val = 0.0;
-     }
+   else minus_val = 0.0;
 
    if ((0 == bisection (&h_plus_lower, m_min, m_max, &info, &plus_lower))
        && (0 == bisection (&h_plus_upper, m_min, m_max, &info, &plus_upper)))
@@ -300,13 +294,7 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
         if (-1 == do_isobar_integral (&f, plus_lower, plus_upper, &plus_val))
           return -1;
      }
-   else
-     {
-#if 0
-        fprintf (stderr, "*** plus_isobar -- failed finding integral limits\n");
-#endif
-        plus_val = 0.0;
-     }
+   else plus_val = 0.0;
 
    *val = (minus_val + plus_val) * bw_norm (T_p) /(2 * PIZERO_REST_ENERGY);
 
