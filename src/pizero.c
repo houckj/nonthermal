@@ -30,7 +30,7 @@ double Pizero_Approx_Min_Energy = 0.0; /* 50.0; */  /* GeV */
 #define TWO_PROTON_REST_ENERGY   (2 * PROTON_REST_ENERGY)
 #define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
 #define SQR_PIZERO_REST_ENERGY  (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
-#define PIZERO_MASS_FACTOR      (SQR_PIZERO_REST_ENERGY - 4*SQR_PROTON_REST_ENERGY)
+#define PIZERO_MASS_FACTOR      (4*SQR_PROTON_REST_ENERGY - SQR_PIZERO_REST_ENERGY)
 #define SQR_PIZERO_MASS_FACTOR  (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
 
 /* Placing MIN_PHOTON_ENERGY just above the threshold
@@ -311,7 +311,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    double E_p, E_pi, gamma_pi, p_pi, lidcs;
    double gamma_c, beta_c, gamma_p, p_p;
    double E_p_cm, p_perp, p_parallel;
-   double e_max_cm, p_max_cm, xp_perp;
+   double e_max_cm, p_max_cm, p_perp_gev;
 
    /* FIXME:  potential loss of accuracy as beta->1 and/or beta->0 */
 
@@ -344,21 +344,21 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    p_parallel = gamma_c * (p_pi * mu - beta_c * E_pi);
 
    /* Max CM frame pion momentum */
-   e_max_cm = (s + PIZERO_MASS_FACTOR) / (2*root_s);
+   e_max_cm = 0.5*(root_s - PIZERO_MASS_FACTOR / root_s);
    p_max_cm = sqrt (e_max_cm * e_max_cm - m_pi2);
 
    /* S&B's cross-section parameterization */
    yp = 1.0 + 4*m_p2/s;
    ym = 1.0 - 4*m_p2/s;
    f = (1.0 + 23.0 / pow(E_p_cm/GEV, 2.6)) * (ym*ym);
-   xp_perp = p_perp / GEV;
-   q = (6.1 + xp_perp * (-3.3 + 0.6 * xp_perp)) / sqrt(yp);
+   p_perp_gev = p_perp / GEV;
+   q = (6.1 + p_perp_gev * (-3.3 + 0.6 * p_perp_gev)) / sqrt(yp);
 
    xx_cm = p_parallel / p_max_cm;
    xbar = sqrt (xx_cm * xx_cm + (4.0/s)*(p_perp*p_perp + m_pi2));
 
-   lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * xp_perp/yp);
-   lidcs *= (MILLIBARN / GEV / GEV);
+   lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * p_perp_gev/yp);
+   lidcs *= MILLIBARN / GEV / GEV;
 
    return lidcs;
 }
@@ -381,7 +381,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    Collision_Info_Type info;
    double epsabs, epsrel, abserr;
    double gamma_c, beta_c;
-   double E_pi, gamma_pi, p_pi, e_max_cm;
+   double E_pi, gamma_pi, p_pi, e_max_cm, root_s;
    double mu_min, mu_max;
    size_t limit;
    int status;
@@ -389,9 +389,10 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    *val = 0.0;
 
    init_collision_info (&info, T_p, T_pi);
+   root_s = sqrt(info.s);
 
    /* Lorentz factor for center of momentum system */
-   gamma_c = sqrt(info.s) /TWO_PROTON_REST_ENERGY;
+   gamma_c = root_s /TWO_PROTON_REST_ENERGY;
    beta_c = bta(gamma_c);
 
    /* Lab frame pion energy/momentum */
@@ -400,7 +401,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    p_pi = E_pi * bta (gamma_pi);
 
    /* Max CM frame pion momentum */
-   e_max_cm = (info.s + PIZERO_MASS_FACTOR) / (2*sqrt(info.s));
+   e_max_cm = 0.5 * (root_s - PIZERO_MASS_FACTOR / root_s);
 
    mu_max = 1.0;
    mu_min = (gamma_c * E_pi - e_max_cm) / (beta_c * gamma_c * p_pi);
@@ -784,7 +785,7 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
    root_s = sqrt (2*PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max));
 
    /* CM frame energy:  See Blattnig et al (2000), Appendix A */
-   e_pizero_cm = 0.5 * (root_s + PIZERO_MASS_FACTOR / root_s);
+   e_pizero_cm = 0.5 * (root_s - PIZERO_MASS_FACTOR / root_s);
 
    /* lab frame max energy */
    gamma_cm = sqrt (0.5*(ep_max/PROTON_REST_ENERGY + 1));
