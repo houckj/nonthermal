@@ -519,7 +519,11 @@ static double delta_function_approximation (Pizero_Type *p) /*{{{*/
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    T_p = eproton_delta - PROTON_REST_ENERGY;
+#if 1
    sigma = pizero_aa_total_xsec (T_p);
+#else
+   sigma = pizero_dermer_total_xsec (T_p);
+#endif   
 
    val = np * v * sigma /kappa;
 
