@@ -768,7 +768,7 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
    if (e_pizero < PIZERO_REST_ENERGY)
      return 0.0;
 
-   if (p->interpolate && (Pizero_Approx_Min_Energy > 0.0))
+   if ((p->interpolate == 2) && (Pizero_Approx_Min_Energy > 0.0))
      {
         status = pizero_interp_pizero_distribution (p->client_data, e_pizero, &q);
      }
