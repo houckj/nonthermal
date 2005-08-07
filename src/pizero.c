@@ -467,15 +467,6 @@ static double pizero_dermer_differential_xsec (double T_p, double T_pi) /*{{{*/
    double e1=3.0, e2=7.0;
    double tp = T_p / GEV;
 
-#if 0
-   if (T_pi <= 0.0)
-     return 0.0;
-   e_pizero = T_pi + PIZERO_REST_ENERGY;
-   Tp_thresh = 2*e_pizero + 0.5*SQR_PIZERO_REST_ENERGY / PROTON_REST_ENERGY;
-   if (T_p < Tp_thresh)
-     return 0.0;
-#endif
-
    if (tp < e2)
      {
         if (-1 == isobar_integral (T_p, T_pi, &xsec_isobar))
