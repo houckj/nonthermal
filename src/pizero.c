@@ -24,7 +24,7 @@
 #include "pizero.h"
 #include "pizero_table.h"
 
-int Pizero_Model = 0;
+int Pizero_Method = 0;
 
 #define TWO_PROTON_REST_ENERGY   (2 * PROTON_REST_ENERGY)
 #define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
@@ -488,14 +488,13 @@ static double pizero_dermer_differential_xsec (double T_p, double T_pi) /*{{{*/
 
 static double pizero_aa_total_xsec (double T_p) /*{{{*/
 {
-   double sigma;
+   double sigma = 0.0;
 
    /* Aharonian and Atoyan (2000) */
    if (T_p > GEV)
-     sigma = 30.0 * (0.95 + 0.06 * log (T_p/GEV));
-   else return 0.0;
+     sigma = MILLIBARN * 30.0 * (0.95 + 0.06 * log (T_p/GEV));
 
-   return sigma * MILLIBARN;
+   return sigma;
 }
 
 /*}}}*/
@@ -538,12 +537,14 @@ static double pizero_blattnig_differential_xsec (double T_p, double T_pi) /*{{{*
 
    /* Blattnig, et al, 2000 Lab-frame differential cross-section
     * parameterization (their equation 32)
-    *
-    * applicable for 0.3 <= T_p <= 50 GeV
     */
 
    T_p /= GEV;
    T_pi /= GEV;
+
+   /* Cross-sections apply only for 0.3 <= T_p <= 50 GeV */
+   if (T_p < 0.3 || T_p > 50.0)
+     return 0.0;
 
    xpi = pow(T_pi, 0.2);
    a = -5.8 - 1.82/pow(T_p, 0.4) + (13.5 - 4.5/xpi)/xpi;
@@ -558,10 +559,10 @@ static double pizero_blattnig_differential_xsec (double T_p, double T_pi) /*{{{*
 
 double pizero_differential_xsec (double T_p, double T_pi) /*{{{*/
 {
-   if (Pizero_Model == 1)
-     return pizero_blattnig_differential_xsec (T_p, T_pi);
+   if (Pizero_Method == 2)
+     return pizero_dermer_differential_xsec (T_p, T_pi);
 
-   return pizero_dermer_differential_xsec (T_p, T_pi);
+   return pizero_blattnig_differential_xsec (T_p, T_pi);
 }
 
 /*}}}*/
@@ -679,18 +680,10 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
 
 int pizero_distribution (Pizero_Type *p, double *val) /*{{{*/
 {
-   if (Pizero_Model == 0)
-     return delta_function_approximation (p, val);
+   if (Pizero_Method != 0)
+     return integral_over_proton_momenta (p, val);
 
-   return integral_over_proton_momenta (p, val);
-}
-
-/*}}}*/
-
-static int _pizero_distribution (Pizero_Type *p, double e_pizero, double *s) /*{{{*/
-{
-   p->energy = e_pizero;
-   return pizero_distribution (p, s);
+   return delta_function_approximation (p, val);
 }
 
 /*}}}*/
@@ -717,7 +710,8 @@ static int pizero_build_table (Pizero_Type *p, double epi_min, double epi_max) /
         double xx, yy;
         lg = lg_min + dlg * i;
         xx = pow(10.0, lg);
-        if (-1 == _pizero_distribution (p, xx, &yy))
+        p->energy = xx;
+        if (-1 == integral_over_proton_momenta(p, &yy))
           {
              free(x);
              return -1;
@@ -749,7 +743,8 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
      }
    else
      {
-        status = _pizero_distribution (p, e_pizero, &q);
+        p->energy = e_pizero;
+        status = pizero_distribution (p, &q);
      }
 
    pc_pizero = sqrt (e_pizero * e_pizero - SQR_PIZERO_REST_ENERGY);

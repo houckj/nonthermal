@@ -841,7 +841,7 @@ static void pizero_distribution_intrin (void);
 
 static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 {
-   MAKE_VARIABLE("Pizero_Model", &Pizero_Model, I, 0),
+   MAKE_VARIABLE("Pizero_Method", &Pizero_Method, I, 0),
    MAKE_VARIABLE("Pizero_Interpolate", &Pizero_Interpolate, I, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
@@ -875,9 +875,9 @@ static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{
    proton->curvature = par[2];
    proton->cutoff_energy = par[3];
    proton->mass = GSL_CONST_CGSM_MASS_PROTON;
-
+   
    p->protons = proton;
-   p->interpolate = Pizero_Interpolate;
+   p->interpolate = Pizero_Method ? Pizero_Interpolate : 0;
    p->client_data = pizero_alloc_table (PIZERO_TABLE_SIZE);
 }
 

@@ -12,7 +12,7 @@ Pizero_Type;
 
 #define NULL_PIZERO_TYPE {NULL,0.0, 0,NULL}
 
-extern int Pizero_Model;
+extern int Pizero_Method;
 
 extern int pizero_decay (void *p, double photon_energy, double *emissivity);
 extern int pizero_distribution (Pizero_Type *p, double *val);
