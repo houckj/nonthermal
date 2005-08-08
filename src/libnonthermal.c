@@ -841,8 +841,7 @@ static void pizero_distribution_intrin (void);
 
 static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 {
-   MAKE_VARIABLE("Pizero_Approx_Min_Energy", &Pizero_Approx_Min_Energy, D, 0),
-   MAKE_VARIABLE("Pizero_Use_Dermer_Xsec", &Pizero_Use_Dermer_Xsec, I, 0),
+   MAKE_VARIABLE("Pizero_Model", &Pizero_Model, I, 0),
    MAKE_VARIABLE("Pizero_Interpolate", &Pizero_Interpolate, I, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
@@ -966,7 +965,7 @@ static void pizero_diff_xsec_intrin (void) /*{{{*/
 
    for (i = 0; i < n; i++)
      {
-        sigma[i] = pizero_diff_xsec (T_p[i], T_pi[i]);
+        sigma[i] = pizero_differential_xsec (T_p[i], T_pi[i]);
      }
 
    SLang_free_array (sl_tp);
