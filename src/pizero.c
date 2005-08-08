@@ -338,11 +338,11 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    p_pi = E_pi * bta(gamma_pi);
 
    /* CM frame proton energy */
-   E_p_cm = gamma_c * (E_p - beta_c * p_p);
+   E_p_cm = gamma_c * E_p * (1.0 - beta_c * bta(gamma_p));
 
    /* CM frame pion momentum components */
    p_perp = p_pi * sqrt (1.0 - mu*mu);
-   p_parallel = gamma_c * (p_pi * mu - beta_c * E_pi);
+   p_parallel = gamma_c * E_pi * (bta(gamma_pi) * mu - beta_c);
 
    /* Max CM frame pion momentum */
    e_max_cm = 0.5*(root_s - PIZERO_MASS_FACTOR / root_s);
