@@ -930,7 +930,9 @@ static void pizero_distribution_intrin (void) /*{{{*/
         p.energy = energies[i] * GSL_CONST_CGSM_ELECTRON_VOLT;
         if (-1 == pizero_distribution (&p, &qpi[i]))
           qpi[i] = 0.0;
-     }   
+     }
+
+   pizero_free_table (p.client_data);   
    
    SLang_push_array (sl_qpi, 1);   
    SLang_free_array (sl_par);
