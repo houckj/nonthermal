@@ -5,6 +5,20 @@
 #include <gsl/gsl_const_num.h>
 #include <gsl/gsl_math.h>
 
+#include <math.h>
+
+#ifndef isequal
+#define isequal(x,b)  (fabs((x)-(b)) < DBL_EPSILON * ((x)+(b)))
+#endif
+
+#ifndef islessequal
+#define islessequal(x,b)  (((x)<(b)) || isequal(x,b))
+#endif
+
+#ifndef isgreaterequal
+#define isgreaterequal(x,b)  (((x)>(b)) || isequal(x,b))
+#endif
+
 #define MAX_QAG_SUBINTERVALS  (1<<18)
 
 #define CBR_TEMPERATURE 2.725         /* Kelvin */
@@ -32,10 +46,10 @@
 
 /* Emissivities derived assuming gamma_electron >> 1
  * and a 1000 TeV seems like a reasonable upper limit.
- * 
+ *
  * Note that, for high B fields (B > 10 mG) electrons
- * with gamma < 100 contribute significant flux below 
- * 1 GHz.  If you're interested in that part of the 
+ * with gamma < 100 contribute significant flux below
+ * 1 GHz.  If you're interested in that part of the
  * radio spectrum more care may be required.
  * Anyway, that's the reason I'm using gamma_min=10
  * instead of gamma_min=100.
