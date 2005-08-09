@@ -1,11 +1,10 @@
-
 #include "config.h"
 #include <math.h>
 #include <stdio.h>
 
 #include "_nonthermal.h"
 
-int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp) 
+int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp)
 {
    unsigned int count = 1;
    unsigned int bisect_count = 5;
@@ -72,5 +71,4 @@ int bisection (double (*func)(double, void *), double a, double b, void *cd, dou
    *xp = x;
    return 0;
 }
-
 
