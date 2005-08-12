@@ -834,6 +834,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 static void pizero_diff_xsec_intrin (void);
 static void pizero_distribution_intrin (void);
+static double pizero_lidcs_intrin (double *T_p, double *T_pi, double *mu);
 
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
@@ -849,7 +850,8 @@ static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
 {
    MAKE_INTRINSIC("pizero_distribution", pizero_distribution_intrin, V, 0),
-   MAKE_INTRINSIC("pizero_diff_xsec", pizero_diff_xsec_intrin, V, 0),   
+   MAKE_INTRINSIC("pizero_diff_xsec", pizero_diff_xsec_intrin, V, 0),
+   MAKE_INTRINSIC_3("pizero_lidcs", pizero_lidcs_intrin, D, D, D, D),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -940,6 +942,11 @@ static void pizero_distribution_intrin (void) /*{{{*/
 }
 
 /*}}}*/
+
+static double pizero_lidcs_intrin (double *T_p, double *T_pi, double *mu)
+{
+   return pizero_lidcs (*T_p, *T_pi, *mu);
+}
 
 static void pizero_diff_xsec_intrin (void) /*{{{*/
 {

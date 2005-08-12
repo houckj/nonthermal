@@ -359,11 +359,20 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
 
    lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * p_perp_gev/yp);
    lidcs *= MILLIBARN / GEV / GEV;
+   
+   /* Check for NaN */
+   if (lidcs != lidcs)
+     lidcs = 0.0;
 
    return lidcs;
 }
 
 /*}}}*/
+
+double pizero_lidcs (double T_p, double T_pi, double mu)
+{
+   return lidcs_stephens_badhwar (T_p, T_pi, mu);
+}
 
 static double angular_integrand (double mu, void *x) /*{{{*/
 {
