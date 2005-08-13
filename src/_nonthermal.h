@@ -7,6 +7,10 @@
 
 #include <math.h>
 
+#ifndef isnan
+#define isnan(a)  ((a)!=(a))
+#endif
+
 #ifndef isequal
 #define isequal(x,b)  (fabs((x)-(b)) < DBL_EPSILON * fabs((x)+(b)))
 #endif

@@ -247,8 +247,7 @@ static int do_isobar_integral (gsl_function *f, double min, double max, double *
      }
 #endif
 
-   /* Check for NaN */
-   if (*val != *val)
+   if (isnan(*val))
      *val = 0.0;
 
    gsl_set_error_handler (gsl_error_handler);
@@ -399,8 +398,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
    lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * p_perp_gev/yp);
    lidcs *= MILLIBARN / GEV / GEV;
 
-   /* Check for NaN */
-   if (lidcs != lidcs)
+   if (isnan(lidcs))
      lidcs = 0.0;
 
    return lidcs;
@@ -408,10 +406,12 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
 
 /*}}}*/
 
-double pizero_lidcs (double T_p, double T_pi, double mu)
+double pizero_lidcs (double T_p, double T_pi, double mu) /*{{{*/
 {
    return lidcs_stephens_badhwar (T_p, T_pi, mu, 1.0 - mu);
 }
+
+/*}}}*/
 
 static double angular_integrand (double mu, void *x) /*{{{*/
 {
@@ -482,8 +482,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
                                       GSL_INTEG_GAUSS15,
                                       work, &v, &abserr);
 
-        /* Check for NaN */
-        if (v != v)
+        if (isnan(v))
           v = 0.0;
         delta_mu_min = EPSILON;
      }
@@ -494,8 +493,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
                                  GSL_INTEG_GAUSS15,
                                  work, &v_eps, &abserr);
 
-   /* Check for NaN */
-   if (v_eps != v_eps)
+   if (isnan(v_eps))
      v_eps = 0.0;
 
    gsl_set_error_handler (gsl_error_handler);
@@ -732,8 +730,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    if (status)
      fprintf (stderr, "*** pizero: proton integral:  %s\n", gsl_strerror (status));
 
-   /* check for NaN */
-   if (*val != *val)
+   if (isnan(*val))
      *val = 0.0;
 
    return 0;
@@ -901,8 +898,7 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    if (status)
      fprintf (stderr, "*** pizero: pizero integral: %s\n", gsl_strerror (status));
 
-   /* Check for NaN */
-   if (*val != *val)
+   if (isnan(*val))
      *val = 0.0;
 
    /* two photons per pion */
