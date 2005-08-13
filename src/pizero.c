@@ -332,6 +332,9 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
    double E_p_cm, p_perp, p_parallel;
    double e_max_cm, p_max_cm, p_perp_gev;
    double f_p_cm, f_parallel, d_c, d_p, d_pi;
+   
+   if (fabs(mu) > 1.0 || delta_mu < 0.0 || 2.0 < delta_mu)
+     return 0.0;
 
    m_p2 = SQR_PROTON_REST_ENERGY;
    m_pi2 = SQR_PIZERO_REST_ENERGY;
