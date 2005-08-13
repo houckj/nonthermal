@@ -129,7 +129,7 @@ static double gamma_fun (double g1, double g2, int sgn) /*{{{*/
    m_pi2 = SQR_PIZERO_REST_ENERGY; \
    g_pi = 1.0 + T_pi / PIZERO_REST_ENERGY; \
    g_c = root_s / TWO_PROTON_REST_ENERGY; \
-   g_d_cm = (s + m_d2 - m_pi2) / (2*root_s * m_d); \
+   g_d_cm = (s + m_d2 - m_pi2) / (2 * root_s * m_d); \
    g_pi_i = (m_d2 + m_pi2 - m_p2) / (2 * PIZERO_REST_ENERGY * m_d);
 
 #define PLUS_COMMON \
@@ -502,7 +502,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    if (status)
      fprintf (stderr, "*** angular integral: %s\n", gsl_strerror (status));
 
-   *val = (v + v_eps) * (2*M_PI * E_pi * bta (gamma_pi));
+   *val = (v + v_eps) * (2 * M_PI * E_pi * bta (gamma_pi));
 
    return 0;
 }
