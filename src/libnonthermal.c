@@ -943,10 +943,12 @@ static void pizero_distribution_intrin (void) /*{{{*/
 
 /*}}}*/
 
-static double pizero_lidcs_intrin (double *T_p, double *T_pi, double *mu)
+static double pizero_lidcs_intrin (double *T_p, double *T_pi, double *mu) /*{{{*/
 {
    return pizero_lidcs (*T_p, *T_pi, *mu);
 }
+
+/*}}}*/
 
 static void pizero_diff_xsec_intrin (void) /*{{{*/
 {
