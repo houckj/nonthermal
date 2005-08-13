@@ -303,17 +303,35 @@ static int isobar_integral (double T_p, double T_pi, double *val) /*{{{*/
 
 /*}}}*/
 
-static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*/
+/* beta = 1 - delta_beta(gamma)
+ * for gamma > GAMMA_THRESH this should give delta_beta to a precision of
+ * better than DBL_EPSILON
+ */
+#define GAMMA_THRESH 1.e3
+static double delta_beta (double gamma) /*{{{*/
+{
+   double x = 1.0 / gamma / gamma;
+   /* Derived from the series for sqrt(1 - x) */
+   return (x/2.0)
+     *(1.0 + (x/4.0)
+       *(1.0 + (3*x/6.0)
+         *(1.0 + (5*x/8.0)
+           *(1.0 + (7*x/10.0)
+             *(1.0 + (9*x/12.0))))));
+}
+
+/*}}}*/
+
+static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double delta_mu) /*{{{*/
 {
    /* lidcs = Lorentz invariant differential cross-section */
 
    double m_p2, m_pi2, s, root_s, yp, ym, f, q, xx_cm, xbar;
    double E_p, E_pi, gamma_pi, p_pi, lidcs;
-   double gamma_c, beta_c, gamma_p, p_p;
+   double gamma_c, beta_c, gamma_p, p_p, beta_p, beta_pi;
    double E_p_cm, p_perp, p_parallel;
    double e_max_cm, p_max_cm, p_perp_gev;
-
-   /* FIXME:  potential loss of accuracy as beta->1 and/or beta->0 */
+   double f_p_cm, f_parallel, d_c, d_p, d_pi;
 
    m_p2 = SQR_PROTON_REST_ENERGY;
    m_pi2 = SQR_PIZERO_REST_ENERGY;
@@ -329,19 +347,37 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
    /* Lab frame proton energy/momentum */
    E_p = T_p + PROTON_REST_ENERGY;
    gamma_p = E_p / PROTON_REST_ENERGY;
-   p_p = E_p * bta(gamma_p);
+   beta_p = bta(gamma_p);
+   p_p = E_p * beta_p;
 
    /* Lab frame pion energy/momentum */
    E_pi = T_pi + PIZERO_REST_ENERGY;
    gamma_pi = E_pi / PIZERO_REST_ENERGY;
-   p_pi = E_pi * bta(gamma_pi);
+   beta_pi = bta(gamma_pi);
+   p_pi = E_pi * beta_pi;
 
    /* CM frame proton energy */
-   E_p_cm = gamma_c * E_p * (1.0 - beta_c * bta(gamma_p));
+   if (gamma_c < GAMMA_THRESH && gamma_p < GAMMA_THRESH)
+     f_p_cm = (1.0 - beta_c * beta_p);
+   else
+     {
+        d_c = delta_beta (gamma_c);
+        d_p = delta_beta (gamma_p);
+        f_p_cm = d_c + d_p - d_c * d_p;
+     }
+   E_p_cm = gamma_c * E_p * f_p_cm;
 
    /* CM frame pion momentum components */
-   p_perp = p_pi * sqrt (1.0 - mu*mu);
-   p_parallel = gamma_c * E_pi * (bta(gamma_pi) * mu - beta_c);
+   p_perp = p_pi * sqrt ((1.0 + mu)*delta_mu);
+   if (gamma_pi < GAMMA_THRESH && gamma_c < GAMMA_THRESH)
+     f_parallel = bta(gamma_pi) * mu - bta(gamma_c);
+   else
+     {
+        d_c = delta_beta (gamma_c);
+        d_pi = delta_beta (gamma_pi);
+        f_parallel = - delta_mu - mu * d_pi + d_c;
+     }
+   p_parallel = gamma_c * E_pi * f_parallel;
 
    /* Max CM frame pion momentum */
    e_max_cm = 0.5*(root_s - PIZERO_MASS_FACTOR / root_s);
@@ -359,7 +395,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
 
    lidcs = 140.0 * f * pow (1.0 - xbar, q) * exp (-5.43 * p_perp_gev/yp);
    lidcs *= MILLIBARN / GEV / GEV;
-   
+
    /* Check for NaN */
    if (lidcs != lidcs)
      lidcs = 0.0;
@@ -371,13 +407,21 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu) /*{{{*
 
 double pizero_lidcs (double T_p, double T_pi, double mu)
 {
-   return lidcs_stephens_badhwar (T_p, T_pi, mu);
+   return lidcs_stephens_badhwar (T_p, T_pi, mu, 1.0 - mu);
 }
 
 static double angular_integrand (double mu, void *x) /*{{{*/
 {
    Collision_Info_Type *info = (Collision_Info_Type *)x;
-   return lidcs_stephens_badhwar (info->T_p, info->T_pi, mu);
+   return lidcs_stephens_badhwar (info->T_p, info->T_pi, mu, 1.0 - mu);
+}
+
+/*}}}*/
+
+static double delta_mu_angular_integrand (double delta_mu, void *x) /*{{{*/
+{
+   Collision_Info_Type *info = (Collision_Info_Type *)x;
+   return lidcs_stephens_badhwar (info->T_p, info->T_pi, 1.0-delta_mu, delta_mu);
 }
 
 /*}}}*/
@@ -389,9 +433,8 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    gsl_function f;
    Collision_Info_Type info;
    double epsabs, epsrel, abserr;
-   double gamma_c, beta_c;
-   double E_pi, gamma_pi, p_pi, e_max_cm, root_s;
-   double mu_min, mu_max;
+   double gamma_c, E_pi, gamma_pi, e_max_cm, root_s;
+   double mu_min, mu_max, v, v_eps, delta_mu_min;
    size_t limit;
    int status;
 
@@ -402,22 +445,21 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
 
    /* Lorentz factor for center of momentum system */
    gamma_c = root_s /TWO_PROTON_REST_ENERGY;
-   beta_c = bta(gamma_c);
 
    /* Lab frame pion energy/momentum */
    E_pi = T_pi + PIZERO_REST_ENERGY;
    gamma_pi = E_pi / PIZERO_REST_ENERGY;
-   p_pi = E_pi * bta (gamma_pi);
 
    /* Max CM frame pion momentum */
    e_max_cm = 0.5 * (root_s - PIZERO_MASS_FACTOR / root_s);
 
    mu_max = 1.0;
-   mu_min = (gamma_c * E_pi - e_max_cm) / (beta_c * gamma_c * p_pi);
+   mu_min = (1.0 - e_max_cm/(gamma_c * E_pi)) / (bta(gamma_c) * bta(gamma_pi));
    if (mu_min < -1)
      mu_min = -1.0;
    else if (1 <= mu_min)
      return 0;
+   delta_mu_min = 1.0 - mu_min;
 
    f.function = &angular_integrand;
    f.params = &info;
@@ -430,21 +472,28 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 1
-   status = gsl_integration_qag (&f, mu_min, mu_max, epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS15,
-                                 work, val, &abserr);
-#else
+#define EPSILON  1.e-3
+   if (mu_min < mu_max-EPSILON)
      {
-        size_t neval;
-        status = gsl_integration_qng (&f, mu_min, mu_max, epsabs, epsrel, val, &abserr,
-                                      &neval);
+        status = gsl_integration_qag (&f, mu_min, mu_max-EPSILON, epsabs, epsrel, limit,
+                                      GSL_INTEG_GAUSS15,
+                                      work, &v, &abserr);
+
+        /* Check for NaN */
+        if (v != v)
+          v = 0.0;
+        delta_mu_min = EPSILON;
      }
-#endif
+   else v = 0.0;
+
+   f.function = &delta_mu_angular_integrand;
+   status = gsl_integration_qag (&f, 0.0, delta_mu_min, epsabs, epsrel, limit,
+                                 GSL_INTEG_GAUSS15,
+                                 work, &v_eps, &abserr);
 
    /* Check for NaN */
-   if (*val != *val)
-     *val = 0.0;
+   if (v_eps != v_eps)
+     v_eps = 0.0;
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
@@ -452,7 +501,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    if (status)
      fprintf (stderr, "*** angular integral: %s\n", gsl_strerror (status));
 
-   *val *= (2*M_PI * p_pi);
+   *val = (v + v_eps) * (2*M_PI * E_pi * bta (gamma_pi));
 
    return 0;
 }
