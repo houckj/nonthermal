@@ -235,18 +235,9 @@ static int do_isobar_integral (gsl_function *f, double min, double max, double *
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 0
    status = gsl_integration_qag (f, min, max, epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
-#else
-     {
-        size_t neval;
-        status = gsl_integration_qng (f, min, max, epsabs, epsrel, val, &abserr,
-                                      &neval);
-     }
-#endif
-
    if (isnan(*val))
      *val = 0.0;
 
