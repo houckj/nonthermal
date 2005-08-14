@@ -319,7 +319,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
    double m_p2, m_pi2, s, root_s, yp, ym, f, q, xx_cm, xbar;
    double E_p, E_pi, gamma_pi, p_pi, lidcs;
    double gamma_c, beta_c, gamma_p, p_p, beta_p, beta_pi;
-   double E_p_cm, p_perp, p_parallel;
+   double /* E_p_cm, */ p_perp, p_parallel;
    double e_max_cm, p_max_cm, p_perp_gev;
    double f_p_cm, f_parallel, d_c, d_p, d_pi;
 
@@ -349,6 +349,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
    beta_pi = bta(gamma_pi);
    p_pi = E_pi * beta_pi;
 
+#if 0   
    /* CM frame proton energy */
    if (gamma_c < GAMMA_THRESH && gamma_p < GAMMA_THRESH)
      f_p_cm = (1.0 - beta_c * beta_p);
@@ -359,6 +360,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
         f_p_cm = d_c + d_p - d_c * d_p;
      }
    E_p_cm = gamma_c * E_p * f_p_cm;
+#endif   
 
    /* CM frame pion momentum components */
    p_perp = p_pi * sqrt ((1.0 + mu)*delta_mu);
@@ -379,7 +381,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
    /* S&B's cross-section parameterization */
    yp = 1.0 + 4*m_p2/s;
    ym = 1.0 - 4*m_p2/s;
-   f = (1.0 + 23.0 / pow(E_p_cm/GEV, 2.6)) * (ym*ym);
+   f = (1.0 + 23.0 / pow(T_p/GEV, 2.6)) * (ym*ym);
    p_perp_gev = p_perp / GEV;
    q = (6.1 + p_perp_gev * (-3.3 + 0.6 * p_perp_gev)) / sqrt(yp);
 
