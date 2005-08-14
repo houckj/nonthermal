@@ -241,7 +241,7 @@ static int do_isobar_integral (gsl_function *f, double min, double max, double *
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
 
-   if (status)
+   if (status > 0 && status != GSL_EROUND)
      fprintf (stderr, "*** isobar integral: %s\n", gsl_strerror (status));
 
    return status;
@@ -491,7 +491,7 @@ static int angular_integral (double T_p, double T_pi, double *val) /*{{{*/
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
 
-   if (status)
+   if (status > 0 && status != GSL_EROUND)
      fprintf (stderr, "*** angular integral: %s\n", gsl_strerror (status));
 
    *val = (v + v_eps) * (2 * M_PI * E_pi * bta (gamma_pi));
@@ -719,7 +719,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
 
-   if (status)
+   if (status > 0 && status != GSL_EROUND)
      fprintf (stderr, "*** pizero: proton integral:  %s\n", gsl_strerror (status));
 
    if (isnan(*val))
@@ -887,7 +887,7 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
 
-   if (status)
+   if (status > 0 && status != GSL_EROUND)
      fprintf (stderr, "*** pizero: pizero integral: %s\n", gsl_strerror (status));
 
    if (isnan(*val))
