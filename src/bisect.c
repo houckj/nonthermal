@@ -4,6 +4,9 @@
 
 #include "_nonthermal.h"
 
+#define OUTSIDE(x,a,b) (((x) < (a)) || ((b) < (x)) \
+                           || ((x) == nextafter((a),(b))) || ((x) == nextafter((b),(a))))
+
 int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp)
 {
    unsigned int count = 1;
@@ -44,13 +47,13 @@ int bisection (double (*func)(double, void *), double a, double b, void *cd, dou
         if (count % bisect_count)
           {
              x = (a*fb - b*fa) / (fb - fa);
-             if ((x < a) || (b < x) || (x == nextafter(a,b)))
+             if (OUTSIDE(x,a,b))
                x = 0.5 * (a + b);
           }
         else
           x = 0.5 * (a + b);
 
-        if ((x < a) || (b < x) || (x == nextafter(a,b)))
+        if (OUTSIDE(x,a,b))
           break;
 
         fx = (*func)(x, cd);
