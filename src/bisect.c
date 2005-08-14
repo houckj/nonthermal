@@ -44,13 +44,13 @@ int bisection (double (*func)(double, void *), double a, double b, void *cd, dou
         if (count % bisect_count)
           {
              x = (a*fb - b*fa) / (fb - fa);
-             if (islessequal(x,a) || isgreaterequal(x,b))
+             if ((x < a) || (b < x) || (x == nextafter(a,b)))
                x = 0.5 * (a + b);
           }
         else
           x = 0.5 * (a + b);
 
-        if (islessequal(x,a) || isgreaterequal(x,b))
+        if ((x < a) || (b < x) || (x == nextafter(a,b)))
           break;
 
         fx = (*func)(x, cd);

@@ -11,18 +11,6 @@
 #define isnan(a)  ((a)!=(a))
 #endif
 
-#ifndef isequal
-#define isequal(x,b)  (fabs((x)-(b)) < DBL_EPSILON * fabs((x)+(b)))
-#endif
-
-#ifndef islessequal
-#define islessequal(x,b)  (((x)<(b)) || isequal(x,b))
-#endif
-
-#ifndef isgreaterequal
-#define isgreaterequal(x,b)  (((x)>(b)) || isequal(x,b))
-#endif
-
 #define MAX_QAG_SUBINTERVALS  (1<<18)
 
 #define CBR_TEMPERATURE 2.725         /* Kelvin */
