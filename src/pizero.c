@@ -76,9 +76,9 @@ static double pizero_dermer_total_xsec (double T_p) /*{{{*/
    else if (0.78 <= pc && pc < 0.96)
      {
         double x, eta2, eta4, tem;
-        s = 2*PROTON_REST_ENERGY * (T_p + 2*PROTON_REST_ENERGY);
-        x = 2*PROTON_REST_ENERGY * T_p - SQR_PIZERO_REST_ENERGY;
-        tem = 2*PIZERO_REST_ENERGY*(2*PROTON_REST_ENERGY);
+        tem = 2*PIZERO_REST_ENERGY;
+        s = (T_p + TWO_PROTON_REST_ENERGY) / TWO_PROTON_REST_ENERGY;
+        x = T_p - SQR_PIZERO_REST_ENERGY / TWO_PROTON_REST_ENERGY;
         eta2 = DIFF_SQR(x,tem)/(4*SQR_PIZERO_REST_ENERGY*s);
         eta4 = eta2 * eta2;
         sigma = eta2 * (0.032 + eta4 * (0.040 + eta2 * 0.047));
@@ -92,7 +92,7 @@ static double pizero_dermer_total_xsec (double T_p) /*{{{*/
    else if (1.e3 <= pc)
      {
         /* Mori (1997), ApJ, 478, 225 */
-        s = 2*PROTON_REST_ENERGY * (T_p + 2*PROTON_REST_ENERGY);
+        s = TWO_PROTON_REST_ENERGY * (T_p + TWO_PROTON_REST_ENERGY);
         /* s /= GEV; */
         sigma = 163.0 * pow(s/1876.0, 0.21);
      }
@@ -824,7 +824,7 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
 
    pc_max = (*protons->momentum_max)(protons);
    ep_max = hypot (pc_max, PROTON_REST_ENERGY);
-   root_s = sqrt (2*PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max));
+   root_s = sqrt (TWO_PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max));
 
    /* CM frame energy:  See Blattnig et al (2000), Appendix A */
    e_pizero_cm = 0.5 * (root_s - PIZERO_MASS_FACTOR / root_s);
