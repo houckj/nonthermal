@@ -1,6 +1,5 @@
 #include "config.h"
 #include <math.h>
-#include <stdio.h>
 
 int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp)
 {
@@ -13,7 +12,7 @@ int bisection (double (*func)(double, void *), double a, double b, void *cd, dou
      {
         double tmp = a; a = b; b = tmp;
      }
-   
+
    a = nextafter (a, b);
    b = nextafter (b, a);
 
@@ -51,7 +50,7 @@ int bisection (double (*func)(double, void *), double a, double b, void *cd, dou
         else x = 0.5 * (a + b);
 
         x = nextafter (x, a);
-        
+
         if (x <= a || b <= x)
           break;
 
@@ -74,3 +73,30 @@ int bisection (double (*func)(double, void *), double a, double b, void *cd, dou
    return 0;
 }
 
+#ifdef TESTING
+
+#include <float.h>
+#include <stdio.h>
+
+static double f (double x, void *cd)
+{
+   (void) cd;
+
+   return x - cos(x);
+}
+
+int main (void)
+{
+   double x;
+
+   (void) bisection (&f, 0.0, 1.0, NULL, &x);
+
+   if (fabs(f(x,NULL)) > DBL_EPSILON)
+     fprintf (stdout, "Error\n");
+
+   fprintf (stdout, "x = %15.13f\n", x);
+
+   return 0;
+}
+
+#endif
