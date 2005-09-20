@@ -432,7 +432,7 @@ ISIS_USER_SOURCE_MODULE(sync,p,options) /*{{{*/
 {
    static const char *parameter_names[] = {"norm", "B_tot", "index", "curvature", "cutoff", NULL};
    static const char *parameter_units[] = {"cm^-2 GeV^-1", "microgauss", "",          "",    "TeV", NULL};
-   static double default_max[]   = {10.0, 10.0, -1.0,  1.0, 100.0};
+   static double default_max[]   = {1.0e10, 10.0, -1.0,  1.0, 100.0};
    static double default_value[] = { 1.0,  1.0, -2.0,  0.0, 10.0};
    static double default_min[]   = { 0.0,  0.0, -3.0, -1.0,  1.0};
    static unsigned int default_freeze[] = {0, 0, 0, 1, 0};
@@ -546,7 +546,7 @@ ISIS_USER_SOURCE_MODULE(invc,p,options) /*{{{*/
 {
    static const char *parameter_names[] = {"norm", "index", "curvature", "cutoff", "T_photon[K]", NULL};
    static const char *parameter_units[] = {"cm^-2 GeV^-1", "",      "",    "TeV",        "K", NULL};
-   static double default_max[]   = {10.0, -1.0,  1.0, 100.0, 1.e10};
+   static double default_max[]   = {1.0e10, -1.0,  1.0, 100.0, 1.e10};
    static double default_value[] = { 1.0, -2.0,  0.0, 10.0,  CBR_TEMPERATURE};
    static double default_min[]   = { 0.0, -3.0, -1.0,  1.0,   0.0};
    static unsigned int default_freeze[] = {0, 0, 1, 0, 1};
@@ -807,7 +807,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 {
    static const char *parameter_names[] = {"norm", "index", "curvature", "cutoff", NULL};
    static const char *parameter_units[] = {"cm^-2 GeV^-1", "",       "",    "TeV", NULL};
-   static double default_max[]   = {10.0, -1.0,  1.0, 100.0};
+   static double default_max[]   = {1.e10, -1.0,  1.0, 100.0};
    static double default_value[] = { 1.0, -2.0,  0.0, 10.0};
    static double default_min[]   = { 0.0, -3.0, -1.0,  1.0};
    static unsigned int default_freeze[] = {0, 0, 1, 0};
@@ -1024,7 +1024,7 @@ ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
 {
    static const char *parameter_names[] = {"norm", "index", "curvature", "cutoff", NULL};
    static const char *parameter_units[] = {"cm^-2 GeV^-1", "",       "",    "TeV", NULL};
-   static double default_max[]   = {10.0, -1.0,  1.0, 100.0};
+   static double default_max[]   = {1.e10, -1.0,  1.0, 100.0};
    static double default_value[] = { 1.0, -2.0,  0.0, 10.0};
    static double default_min[]   = { 0.0, -3.0, -1.0,  1.0};
    static unsigned int default_freeze[] = {0, 0, 1, 0};
