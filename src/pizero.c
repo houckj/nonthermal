@@ -593,7 +593,7 @@ static double pizero_blattnig_differential_xsec (double T_p, double T_pi) /*{{{*
    T_p /= GEV;
    T_pi /= GEV;
 
-#if 0
+#if 1
    /* Cross-sections apply only for 0.3 <= T_p <= 50 GeV */
    if (T_p < 0.3 || T_p > 50.0)
      return 0.0;
