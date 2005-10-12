@@ -85,8 +85,10 @@ static double thermal_distrib (double *mv, double *pkT_keV, double *pmass) /*{{{
 
    f = 2 * M_2_SQRTPI * x * exp (-x) / sqrt (a);
 
-   /* match units of nonthermal electron distribution function */
-   return f * (GEV / GSL_CONST_CGSM_SPEED_OF_LIGHT);
+   /* match units of nonthermal distribution function */
+   f /= GEV * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   return f;
 }
 
 /*}}}*/
@@ -147,8 +149,6 @@ static double root_func (double mv, void *cd) /*{{{*/
    f_nth *= di->n_GeV;
    /* dn/dp = d(Pc)/dp * dn/d(Pc);   p = m*v, P = gamma*mv */
    f_nth *= gamma2 * gamma;
-   
-   /* fprintf (stderr, "f_th = %g  f_nth = %g\n", f_th, f_nth); */
 
    return f_th - f_nth;
 }
@@ -158,9 +158,8 @@ static double root_func (double mv, void *cd) /*{{{*/
 static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 {
    Particle_Type *pt = &di->particle;
-   double mc, p_th, pmax, p;
-   unsigned int n = 8;
-   int status = 1;
+   double mc, p_th, pmax, p, f_lo, f_hi;
+   int status = 0;
 
    /* FIXME: This won't handle pathological cases, e.g. where
     * the two curves cross at a tangent point or where there are
@@ -169,15 +168,23 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 
    p_th = sqrt (2 * pt->mass * di->kT * KEV);
    mc = pt->mass * GSL_CONST_CGSM_SPEED_OF_LIGHT;
-   
-   pmax = p_th * 4;
 
-   while (n-- > 0 && pmax < mc)
+   f_lo = root_func (p_th, di);
+   pmax = p_th;
+
+   do
      {
-        if (0 == (status = bisection (&root_func, p_th, pmax, di, &p)))
-          break;
-
         pmax *= 2;
+        f_hi = root_func (pmax, di);
+        if (pmax >= mc)
+          break;
+     }
+   while (f_lo * f_hi >= 0);
+
+   if (pmax < mc)
+     {
+        /* root should be bracketed */
+        status = bisection (&root_func, p_th, pmax, di, &p);
      }
 
    /* No solution, use thermal peak */
@@ -186,7 +193,7 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 
    *momentum = p;
 
-   return status;
+   return 0;
 }
 
 /*}}}*/
@@ -205,7 +212,7 @@ static double _find_momentum_min (void) /*{{{*/
    if (-1 == find_momentum_min (&di, &p))
      {
         fprintf (stderr, "find_momentum_min: no solution -- using thermal peak momentum\n");
-     }   
+     }
 
    return p;
 }
@@ -236,6 +243,7 @@ static int eval_nontherm_integral (gsl_function *f, double *value) /*{{{*/
      {
         Failed_Finding_Momentum_Min = 1;
      }
+
    beta = (p_min / pt->mass) / GSL_CONST_CGSM_SPEED_OF_LIGHT;
    gamma = 1.0 / sqrt ((1.0 + beta)*(1.0 - beta));
    pc_min = gamma * p_min * GSL_CONST_CGSM_SPEED_OF_LIGHT;
@@ -363,28 +371,47 @@ static double nontherm_density (void) /*{{{*/
 }
 /*}}}*/
 
-static double Electron_Density;
-static double charge_balance (double p_norm, void *cd) /*{{{*/
+static double CR_Electron_Density;
+
+static double charge_error (double p_norm, void *cl) /*{{{*/
 {
-   Density_Info *dp = (Density_Info *) cd;
+   Density_Info *dp = (Density_Info *)cl;
    double fp;
 
    dp->n_GeV = p_norm;
-
    if (-1 == nontherm_integral (dp, &nontherm_density_integrand, &fp))
-     return -1.0;
+     {
+        fprintf (stderr, "failed integrating proton distribution\n");
+        /* SLang_set_error (SL_INTRINSIC_ERROR); */
+        return -1.0;
+     }
 
-   return 1.0 - fp * p_norm / Electron_Density;
+   return 1.0 - fp * p_norm / CR_Electron_Density;
 }
 
 /*}}}*/
 
+static double pc_inj (Particle_Type *pt)
+{
+   double T_inj, gamma, mc2, pc;
+
+   /* Injection kinetic energy.
+    * Presumably non-relativistic for both e- and protons.
+    */
+   T_inj = 50.0 * KEV;
+
+   mc2 = pt->mass * C_SQUARED;
+   gamma = T_inj/ mc2 + 1.0;
+   pc = mc2 * sqrt ((gamma + 1.0)*(gamma - 1.0));
+
+   return pc;
+}
+
 static double conserve_charge (void) /*{{{*/
 {
    Density_Info de, dp;
-   double p_norm, e_norm, fe, lo, hi;
-   int k, status;
-   char *msg = "";
+   double fe, fp, p_norm;
+   double mr = sqrt (GSL_CONST_CGSM_MASS_ELECTRON / GSL_CONST_CGSM_MASS_PROTON);
 
    if (-1 == pop_density_info (&dp)
        || -1 == pop_density_info (&de))
@@ -393,36 +420,48 @@ static double conserve_charge (void) /*{{{*/
         return -1.0;
      }
 
-   e_norm = de.n_GeV;
+#if 1
+
+   /* Assume equal numbers of protons and electrons are
+    * injected with kinetic energy T_inj
+    *
+    *                       n(P_electron) dP_electron
+    * \equiv ratio (T_inj)  ------------------------
+    *                         n(P_proton) dP_proton
+    *
+    *  dP_electron/dP_proton = sqrt (m_e/m_p)
+    *
+    * See Bell (1978) paper II
+    */
+   (void) (*de.particle.spectrum)(&de.particle, pc_inj(&de.particle), &fe);
+   (void) (*dp.particle.spectrum)(&dp.particle, pc_inj(&dp.particle), &fp);
+   p_norm = mr * de.n_GeV * fe / fp;
+
+#else
+
    if (-1 == nontherm_integral (&de, &nontherm_density_integrand, &fe))
      {
-        if (Failed_Finding_Momentum_Min) msg = ":  failed finding min momentum";
-        fprintf (stderr, "failed computing e- density%s\n", msg);
-        SLang_set_error (SL_INTRINSIC_ERROR);
+        fprintf (stderr, "failed integrating electron distribution\n");
+        /* SLang_set_error (SL_INTRINSIC_ERROR); */
         return -1.0;
      }
 
-   Electron_Density = e_norm * fe;
+   CR_Electron_Density = de.n_GeV * fe;
 
-   lo = e_norm;
-   hi = e_norm * 2.e3;
-   k = 0;
-   do
-     {
-        status = bisection (&charge_balance, lo, hi, &dp, &p_norm);
-        hi *= 1.e2;
-        lo *= 1.e-2;
-        k++;
-     }
-   while (status != 0 && k < 8);
+   /* Plausible first guess */
+   dp.n_GeV = 100.0 * de.n_GeV;
 
-   if (status || Failed_Finding_Momentum_Min)
+   /* The CR proton density @1 GeV should be larger than the
+    * CR electron density @1 GeV (de.n_GeV) but definitely
+    * smaller than the total thermal electron density (de.n_th).
+    */
+   if (bisection (&charge_error, de.n_GeV, de.n_th, &dp, &p_norm) < 0)
      {
-        if (Failed_Finding_Momentum_Min) msg = ":  failed finding min momentum";
-        fprintf (stderr, "failed computing proton density%s\n", msg);
-        SLang_set_error (SL_INTRINSIC_ERROR);
+        fprintf (stderr, "Error:  couldn't find c.r. proton norm: bisection failed\n");
+        /* SLang_set_error (SL_INTRINSIC_ERROR); */
         return -1.0;
-     }   
+     }
+#endif
 
    return p_norm;
 }
