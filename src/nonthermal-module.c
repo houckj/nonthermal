@@ -407,20 +407,10 @@ static double pc_inj (Particle_Type *pt)
    return pc;
 }
 
-static double conserve_charge (void) /*{{{*/
+static double equal_injection_densities (Density_Info *de, Density_Info *dp)                                         
 {
-   Density_Info de, dp;
    double fe, fp, p_norm;
    double mr = sqrt (GSL_CONST_CGSM_MASS_ELECTRON / GSL_CONST_CGSM_MASS_PROTON);
-
-   if (-1 == pop_density_info (&dp)
-       || -1 == pop_density_info (&de))
-     {
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return -1.0;
-     }
-
-#if 1
 
    /* Assume equal numbers of protons and electrons are
     * injected with kinetic energy T_inj
@@ -433,35 +423,67 @@ static double conserve_charge (void) /*{{{*/
     *
     * See Bell (1978) paper II
     */
-   (void) (*de.particle.spectrum)(&de.particle, pc_inj(&de.particle), &fe);
-   (void) (*dp.particle.spectrum)(&dp.particle, pc_inj(&dp.particle), &fp);
-   p_norm = mr * de.n_GeV * fe / fp;
+   (void) (*de->particle.spectrum)(&de->particle, pc_inj(&de->particle), &fe);
+   (void) (*dp->particle.spectrum)(&dp->particle, pc_inj(&dp->particle), &fp);
+   p_norm = mr * de->n_GeV * fe / fp;
 
-#else
+   return p_norm;
+}
 
-   if (-1 == nontherm_integral (&de, &nontherm_density_integrand, &fe))
+static double equal_integrated_nonthermal_densities (Density_Info *de, Density_Info *dp)                                         
+{
+   double fe, p_norm;
+
+   if (-1 == nontherm_integral (de, &nontherm_density_integrand, &fe))
      {
         fprintf (stderr, "failed integrating electron distribution\n");
         /* SLang_set_error (SL_INTRINSIC_ERROR); */
         return -1.0;
      }
 
-   CR_Electron_Density = de.n_GeV * fe;
+   CR_Electron_Density = de->n_GeV * fe;
 
    /* Plausible first guess */
-   dp.n_GeV = 100.0 * de.n_GeV;
+   dp->n_GeV = 100.0 * de->n_GeV;
 
    /* The CR proton density @1 GeV should be larger than the
     * CR electron density @1 GeV (de.n_GeV) but definitely
     * smaller than the total thermal electron density (de.n_th).
     */
-   if (bisection (&charge_error, de.n_GeV, de.n_th, &dp, &p_norm) < 0)
+   if (bisection (&charge_error, de->n_GeV, de->n_th, dp, &p_norm) < 0)
      {
         fprintf (stderr, "Error:  couldn't find c.r. proton norm: bisection failed\n");
         /* SLang_set_error (SL_INTRINSIC_ERROR); */
         return -1.0;
      }
-#endif
+   
+   return p_norm;
+}
+
+static double conserve_charge (int *method) /*{{{*/
+{
+   Density_Info de, dp;
+   double p_norm;
+
+   if (-1 == pop_density_info (&dp)
+       || -1 == pop_density_info (&de))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return -1.0;
+     }
+
+   switch (*method)
+     {
+      case 0:
+        /* drop */
+      default:
+        p_norm = equal_injection_densities (&de, &dp);
+        break;
+        
+      case 1:
+        p_norm = equal_integrated_nonthermal_densities (&de, &dp);
+        break;        
+     }
 
    return p_norm;
 }
@@ -529,6 +551,7 @@ static double gamma_function (double *x) /*{{{*/
 /*}}}*/
 
 #define D SLANG_DOUBLE_TYPE
+#define I SLANG_INT_TYPE
 #define V SLANG_VOID_TYPE
 
 static SLang_Intrin_Fun_Type Intrinsics [] =
@@ -537,7 +560,7 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
    MAKE_INTRINSIC("sync_F", synchrotron1, V, 0),
    MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
    MAKE_INTRINSIC_5("particle_distrib", particle_distrib, D, D, D, D, D, D),
-   MAKE_INTRINSIC("conserve_charge", conserve_charge, D, 0),
+   MAKE_INTRINSIC_1("conserve_charge", conserve_charge, D, I),
    MAKE_INTRINSIC("_find_momentum_min", _find_momentum_min, D, 0),
    MAKE_INTRINSIC("_nontherm_density", nontherm_density, D, 0),
    MAKE_INTRINSIC("_nontherm_energy_density", nontherm_energy_density, D, 0),
@@ -545,6 +568,7 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
 };
 
 #undef D
+#undef I
 #undef V
 
 static SLang_IConstant_Type Intrin_Const [] =

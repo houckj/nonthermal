@@ -1,6 +1,8 @@
 #include "config.h"
 #include <math.h>
 
+extern 
+int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp);  
 int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp)
 {
    unsigned int count = 1;

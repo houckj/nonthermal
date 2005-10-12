@@ -443,14 +443,31 @@ define nontherm_energy_density (s) %{{{
 
 %}}}
 
-define force_charge_conservation (se, sp) %{{{
+define force_charge_conservation () %{{{
 {
-   variable pnorm;
+   variable pnorm, se, sp;
+   variable method = 0;
+   
+   switch (_NARGS)
+     {
+      case 2:
+        (se, sp) = ();
+     }
+     {        
+      case 3:
+        (se, sp, method) = ();
+     }
+     {
+        % default:
+        vmessage ("Usage:  force_charge_conservation (e, p [, method]);");
+        vmessage ("        method = 0 means equal injection densities (ne_inj = np_inj)");
+        vmessage ("        method = 1 means equal integrated nonthermal densities (ne_tot=np_tot)");
+        return;
+     }   
 
-   pnorm = conserve_charge (struct_args(se), struct_args(sp));
-
-   if (pnorm <= 0.0)
-     return -1;
+   pnorm = conserve_charge (struct_args(se), struct_args(sp), method);
+   if (pnorm < 0)
+     return pnorm;
 
    sp.n_GeV = pnorm;
    return 0;
