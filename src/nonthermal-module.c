@@ -371,6 +371,24 @@ static double nontherm_density (void) /*{{{*/
 }
 /*}}}*/
 
+static double pc_inj (Particle_Type *pt) /*{{{*/
+{
+   double T_inj, gamma, mc2, pc;
+
+   /* Injection kinetic energy.
+    * Presumably non-relativistic for both e- and protons.
+    */
+   T_inj = 50.0 * KEV;
+
+   mc2 = pt->mass * C_SQUARED;
+   gamma = T_inj/ mc2 + 1.0;
+   pc = mc2 * sqrt ((gamma + 1.0)*(gamma - 1.0));
+
+   return pc;
+}
+
+/*}}}*/
+
 static double CR_Electron_Density;
 
 static double charge_error (double p_norm, void *cl) /*{{{*/
@@ -391,46 +409,7 @@ static double charge_error (double p_norm, void *cl) /*{{{*/
 
 /*}}}*/
 
-static double pc_inj (Particle_Type *pt)
-{
-   double T_inj, gamma, mc2, pc;
-
-   /* Injection kinetic energy.
-    * Presumably non-relativistic for both e- and protons.
-    */
-   T_inj = 50.0 * KEV;
-
-   mc2 = pt->mass * C_SQUARED;
-   gamma = T_inj/ mc2 + 1.0;
-   pc = mc2 * sqrt ((gamma + 1.0)*(gamma - 1.0));
-
-   return pc;
-}
-
-static double equal_injection_densities (Density_Info *de, Density_Info *dp)                                         
-{
-   double fe, fp, p_norm;
-   double mr = sqrt (GSL_CONST_CGSM_MASS_ELECTRON / GSL_CONST_CGSM_MASS_PROTON);
-
-   /* Assume equal numbers of protons and electrons are
-    * injected with kinetic energy T_inj
-    *
-    *                       n(P_electron) dP_electron
-    * \equiv ratio (T_inj)  ------------------------
-    *                         n(P_proton) dP_proton
-    *
-    *  dP_electron/dP_proton = sqrt (m_e/m_p)
-    *
-    * See Bell (1978) paper II
-    */
-   (void) (*de->particle.spectrum)(&de->particle, pc_inj(&de->particle), &fe);
-   (void) (*dp->particle.spectrum)(&dp->particle, pc_inj(&dp->particle), &fp);
-   p_norm = mr * de->n_GeV * fe / fp;
-
-   return p_norm;
-}
-
-static double equal_integrated_nonthermal_densities (Density_Info *de, Density_Info *dp)                                         
+static double equal_integrated_nonthermal_densities (Density_Info *de, Density_Info *dp) /*{{{*/
 {
    double fe, p_norm;
 
@@ -459,6 +438,37 @@ static double equal_integrated_nonthermal_densities (Density_Info *de, Density_I
    
    return p_norm;
 }
+
+/*}}}*/
+
+static double equal_injection_densities (Density_Info *de, Density_Info *dp) /*{{{*/
+{
+   double mr = sqrt (GSL_CONST_CGSM_MASS_ELECTRON / GSL_CONST_CGSM_MASS_PROTON);
+   Particle_Type *e = &de->particle;
+   Particle_Type *p = &dp->particle;
+   double fe, fp, p_norm;
+
+   /* Assume equal numbers of protons and electrons are
+    * injected with kinetic energy T_inj
+    *
+    *                       n(P_electron) dP_electron
+    * \equiv ratio (T_inj)  ------------------------
+    *                         n(P_proton) dP_proton
+    *
+    *  dP_electron/dP_proton = sqrt (m_e/m_p)
+    *
+    * See Bell (1978) paper II
+    */
+
+   (void) (*e->spectrum)(e, pc_inj(e), &fe);
+   (void) (*p->spectrum)(p, pc_inj(p), &fp);
+
+   p_norm = mr * de->n_GeV * fe / fp;
+
+   return p_norm;
+}
+
+/*}}}*/
 
 static double conserve_charge (int *method) /*{{{*/
 {
