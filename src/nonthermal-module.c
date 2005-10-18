@@ -451,9 +451,9 @@ static double equal_injection_densities (Density_Info *de, Density_Info *dp) /*{
    /* Assume equal numbers of protons and electrons are
     * injected with kinetic energy T_inj
     *
-    *                       n(P_electron) dP_electron
-    * \equiv ratio (T_inj)  ------------------------
-    *                         n(P_proton) dP_proton
+    *                      n(P_electron) dP_electron
+    * ratio (T_inj) \equiv -------------------------
+    *                        n(P_proton) dP_proton
     *
     *  dP_electron/dP_proton = sqrt (m_e/m_p)
     *
