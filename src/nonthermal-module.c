@@ -85,9 +85,6 @@ static double thermal_distrib (double *mv, double *pkT_keV, double *pmass) /*{{{
 
    f = 2 * M_2_SQRTPI * x * exp (-x) / sqrt (a);
 
-   /* match units of nonthermal distribution function */
-   f /= GEV * GSL_CONST_CGSM_SPEED_OF_LIGHT;
-
    return f;
 }
 
@@ -137,6 +134,7 @@ static double root_func (double mv, void *cd) /*{{{*/
         return 0.0;
      }
 
+   /* dn/dp */
    f_th = thermal_distrib (&mv, &di->kT, &pt->mass);
    f_th *= di->n_th;
 
@@ -146,8 +144,8 @@ static double root_func (double mv, void *cd) /*{{{*/
 
    /* dn/d(Pc) */
    (void) (*pt->spectrum) (pt, pc, &f_nth);
-   f_nth *= di->n_GeV;
-   /* dn/dp = d(Pc)/dp * dn/d(Pc);   p = m*v, P = gamma*mv */
+   f_nth *= di->n_GeV * GSL_CONST_CGSM_SPEED_OF_LIGHT / GEV;
+   /* dn/dp = dP/dp * dn/dP;   p = m*v, P = gamma*mv */
    f_nth *= gamma2 * gamma;
 
    return f_th - f_nth;
@@ -592,11 +590,13 @@ static SLang_IConstant_Type Intrin_Const [] =
 };
 
 static char *Module_Install_Prefix = INSTALL_PREFIX ;
+extern double Min_Curvature_Pc;
 
 static SLang_Intrin_Var_Type Intrin_Variables [] =
 {
    MAKE_VARIABLE("_nonthermal_module_version_string", &Module_Version_String, SLANG_STRING_TYPE, 1),
    MAKE_VARIABLE("_nonthermal_install_prefix", &Module_Install_Prefix, SLANG_STRING_TYPE, 1),
+   MAKE_VARIABLE("_nonthermal_curvature_momentum_gev", &Min_Curvature_Pc, SLANG_DOUBLE_TYPE, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
 

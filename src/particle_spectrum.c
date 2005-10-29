@@ -11,6 +11,9 @@
 
 #include "_nonthermal.h"
 
+extern double Min_Curvature_Pc;
+double Min_Curvature_Pc = 1.0;  /* GeV */
+
 static double momentum (double gamma, double mass) /*{{{*/
 {
    return mass * C_SQUARED * sqrt ((gamma + 1.0) * (gamma - 1.0));
@@ -64,7 +67,7 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
    g = pt->index;
 
    /* no curvature below 1 GeV */
-   if ((pt->curvature != 0.0) && (x > 1.0))
+   if ((pt->curvature != 0.0) && (x > Min_Curvature_Pc))
      g += pt->curvature * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
