@@ -173,9 +173,9 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
    do
      {
         pmax *= 2;
-        f_hi = root_func (pmax, di);
         if (pmax >= mc)
           break;
+        f_hi = root_func (pmax, di);
      }
    while (f_lo * f_hi >= 0);
 
