@@ -15,4 +15,13 @@ test:
 	cd src; $(MAKE) test
 install:
 	cd src; $(MAKE) install
-
+#
+#  These targets are used by the maintainer
+#
+configure: autoconf/aclocal.m4 autoconf/configure.in
+	cd autoconf && autoconf && /bin/rm -rf autom4te.cache && mv ./configure ..
+update: autoconf/config.sub autoconf/config.guess
+autoconf/config.guess: /usr/share/misc/config.guess
+	/bin/cp -f /usr/share/misc/config.guess autoconf/config.guess
+autoconf/config.sub: /usr/share/misc/config.sub
+	/bin/cp -f /usr/share/misc/config.sub autoconf/config.sub
