@@ -165,6 +165,16 @@ static int _nt_binned_contin (void *cl, /*{{{*/
    if (Bin_Integral_Method == NULL)
      return -1;
 
+   if (norm == 0.0)
+     {
+        for (i = 0; i < g->n_notice; i++)
+          {
+             val[i] = 0.0;
+          }
+
+        return 0;
+     }
+
     for (i=0; i < g->n_notice; i++)
      {
         double el, eh, area;
@@ -197,6 +207,15 @@ static int _nt_contin (void *cl, /*{{{*/
    int i;
 
    (void) npar;
+
+   if (norm == 0.0)
+     {
+        for (i = 0; i < g->npts; i++)
+          {
+             val[i] = 0.0;
+          }
+        return 0;
+     }
 
    /* g->x[i] in eV
     * val in photons /s /cm^2 /GeV
