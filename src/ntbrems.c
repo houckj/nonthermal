@@ -412,7 +412,7 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    *val = 0.0;
 
    s.een = een;  /* incident electron kinetic energy (keV) */
-   s.pen = pen;  /* photon kinetic energy (keV) */
+   s.pen = pen;  /* photon energy (keV) */
 
    if ((een <= 0.0) || (pen <= 0.0))
      return -1;
