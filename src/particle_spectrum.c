@@ -43,7 +43,7 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
    e_cutoff = pt->cutoff_energy * TEV;
    r = (GEV - e_cutoff * log(f)) / mc2;
 
-   return mc2 * sqrt (r*r - 1.0);
+   return mc2 * sqrt ((r + 1.0)*(r - 1.0));
 }
 
 /*}}}*/
