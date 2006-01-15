@@ -30,7 +30,7 @@ static double particle_momentum_min (Particle_Type *pt) /*{{{*/
 
 static double particle_momentum_max (Particle_Type *pt) /*{{{*/
 {
-   double e_cutoff, mc2, r, f=1.e-8;
+   double e_cutoff, mc2, r, p_max, f=1.e-8;
 
    if (pt->cutoff_energy == 0)
      return momentum (GAMMA_MAX_DEFAULT, pt->mass);
@@ -42,15 +42,16 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
    mc2 = pt->mass * C_SQUARED;
    e_cutoff = pt->cutoff_energy * TEV;
    r = (GEV - e_cutoff * log(f)) / mc2;
+   p_max = mc2 * sqrt ((r + 1.0)*(r - 1.0));
 
-   return mc2 * sqrt ((r + 1.0)*(r - 1.0));
+   return p_max;
 }
 
 /*}}}*/
 
 static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
 {
-   double mc2, e_k, e0, pcomc2, x, g, f;
+   double mc2, E, T, e0, pcomc2, x, g, f;
 
    if (pt == NULL || ne == NULL)
      return -1;
@@ -61,7 +62,8 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
    e0  = pt->cutoff_energy * TEV;
 
    pcomc2 = pc/mc2;
-   e_k = mc2 * (sqrt (1.0 + pcomc2 * pcomc2) - 1.0);
+   E = mc2 * sqrt (1.0 + pcomc2 * pcomc2);
+   T = E - mc2;
 
    x = pc / GEV;
    g = pt->index;
@@ -71,26 +73,25 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
      g += pt->curvature * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
-#if 1
-   f = pow (x, g) * exp ((GEV-e_k)/e0);
-#endif
 #if 0
+   f = pow (x, g) * exp ((GEV-T)/e0);
+#endif
+#if 1
    /* Dermer 1986 proton spectrum */
-   f = pow ((e_k + mc2)/GEV, g);
+   f = pow (E/GEV, g);
 #endif
 #if 0
      {
         /* Mori 1997 proton spectrum */
-        double ep = e_k + mc2;
         double f0 = 4*M_PI/GSL_CONST_CGSM_SPEED_OF_LIGHT;
-        if (ep >= 100.0 * GEV)
+        if (E >= 100.0 * GEV)
           {
              double t = 2.5 * GEV/ pc;
              f = 1.67*pow(pc/GEV, -2.7) /sqrt(1.0 + t*t);             
           }
         else
           {
-             f = 6.65e-6*pow(ep/(100.0*GEV), -2.75);
+             f = 6.65e-6*pow(E/(100.0*GEV), -2.75);
           }        
         f *= f0;
      }   

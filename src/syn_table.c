@@ -164,13 +164,20 @@ int syn_interp_angular_integral (void *p, double x, double *y) /*{{{*/
 
    *y = 0.0;
 
-   if ((x <= 0.0) || t == NULL)
+   if ((x <= 0.0) || (t == NULL))
      return 0;
 
    lgx = log10(x);
 
    if (lgx < t->x[0] || t->x[t->n-1] <= lgx)
-     return 0;
+     {
+#if 0
+        fprintf (stderr, "*** attempt to extrapolate table!!\n");
+        fprintf (stderr, "lgx = %g is outside [%g, %g]\n",
+                 lgx, t->x[0], t->x[t->n-1]);
+#endif        
+        return 0;
+     }   
 
    if (-1 == gsl_spline_eval_e (t->spline, lgx, t->accel, y))
      return -1;

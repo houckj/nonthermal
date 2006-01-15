@@ -82,8 +82,8 @@ private define make_table (x_min, x_max, tol)
 
 define _sync_make_table ()
 {
-   variable x_min = 1.e-38;
-   variable x_max = 32.0;
+   variable x_min = 1.0e-38;
+   variable x_max = 100.0;
    variable y_tol = 0.05;
    return make_table (x_min, x_max, y_tol);
 }

@@ -9,6 +9,7 @@
  */
 
 #include "config.h"
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +45,6 @@
 static double angular_integrand (double t, void *p) /*{{{*/
 {
    double x = *(double *)p;
-   double t2;
    gsl_sf_result f;
 
    if (t == 0.0 || t == 1.0)
@@ -52,9 +52,7 @@ static double angular_integrand (double t, void *p) /*{{{*/
 
    (void) gsl_sf_synchrotron_1_e (x/t, &f);
 
-   t2 = t*t;
-
-   return f.val * t2 / sqrt (1.0 - t2);
+   return f.val * t*t / sqrt ((1.0 + t)*(1.0 - t));
 }
 
 /*}}}*/
@@ -81,9 +79,26 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
+#if 0   
    (void) gsl_integration_qag (&f, 0.0, 1.0, epsabs, epsrel, limit,
                                GSL_INTEG_GAUSS31,
                                work, y, &abserr);
+#else
+   {
+      double pts[] = {0.0, 1.0};
+      int status;
+      
+      status = gsl_integration_qagp (&f, pts, 2, epsabs, epsrel, limit,
+                                     work, y, &abserr);
+      if (status)
+        {
+           if (status != GSL_EROUND)           
+             fprintf (stderr, "status = %d:  %s\n",
+                      status,
+                      gsl_strerror (status));
+        }      
+   }   
+#endif   
 
    gsl_set_error_handler (gsl_error_handler);
 
