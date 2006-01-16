@@ -42,7 +42,7 @@
 
 /*}}}*/
 
-#define DO_ANGULAR_INTEGRAL 1
+#define DO_ANGULAR_INTEGRAL 0
 
 #if DO_ANGULAR_INTEGRAL
 static double angular_integrand (double t, void *p) /*{{{*/
@@ -113,19 +113,39 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 /*}}}*/
 #else
 
-# include <gsl/gsl_sf_hyperg.h>
-static double whittaker (double x, double a, double b) /*{{{*/
+#include <gsl/gsl_sf_hyperg.h>
+
+#if 0
+static double W (double kappa, double mu, double x) /*{{{*/
 {
-   return exp(-x/2.0) * pow (x,b + 0.5) * gsl_sf_hyperg_U (0.5+b-a, 1+2*b, x);
+   return exp(-x/2.0) * pow (x,mu + 0.5) 
+     * gsl_sf_hyperg_U (0.5+mu-kappa, 1+2*mu, x);
+}
+
+static double R (double x)
+{
+   return 0.5*M_PI*x *
+     (W (0.0, 4.0/3, x) * W (0.0, 1.0/3, x)
+      - W (0.5, 5.0/6, x) * W (-0.5, 5.0/6, x));
+}
+#endif
+
+static double uu (double kappa, double mu, double x)
+{
+   return gsl_sf_hyperg_U (0.5+mu-kappa, 1+2*mu, x);
+}
+
+static double R_factored (double x)
+{
+   return 0.5*M_PI * exp(-x) * pow(x, 11.0/3) *
+     (uu(0,4.0/3,x) * uu(0, 1.0/3, x) - uu(0.5, 5.0/6, x)*uu(-0.5, 5.0/6, x));
 }
 
 /*}}}*/
 
 int syn_angular_integral (double x, double *y) /*{{{*/
 {
-   *y = 0.5*M_PI*x *
-     (whittaker (x, 0.0, 4.0/3)*whittaker(x, 0.0, 1.0/3)
-      - whittaker (x, 0.5, 5.0/6)*whittaker(x, -0.5, 5.0/6));
+   *y = R_factored(x);
    return 0;
 }
 /*}}}*/
