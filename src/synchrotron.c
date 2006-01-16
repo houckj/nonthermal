@@ -42,6 +42,9 @@
 
 /*}}}*/
 
+#define DO_ANGULAR_INTEGRAL 1
+
+#if DO_ANGULAR_INTEGRAL
 static double angular_integrand (double t, void *p) /*{{{*/
 {
    double x = *(double *)p;
@@ -79,7 +82,7 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 0   
+#if 0
    (void) gsl_integration_qag (&f, 0.0, 1.0, epsabs, epsrel, limit,
                                GSL_INTEG_GAUSS31,
                                work, y, &abserr);
@@ -87,18 +90,18 @@ int syn_angular_integral (double x, double *y) /*{{{*/
    {
       double pts[] = {0.0, 1.0};
       int status;
-      
+
       status = gsl_integration_qagp (&f, pts, 2, epsabs, epsrel, limit,
                                      work, y, &abserr);
       if (status)
         {
-           if (status != GSL_EROUND)           
+           if (status != GSL_EROUND)
              fprintf (stderr, "status = %d:  %s\n",
                       status,
                       gsl_strerror (status));
-        }      
-   }   
-#endif   
+        }
+   }
+#endif
 
    gsl_set_error_handler (gsl_error_handler);
 
@@ -108,6 +111,26 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 }
 
 /*}}}*/
+#else
+
+# include <gsl/gsl_sf_hyperg.h>
+static double whittaker (double x, double a, double b) /*{{{*/
+{
+   return exp(-x/2.0) * pow (x,b + 0.5) * gsl_sf_hyperg_U (0.5+b-a, 1+2*b, x);
+}
+
+/*}}}*/
+
+int syn_angular_integral (double x, double *y) /*{{{*/
+{
+   *y = 0.5*M_PI*x *
+     (whittaker (x, 0.0, 4.0/3)*whittaker(x, 0.0, 1.0/3)
+      - whittaker (x, 0.5, 5.0/6)*whittaker(x, -0.5, 5.0/6));
+   return 0;
+}
+/*}}}*/
+
+#endif
 
 static int eval_angular_integral (double x, void *pt, double *y) /*{{{*/
 {
