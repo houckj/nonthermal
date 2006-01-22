@@ -739,6 +739,20 @@ static void _ee_haug (void) /*{{{*/
 
 /*}}}*/
 
+static double _ep_heitler1 (double *ekinetic, double *ephoton) /*{{{*/
+{
+   return _ntb_ei_sigma (*ekinetic, *ephoton);
+}
+
+/*}}}*/
+
+static double _ee_haug1 (double *ekinetic, double *ephoton) /*{{{*/
+{
+   return _ntb_ee_sigma_haug (*ekinetic, *ephoton);
+}
+
+/*}}}*/
+
 static double ee_interp_sigma (double ekinetic, double ephoton) /*{{{*/
 {
    Brems_Type b = NULL_BREMS_TYPE;
@@ -792,6 +806,8 @@ static SLang_Intrin_Fun_Type Ntb_Intrinsics [] =
    MAKE_INTRINSIC_2("_ntb_set_process_weights", _ntb_set_process_weights, V, D,D),
    MAKE_INTRINSIC("_ep_heitler", _ep_heitler, V, 0),
    MAKE_INTRINSIC("_ee_haug", _ee_haug, V, 0),
+   MAKE_INTRINSIC_2("_ep_heitler1", _ep_heitler1, D, D,D),
+   MAKE_INTRINSIC_2("_ee_haug1", _ee_haug1, D, D,D),
    MAKE_INTRINSIC("_ee_interp", _ee_interp, V, 0),
    SLANG_END_INTRIN_FUN_TABLE
 };
