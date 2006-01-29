@@ -10,6 +10,6 @@ extern void *ntb_init_client_data (const char *file);
 extern int ntb_push_table (int process);
 /* extern void ntb_set_process_weights (void *v, double *pw, unsigned int n); */
 
-extern int ntb_interp_sigma (Brems_Type *ntb, double gamma, double ephoton, double *value);
+extern int ntb_interp_sigma (Brems_Type *ntb, double gm1, double ephoton, double *value);
 
 #endif
