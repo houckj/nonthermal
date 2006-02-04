@@ -109,10 +109,6 @@ static double eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
    double rq, wq, wr, xq, xr, ww, p1q, rq2, rq4, wq2, rx1, rx2,
      rx3, wq4, wr1, x1q, x2q, x3q, pct, wiq, wwq, wq2q, wq4q;
 
-   /* JCH added this to enforce energy conservation */
-   if (pen > een)
-     return 0.0;
-
    e11 = een / mcq;
    e1 = e11 + 1.0;
    p1q = e11 * (e11 + 2.0);
