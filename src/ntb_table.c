@@ -43,7 +43,7 @@ static void *pop_table (const char *file) /*{{{*/
    double *keys;
    int status = 1;
 
-   if (-1 == SLang_run_hooks ("_ntbrem_table2_init", 1, file))
+   if (-1 == SLang_run_hooks ("ntbrem_table_init_hook", 1, file))
      return NULL;
    
    if (SLANG_NULL_TYPE == SLang_peek_at_stack())

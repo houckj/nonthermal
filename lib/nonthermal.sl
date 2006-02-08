@@ -16,9 +16,7 @@ private define push_array_values (a) %{{{
 
 %}}}
 
-private variable IC_Keys = ["GAMMIN", "GAMMAX", "EFNMIN", "EFNMAX"];
-
-public define _invc_table2_init (file) %{{{
+public define invc_table_init_hook (file) %{{{
 {
    variable t = fits_read_table (file);
    variable bdry_hdu = sprintf ("%s[BOUNDARY]", file);
@@ -44,7 +42,7 @@ public define _invc_table2_init (file) %{{{
 
 %}}}
 
-public define _ntbrem_table2_init (file) %{{{
+public define ntbrem_table_init_hook (file) %{{{
 {
    variable t = fits_read_table (file);
    variable bdry_hdu = sprintf ("%s[BOUNDARY]", file);
@@ -91,52 +89,6 @@ private define _get_table_names (file, env) %{{{
 
    list = array_map (String_Type, &path_concat, env, list);
    return list;
-}
-
-%}}}
-
-public define ic_read_table_hook (file) %{{{
-{
-   variable t = struct
-     {
-        gamma_range, efinal_range,
-          gammas, efinals, y
-     };
-
-   variable x = fits_read_table (file);
-   variable k = fits_read_key_struct (file, push_array_values(IC_Keys));
-
-   t.gamma_range = [k.gammin, k.gammax];
-   t.efinal_range = [k.efnmin, k.efnmax];
-   t.gammas = x.gamma;
-   t.efinals = x.efinal;
-   t.y = x.y;
-
-   return t;
-}
-
-%}}}
-
-private variable NTB_Keys = ["EPHMIN", "EPHMAX", "EKNMIN", "EKNMAX"];
-
-public define ntb_read_table_hook (file) %{{{
-{
-   variable t = struct
-     {
-        ephoton_range, ekinetic_range,
-          ephotons, ekinetics, y
-     };
-
-   variable x = fits_read_table (file);
-   variable k = fits_read_key_struct (file, push_array_values(NTB_Keys));
-
-   t.ephoton_range = [k.ephmin, k.ephmax];
-   t.ekinetic_range = [k.eknmin, k.eknmax];
-   t.ephotons = x.ephoton;
-   t.ekinetics = x.ekinetic;
-   t.y = x.y;
-
-   return t;
 }
 
 %}}}
@@ -239,83 +191,6 @@ define make_sync_table () %{{{
 
 %}}}
 
-private define ic_write_table_row (i, t, fptr) %{{{
-{
-   variable firstrow = i;
-   variable firstelem = 1;
-   variable status;
-
-   status = _fits_write_col (fptr, 1, firstrow, firstelem, t.gammas[i-1]);
-   status = _fits_write_col (fptr, 2, firstrow, firstelem, t.efinals[i-1]);
-   status = _fits_write_col (fptr, 3, firstrow, firstelem, t.y[i-1]);
-}
-
-%}}}
-
-private define ic_write_table (t, file) %{{{
-{
-   variable fp = fits_open_file (file, "c");
-
-   variable status, naxis2, ttype, tform, tunit, extname;
-   naxis2 = length(t.gammas);
-   ttype = ["gamma", "efinal", "y"];
-   tform = ["1D", "1PD", "1PD"];
-   tunit = NULL;
-   extname = NULL;
-   status = _fits_create_binary_tbl (fp, naxis2, ttype, tform, tunit, extname);
-
-   fits_update_key (fp, IC_Keys[0], t.gamma_range[0]);
-   fits_update_key (fp, IC_Keys[1], t.gamma_range[1]);
-   fits_update_key (fp, IC_Keys[2], t.efinal_range[0]);
-   fits_update_key (fp, IC_Keys[3], t.efinal_range[1]);
-
-   array_map (Void_Type, &ic_write_table_row, [1:naxis2], t, fp);
-
-   fits_close_file (fp);
-}
-
-%}}}
-
-private define ic_make_table (t, file) %{{{
-{
-   ic_write_table (_invc_make_table (t), file);
-}
-
-%}}}
-
-define make_invc_table () %{{{
-{
-   variable file = _invc_table_file_name;
-   variable t = 0.0;
-
-   switch (_NARGS)
-     {
-      case 0:
-	% use defaults
-     }
-     {
-      case 1:
-	t = ();
-     }
-     {
-      case 2:
-	(t, file) = ();
-     }
-     {
-	% default
-	_pop_n (_NARGS);
-	usage ("status = make_invc_table ([temperature [, filename])");
-	return;
-     }
-
-   if (typeof(t) != Array_Type)
-     t = [t];
-
-   array_map (Void_Type, &ic_make_table, t, file);
-}
-
-%}}}
-
 private variable NTB_Process_Type = Assoc_Type[];
 NTB_Process_Type ["ee"] = NTB_ee;
 NTB_Process_Type ["ep"] = NTB_ep;
@@ -331,84 +206,6 @@ private define ntb_parse_process_type (type) %{{{
         return NULL;
      }
    return NTB_Process_Type[type];
-}
-
-%}}}
-
-private define ntb_write_table_row (i, t, fptr) %{{{
-{
-   variable firstrow = i;
-   variable firstelem = 1;
-   variable status;
-
-   status = _fits_write_col (fptr, 1, firstrow, firstelem, t.ephotons[i-1]);
-   status = _fits_write_col (fptr, 2, firstrow, firstelem, t.ekinetics[i-1]);
-   status = _fits_write_col (fptr, 3, firstrow, firstelem, t.y[i-1]);
-}
-
-%}}}
-
-private define ntb_write_table (t, file) %{{{
-{
-   variable fp = fits_open_file (file, "c");
-
-   variable status, naxis2, ttype, tform, tunit, extname;
-   naxis2 = length(t.ephotons);
-   ttype = ["ephoton", "ekinetic", "y"];
-   tform = ["1D", "1PD", "1PD"];
-   tunit = NULL;
-   extname = NULL;
-   status = _fits_create_binary_tbl (fp, naxis2, ttype, tform, tunit, extname);
-
-   fits_update_key (fp, NTB_Keys[0], t.ephoton_range[0]);
-   fits_update_key (fp, NTB_Keys[1], t.ephoton_range[1]);
-   fits_update_key (fp, NTB_Keys[2], t.ekinetic_range[0]);
-   fits_update_key (fp, NTB_Keys[3], t.ekinetic_range[1]);
-
-   array_map (Void_Type, &ntb_write_table_row, [1:naxis2], t, fp);
-
-   fits_close_file (fp);
-}
-
-%}}}
-
-private define ntb_make_table (process, file) %{{{
-{
-   variable t = _ntb_make_table (ntb_parse_process_type(process));
-   ntb_write_table (t, file);
-}
-
-%}}}
-
-define make_ntbrem_table () %{{{
-{
-   variable file = _ntbrem_table_file_name;
-   variable process = NTB_ee;
-
-   switch (_NARGS)
-     {
-      case 0:
-	% use defaults
-     }
-     {
-      case 1:
-	file = ();
-     }
-     {
-      case 2:
-        (file, process) = ();
-     }
-     {
-	% default
-	_pop_n (_NARGS);
-	usage ("status = make_ntbrem_table ([filename [, process]])");
-	return;
-     }
-
-   if (typeof(file) != Array_Type)
-     file = [file];
-
-   array_map (Void_Type, &ntb_make_table, process, file);
 }
 
 %}}}

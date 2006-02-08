@@ -64,7 +64,7 @@ static void *pop_table (char *file) /*{{{*/
    double *keys;
    int status;
 
-   if (-1 == SLang_run_hooks ("_invc_table2_init", 1, file))
+   if (-1 == SLang_run_hooks ("invc_table_init_hook", 1, file))
      return NULL;
 
    if (SLANG_NULL_TYPE == SLang_peek_at_stack())
