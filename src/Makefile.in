@@ -17,6 +17,16 @@ SL_FILES_INSTALL_DIR = ${exec_prefix}/share/isis
 DATA_FILES_INSTALL_DIR = ${exec_prefix}/share/isis/nonthermal/data
 
 #---------------------------------------------------------------------------
+# Compilers
+#---------------------------------------------------------------------------
+CC        = @CC@
+CFLAGS    = @CFLAGS@
+F77       = @F77@
+FFLAGS    = @FFLAGS@
+FLIBS     = @FLIBS@
+F77_DEFS  = @F77_DEFS@
+
+#---------------------------------------------------------------------------
 # C Compiler to create a shared library
 #---------------------------------------------------------------------------
 CC_SHARED 	= @CC_SHARED@
@@ -59,12 +69,16 @@ INCS = $(SLANG_INC) $(ISIS_INC) $(GSL_INC)
 config_dir = @CONFIG_DIR@
 SRCDIR = $(config_dir)/src
 OBJDIR = $(config_dir)/src/$(ARCH)objs
-OBJS = @PROGRAM_OBJECTS@
+OBJS = @PROGRAM_OBJECTS@ 
 
-MODULE_OBJS = $(OBJDIR)/bisect.o $(OBJDIR)/particle_spectrum.o
+MODULE_OBJS = $(OBJDIR)/bisect.o $(OBJDIR)/particle_spectrum.o \
+              $(OBJDIR)/bspline_22.o @PROGRAM_F77_OBJECTS@
 
 ALL_CFLAGS = $(CFLAGS) -Dunix $(INCS)
 COMPILE_CMD = $(CC) -c $(ALL_CFLAGS)
+F77_COMPILE_CMD = $(F77) -c $(FFLAGS)
+
+bspline_22_C_FLAGS = $(F77_DEFS)
 
 all: $(OBJDIR) $(MODULES)
 

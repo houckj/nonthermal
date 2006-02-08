@@ -16,6 +16,7 @@
 #include <slang.h>
 
 #include "_nonthermal.h"
+#include "interp.h"
 #include "version.h"
 
 #ifndef M_2_SQRTPI
@@ -558,6 +559,13 @@ static double gamma_function (double *x) /*{{{*/
 
 /*}}}*/
 
+/* DUMMY_CLASS_TYPE is a temporary hack that will be modified to the true
+  * id once the interpreter provides it when the class is registered.  See below
+  * for details.  The reason for this is simple: for a module, the type-id
+  * must be assigned dynamically.
+  */
+#define DUMMY_CLASS_TYPE   255
+#define MT DUMMY_CLASS_TYPE
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
 #define V SLANG_VOID_TYPE
@@ -572,6 +580,9 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
    MAKE_INTRINSIC("_find_momentum_min", _find_momentum_min, D, 0),
    MAKE_INTRINSIC("_nontherm_density", nontherm_density, D, 0),
    MAKE_INTRINSIC("_nontherm_energy_density", nontherm_energy_density, D, 0),
+   MAKE_INTRINSIC_2("bspline_open_intrin", bspline_open_intrin, V, I, I),
+   MAKE_INTRINSIC_3("bspline_eval_intrin", bspline_eval_intrin, D, MT, D, D),
+   MAKE_INTRINSIC_1("bspline_init_info_intrin", bspline_init_info_intrin, V, MT),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -600,13 +611,60 @@ static SLang_Intrin_Var_Type Intrin_Variables [] =
    SLANG_END_INTRIN_VAR_TABLE
 };
 
+static void patchup_intrinsic_table (unsigned int valid_id) /*{{{*/
+{
+   SLang_Intrin_Fun_Type *f;
+   unsigned int dummy_id = DUMMY_CLASS_TYPE;
+
+   f = Intrinsics;
+   while (f->name != NULL)
+     {
+        unsigned int i, nargs;
+        SLtype *args;
+
+        nargs = f->num_args;
+        args = f->arg_types;
+        for (i = 0; i < nargs; i++)
+          {
+             if (args[i] == dummy_id)
+               args[i] = valid_id;
+          }
+
+        /* For completeness */
+        if (f->return_type == dummy_id)
+          f->return_type = valid_id;
+
+        f++;
+     }
+}
+
+/*}}}*/
+
 SLANG_MODULE(nonthermal);
 int init_nonthermal_module_ns (char *ns_name)
 {
    SLang_NameSpace_Type *ns;
+   SLang_Class_Type *cl;
 
    if (NULL == (ns = SLns_create_namespace (ns_name)))
      return -1;
+
+   if (Bspline_Type_Id == -1)
+     {
+        if (NULL == (cl = SLclass_allocate_class ("Bspline_Type")))
+          return -1;
+        (void) SLclass_set_destroy_function (cl, destroy_bspline_type);
+
+        /* By registering as SLANG_VOID_TYPE,
+         * slang will dynamically allocate a type
+         */
+        if (-1 == SLclass_register_class (cl, SLANG_VOID_TYPE, sizeof (Bspline_Type),
+                                          SLANG_CLASS_TYPE_MMT))
+          return -1;
+
+        Bspline_Type_Id = SLclass_get_class_id (cl);
+        patchup_intrinsic_table (Bspline_Type_Id);
+     }
 
    if ((-1 == SLns_add_intrin_fun_table (ns, Intrinsics, NULL))
         || (-1 == SLns_add_intrin_var_table (ns, Intrin_Variables, NULL))
