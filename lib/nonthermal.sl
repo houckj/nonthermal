@@ -2,10 +2,71 @@
 
 import("nonthermal");
 
-$1 = path_concat (_nonthermal_install_prefix, "share/isis/nonthermal");
+$1 = path_concat (path_dirname (__FILE__), "nonthermal");
 prepend_to_isis_load_path ($1);
-
 private variable Data_Path = path_concat ($1, "data");
+
+private define push_array_values (a) %{{{
+{
+   foreach (a)
+     {
+        ();
+     }
+}
+
+%}}}
+
+private variable IC_Keys = ["GAMMIN", "GAMMAX", "EFNMIN", "EFNMAX"];
+
+public define _invc_table2_init (file) %{{{
+{
+   variable t = fits_read_table (file);
+   variable bdry_hdu = sprintf ("%s[BOUNDARY]", file);
+   variable bdry = fits_read_table (bdry_hdu);
+   variable key_names = ["gammin", "gammax", "efnmin", "efnmax", "sigma0", "xepsilon"];
+   variable s = fits_read_key_struct (bdry_hdu, push_array_values(key_names));
+   variable keys = Double_Type[length(key_names)];
+   _for (0, length(key_names)-1, 1)
+     {
+        variable k = ();
+        keys[k] = get_struct_field (s, key_names[k]);
+     }
+   variable b = struct 
+     {
+        x, y, f
+     };
+   b.x = t.xgrid;
+   b.y = t.ygrid;
+   b.f = t.f;
+   variable p = bspline_open_intrin (NULL, b, 5,5);
+   return (p, bdry.xleft, bdry.yleft, keys);
+}
+
+%}}}
+
+public define _ntbrem_table2_init (file) %{{{
+{
+   variable t = fits_read_table (file);
+   variable bdry_hdu = sprintf ("%s[BOUNDARY]", file);
+   variable bdry = fits_read_table (bdry_hdu);
+   variable key_names = ["ekinmin", "ekinmax", "ephmin", "ephmax", "sigma0", "xepsilon"];
+   variable s = fits_read_key_struct (bdry_hdu, push_array_values(key_names));
+   variable keys = Double_Type[length(key_names)];
+   _for (0, length(key_names)-1, 1)
+     {
+        variable k = ();
+        keys[k] = get_struct_field (s, key_names[k]);
+     }
+   variable b = struct 
+     {
+        x, y, f
+     };
+   b.x = t.xgrid;
+   b.y = t.ygrid;
+   b.f = t.f;
+   variable p = bspline_open_intrin (NULL, b, 3,3);
+   return (p, bdry.xleft, bdry.yleft, keys);
+}
 
 private define _get_table_names (file, env) %{{{
 {
@@ -33,18 +94,6 @@ private define _get_table_names (file, env) %{{{
 }
 
 %}}}
-
-private define push_array_values (a) %{{{
-{
-   foreach (a)
-     {
-        ();
-     }
-}
-
-%}}}
-
-private variable IC_Keys = ["GAMMIN", "GAMMAX", "EFNMIN", "EFNMAX"];
 
 public define ic_read_table_hook (file) %{{{
 {
@@ -447,13 +496,13 @@ define force_charge_conservation () %{{{
 {
    variable pnorm, se, sp;
    variable method = 0;
-   
+
    switch (_NARGS)
      {
       case 2:
         (se, sp) = ();
      }
-     {        
+     {
       case 3:
         (se, sp, method) = ();
      }
@@ -463,7 +512,7 @@ define force_charge_conservation () %{{{
         vmessage ("        method = 0 means equal injection densities (ne_inj = np_inj)");
         vmessage ("        method = 1 means equal integrated nonthermal densities (ne_tot=np_tot)");
         return;
-     }   
+     }
 
    pnorm = conserve_charge (struct_args(se), struct_args(sp), method);
    if (pnorm < 0)
