@@ -963,3 +963,89 @@ AC_DEFUN(JD_HAVE_ISINF, dnl#{{{
                   AC_DEFINE(HAVE_ISINF, 1)])
 ])
 #}}}
+
+AC_DEFUN(JH_APPEND_F77_RULES, dnl#{{{
+[
+ echo "$PROGRAM_F77_OBJECT_RULES" >> $1
+ PROGRAM_F77_OBJECT_RULES=""
+])
+dnl#}}}
+
+AC_DEFUN(JH_APPEND_F77_ELFRULES, dnl#{{{
+[
+ echo "$PROGRAM_F77_ELF_ORULES" >> $1
+ PROGRAM_F77_ELF_ORULES=""
+])
+
+dnl#}}}
+
+AC_DEFUN(JH_CREATE_F77_ORULE, dnl#{{{
+[
+PROGRAM_F77_OBJECT_RULES="$PROGRAM_F77_OBJECT_RULES
+\$(OBJDIR)/$1.o : \$(SRCDIR)/$1.f \$(DOT_O_DEPS) \$("$1"_O_DEP)
+	cd \$(OBJDIR); \$(F77_COMPILE_CMD) \$("$1"_F77_FLAGS) \$(SRCDIR)/$1.f
+"
+])
+
+dnl#}}}
+
+AC_DEFUN(JH_CREATE_F77_ELFORULE, dnl#{{{
+[
+PROGRAM_F77_ELF_ORULES="$PROGRAM_F77_ELF_ORULES
+\$(ELFDIR)/$1.o : \$(SRCDIR)/$1.f \$(DOT_O_DEPS) \$("$1"_O_DEP)
+	cd \$(ELFDIR); \$(F77_ELFCOMPILE_CMD) \$("$1"_F77_FLAGS) \$("$1"_ELF_F77_FLAGS) \$(SRCDIR)/$1.f
+"
+])
+
+dnl#}}}
+
+AC_DEFUN(JH_CREATE_F77_MODULE_ORULES, dnl#{{{
+[
+ for program_module in $Program_F77_Modules; do
+   JH_CREATE_F77_ORULE($program_module)
+   JH_CREATE_F77_ELFORULE($program_module)
+ done
+])
+
+dnl#}}}
+
+AC_DEFUN(JH_GET_F77_MODULES, dnl#{{{
+[
+ if test -z "$1"
+ then
+   Program_F77_Modules=""
+ else
+   Program_F77_Modules=`cat $1`
+ fi
+ PROGRAM_F77_OFILES=""
+ PROGRAM_F77_OBJECTS=""
+ PROGRAM_F77_ELFOBJECTS=""
+ for program_module in $Program_F77_Modules; do
+   PROGRAM_F77_OFILES="$PROGRAM_F77_OFILES $program_module.o"
+   PROGRAM_F77_OBJECTS="$PROGRAM_F77_OBJECTS \$(OBJDIR)/$program_module.o"
+   PROGRAM_F77_ELFOBJECTS="$PROGRAM_F77_ELFOBJECTS \$(ELFDIR)/$program_module.o"
+ done
+AC_SUBST(PROGRAM_F77_OFILES)dnl
+AC_SUBST(PROGRAM_F77_OBJECTS)dnl
+AC_SUBST(PROGRAM_F77_ELFOBJECTS)dnl
+])
+
+dnl#}}}
+
+AC_DEFUN(JH_F77_DEFS, dnl#{{{
+[
+case "$host_os" in
+ *linux* )
+   F77_DEFS="-Dg77Fortran"
+ ;;
+ *darwin*)
+   F77_DEFS="-Dg77Fortran"
+   ;;
+ *)
+   F77_DEFS=""
+   ;;
+esac
+AC_SUBST(F77_DEFS)
+])
+
+dnl#}}}

@@ -8,10 +8,19 @@ AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
+# Note that Fortran flags may depend on the C compiler (if gcc-3).
+AC_PROG_F77
+
 JD_INIT
 JD_ANSI_CC
 JD_ELF_COMPILER
 JD_IEEE_CFLAGS
+
+AC_F77_LIBRARY_LDFLAGS
+AC_F77_DUMMY_MAIN(,
+  AC_DEFINE(F77_DUMMY_MAIN,MAIN__)
+)
+JH_F77_DEFS
 
 AC_PATH_XTRA
 
@@ -25,6 +34,7 @@ dnl# This macro inits the module installation dir
 JD_SLANG_MODULE_INSTALL_DIR
 
 JD_GET_MODULES(src/modules.lis)
+JH_GET_F77_MODULES(src/f77_modules.lis)
 
 dnl Check these header since they cause trouble
 AC_CHECK_HEADERS( \
@@ -48,12 +58,17 @@ AC_OUTPUT(Makefile:autoconf/Makefile.in src/Makefile)
 JD_CREATE_MODULE_ORULES(src)
 JD_APPEND_RULES(src/Makefile)
 
+JH_CREATE_F77_MODULE_ORULES(src)
+JH_APPEND_F77_RULES(src/Makefile)
+dnl JH_APPEND_F77_ELFRULES(src/Makefile)
+
 echo ""
 echo "You are compiling with the following compiler configuration:"
 echo "        CC =" "$CC"
 echo " CC_SHARED =" "$CC_SHARED"
 echo "    CFLAGS =" "$CFLAGS"
 echo "   LDFLAGS =" "$LDFLAGS" "$DYNAMIC_LINK_FLAGS"
+echo "      F77 =" "$F77"
 echo ""
 echo "The modules will be installed in $MODULE_INSTALL_DIR."
 echo "Any associated .sl files will be install in $SL_FILES_INSTALL_DIR"
