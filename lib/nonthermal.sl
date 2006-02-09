@@ -66,6 +66,8 @@ public define ntbrem_table_init_hook (file) %{{{
    return (p, bdry.xleft, bdry.yleft, keys);
 }
 
+%}}}
+
 private define _get_table_names (file, env) %{{{
 {
    variable list;
