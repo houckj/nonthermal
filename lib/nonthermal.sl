@@ -29,7 +29,7 @@ public define invc_table_init_hook (file) %{{{
         variable k = ();
         keys[k] = get_struct_field (s, key_names[k]);
      }
-   variable b = struct 
+   variable b = struct
      {
         x, y, f
      };
@@ -55,7 +55,7 @@ public define ntbrem_table_init_hook (file) %{{{
         variable k = ();
         keys[k] = get_struct_field (s, key_names[k]);
      }
-   variable b = struct 
+   variable b = struct
      {
         x, y, f
      };
@@ -151,13 +151,39 @@ define _ntbrem_table_file () %{{{
 
 %}}}
 
-private define nonthermal_init () %{{{
+private define add_function () %{{{
 {
    variable lib_file = "libnonthermal.so";
-   add_compiled_function (lib_file, "sync", _sync_table_file());
-   add_compiled_function (lib_file, "invc", _invc_table_file());
-   add_compiled_function (lib_file, "ntbrem", _ntbrem_table_file());
-   add_compiled_function (lib_file, "pizero");
+   variable name, arg;
+
+   try
+     {
+        if (_NARGS == 1)
+          {
+             name = ();
+             add_compiled_function (lib_file, name);
+          }
+        else
+          {
+             (name, arg) = ();
+             add_compiled_function (lib_file, name, arg);
+          }
+     }
+   catch AnyError:
+     {
+        vmessage ("*** %s model is not loaded", name);
+        del_function (name);
+     }
+}
+
+%}}}
+
+private define nonthermal_init () %{{{
+{
+   add_function ("sync", _sync_table_file());
+   add_function ("invc", _invc_table_file());
+   add_function ("ntbrem", _ntbrem_table_file());
+   add_function ("pizero");
 }
 
 %}}}
