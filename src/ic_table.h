@@ -7,7 +7,6 @@
 
 extern void ic_free_client_data (void *);
 extern void *ic_init_client_data (const char *file);
-extern int ic_push_table (Inverse_Compton_Type *ic);
 extern int ic_interp_photon_integral (Inverse_Compton_Type *ic, double *value);
 extern void ic_set_dilution_factors (void *v, double *df, unsigned int n);
 

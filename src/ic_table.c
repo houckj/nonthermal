@@ -32,15 +32,6 @@ struct IC_Table_Type
    unsigned int n;
 };
 
-int ic_push_table (Inverse_Compton_Type *ic) /*{{{*/
-{
-   (void) ic;
-   fprintf (stderr, "*** ic_push_table: not implemented\n");
-   return 0;
-}
-
-/*}}}*/
-
 void ic_free_client_data (void *v) /*{{{*/
 {
    IC_Table_Type *sa = (IC_Table_Type *)v;

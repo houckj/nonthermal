@@ -109,15 +109,6 @@ void *ntb_init_client_data (const char *file) /*{{{*/
 
 /*}}}*/
 
-int ntb_push_table (int process) /*{{{*/
-{
-   (void) process;
-   fprintf (stderr, "ntb_push_table:  not implemented\n");
-   return 0;
-}
-
-/*}}}*/
-
 static int bsearch_d (double t, double *x, int n) /*{{{*/
 {
    int n0, n1, n2;

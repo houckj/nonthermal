@@ -292,30 +292,6 @@ static int unbinned_sync (double *val, Isis_User_Grid_t *g, double *par, unsigne
 
 /*}}}*/
 
-static void _invc_make_table (double *t) /*{{{*/
-{
-   Inverse_Compton_Type ic = NULL_INVERSE_COMPTON_TYPE;
-   int status;
-
-   if (*t <= 0) *t = CBR_TEMPERATURE;
-
-   fprintf (stdout, "Generating IC table for T = %g K\n", *t);
-   fflush (stdout);
-
-   set_incident_photon_kelvin_temperature (*t);
-
-   ic.electrons = NULL;
-   ic.incident_photons = &incident_photon_spectrum;
-   ic.incident_photon_max_energy = incident_photon_max_energy ();
-
-   status = ic_push_table (&ic);
-
-   if (status)
-     fprintf (stderr, "*** failed computing IC table for T = %g K\n", *t);
-}
-
-/*}}}*/
-
 static double _invc_photon_integral (double *gamma, double *energy_final_photon, /*{{{*/
                                     double *t, int *interpolate)
 {
@@ -522,7 +498,6 @@ static SLang_Intrin_Var_Type Invc_Intrin_Vars [] =
 static SLang_Intrin_Fun_Type Invc_Intrinsics [] =
 {
    MAKE_INTRINSIC("_invc_set_dilution_factors", _invc_set_dilution_factors, V, 0),
-   MAKE_INTRINSIC_1("_invc_make_table", _invc_make_table, V, D),
    MAKE_INTRINSIC_4("_invc_photon_integral", _invc_photon_integral, D, D,D,D,I),
    SLANG_END_INTRIN_FUN_TABLE
 };
@@ -638,21 +613,6 @@ static int unbinned_brem (double *val, Isis_User_Grid_t *g, double *par, unsigne
 
    return _nt_contin ((void *)&b, &ntb_brems,
                       val, g, par, npar);
-}
-
-/*}}}*/
-
-static void _ntb_make_table (int *process) /*{{{*/
-{
-   int status;
-
-   fprintf (stdout, "Generating nonthermal bremsstrahlung cross-section table\n");
-   fflush (stdout);
-
-   status = ntb_push_table (*process);
-
-   if (status)
-     fprintf (stderr, "*** failed computing table\n");
 }
 
 /*}}}*/
@@ -814,7 +774,6 @@ static SLang_Intrin_Var_Type Ntb_Intrin_Vars [] =
 
 static SLang_Intrin_Fun_Type Ntb_Intrinsics [] =
 {
-   MAKE_INTRINSIC_1("_ntb_make_table", _ntb_make_table, V, I),
    MAKE_INTRINSIC_2("_ntb_set_process_weights", _ntb_set_process_weights, V, D,D),
    MAKE_INTRINSIC("_ep_heitler", _ep_heitler, V, 0),
    MAKE_INTRINSIC("_ee_haug", _ee_haug, V, 0),
