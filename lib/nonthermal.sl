@@ -162,7 +162,9 @@ private define nonthermal_init () %{{{
 
 nonthermal_init ();
 
-require ("sync_make_table");
+autoload ("_invc_make_table", "invc_make_table");
+autoload ("_ntbrem_make_table", "ntbrem_make_table");
+autoload ("_sync_make_table", "sync_make_table");
 
 define make_sync_table () %{{{
 {
@@ -180,13 +182,63 @@ define make_sync_table () %{{{
      {
 	% default
 	_pop_n (_NARGS);
-	usage ("status = make_sync_table ([filename])");
+	usage ("make_sync_table ([filename])");
 	return;
      }
 
    variable t = _sync_make_table ();
 
    fits_write_binary_table (file, "TABLE", t);
+}
+
+%}}}
+
+define make_invc_table () %{{{
+{
+   variable file = _invc_table_file_name;
+
+   switch (_NARGS)
+     {
+      case 0:
+	% use defaults
+     }
+     {
+      case 1:
+	file = ();
+     }
+     {
+	% default
+	_pop_n (_NARGS);
+	usage ("make_invc_table ([filename])");
+	return;
+     }
+
+   _invc_make_table (file);
+}
+
+%}}}
+
+define make_ntbrem_table () %{{{
+{
+   variable file = _ntbrem_table_file_name;
+
+   switch (_NARGS)
+     {
+      case 0:
+	% use defaults
+     }
+     {
+      case 1:
+	file = ();
+     }
+     {
+	% default
+	_pop_n (_NARGS);
+	usage ("make_ntbrem_table ([filename])");
+	return;
+     }
+
+   _ntbrem_make_table (file);
 }
 
 %}}}

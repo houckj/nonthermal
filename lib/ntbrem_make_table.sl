@@ -217,6 +217,7 @@ private define boundary_corners ()
         variable t = [0:num-1]/(num*1.0);  % don't want t[-1]=1
         Yleft = Log_Y_Range[0] + (Log_Y_Range[1]-Log_Y_Range[0])*t;
         Xleft = array_map (Double_Type, &find_root, Yleft);
+        vmessage ("writing %s", file);
         fp = fits_open_file (file, "c");
         save_boundary (fp, Xleft, Yleft);
         fits_close_file (fp);
@@ -239,7 +240,7 @@ private define boundary_corners ()
    return (xx, ylg);
 }
 
-private define compute_table()
+private define compute_table(file)
 {
    variable x, y;
    (x,y) = boundary_corners ();
@@ -306,15 +307,15 @@ private define compute_table()
    t.ygrid = ygrid;
    t.f = f;
 
-   variable fp = fits_open_file ("ntbrem.fits", "c");
+   variable fp = fits_open_file (file, "c");
    fits_write_binary_table (fp, "TABLE", t, keys, NULL);
    fits_write_binary_table (fp, "BOUNDARY", bdry, keys, NULL);
    fits_close_file(fp);
 }
 
-public define ntbrem_make_table()
+public define _ntbrem_make_table (file)
 {
-   compute_table();
+   compute_table(file);
 }
 
 provide ("ntbrem_make_table");
