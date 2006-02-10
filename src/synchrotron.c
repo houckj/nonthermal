@@ -111,24 +111,9 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 }
 
 /*}}}*/
-#else
+#else  /* DO_ANGULAR_INTEGRAL */
 
 #include <gsl/gsl_sf_hyperg.h>
-
-#if 0
-static double W (double kappa, double mu, double x) /*{{{*/
-{
-   return exp(-x/2.0) * pow (x,mu + 0.5) 
-     * gsl_sf_hyperg_U (0.5+mu-kappa, 1+2*mu, x);
-}
-
-static double R (double x)
-{
-   return 0.5*M_PI*x *
-     (W (0.0, 4.0/3, x) * W (0.0, 1.0/3, x)
-      - W (0.5, 5.0/6, x) * W (-0.5, 5.0/6, x));
-}
-#endif
 
 static double uu (double kappa, double mu, double x)
 {
@@ -137,9 +122,26 @@ static double uu (double kappa, double mu, double x)
 
 static double R_factored (double x)
 {
-   return 0.5*M_PI * exp(-x) * pow(x, 11.0/3)
-     * (uu(0, 4.0/3, x) * uu(0, 1.0/3, x)
-        - uu(0.5, 5.0/6, x) * uu(-0.5, 5.0/6, x));
+   double a, u1, u2, s;
+
+   u1 = uu(0.0, 4.0/3, x) * uu( 0.0, 1.0/3, x);
+   u2 = uu(0.5, 5.0/6, x) * uu(-0.5, 5.0/6, x);
+
+   if (u1 == 0.0 && u2 == 0.0)
+     return 0.0;
+
+   if (fabs(u2) < fabs(u1))
+     {
+        s = u1 * (1.0 - u2/u1);
+     }
+   else
+     {
+        s = u2 * (u1/u2 - 1.0);
+     }
+
+   a = 0.5 * M_PI * exp(-x) * pow(x, 11.0/3);
+
+   return a * s;
 }
 
 /*}}}*/
@@ -151,7 +153,7 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 }
 /*}}}*/
 
-#endif
+#endif /* DO_ANGULAR_INTEGRAL */
 
 static int eval_angular_integral (double x, void *pt, double *y) /*{{{*/
 {
@@ -178,6 +180,7 @@ static double synchrotron_integrand (double pc, void *pt) /*{{{*/
 
    pcomc2 = pc / (elec->mass * C_SQUARED);
    gamma2 = 1.0 + pcomc2*pcomc2;
+
    /* x = (photon energy) / (critical energy) */
    x = (s->photon_energy
            / (SYNCHROTRON_CRIT_ENERGY_COEF * s->B_tot * gamma2));
@@ -218,9 +221,8 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qag (&f, pc_min, pc_max, epsabs, epsrel,
-                                 limit, GSL_INTEG_GAUSS31, work,
-                                 &integral, &abserr);
+   status = gsl_integration_qagiu (&f, pc_min, epsabs, epsrel, limit, work,
+                                   &integral, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);

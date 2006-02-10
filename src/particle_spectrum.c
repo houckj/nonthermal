@@ -51,7 +51,7 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
 
 static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
 {
-   double mc2, E, T, e0, pcomc2, x, g, f;
+   double mc2, E, T, e0, r, sq, x, g, f;
 
    if (pt == NULL || ne == NULL)
      return -1;
@@ -61,9 +61,11 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
    mc2 = pt->mass * C_SQUARED;
    e0  = pt->cutoff_energy * TEV;
 
-   pcomc2 = pc/mc2;
-   E = mc2 * sqrt (1.0 + pcomc2 * pcomc2);
-   T = E - mc2;
+   r = pc/mc2;
+   sq = sqrt (1.0 + r*r);
+   E = mc2 * sq;
+   /* r >> 1 so no worries about precision loss here */
+   T = mc2 * (sq - 1.0);
 
    x = pc / GEV;
    g = pt->index;
@@ -87,15 +89,15 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
         if (E >= 100.0 * GEV)
           {
              double t = 2.5 * GEV/ pc;
-             f = 1.67*pow(pc/GEV, -2.7) /sqrt(1.0 + t*t);             
+             f = 1.67*pow(pc/GEV, -2.7) /sqrt(1.0 + t*t);
           }
         else
           {
              f = 6.65e-6*pow(E/(100.0*GEV), -2.75);
-          }        
+          }
         f *= f0;
-     }   
-#endif   
+     }
+#endif
 
    if (!finite(f))
      f = 0.0;
