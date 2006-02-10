@@ -137,8 +137,9 @@ static double uu (double kappa, double mu, double x)
 
 static double R_factored (double x)
 {
-   return 0.5*M_PI * exp(-x) * pow(x, 11.0/3) *
-     (uu(0,4.0/3,x) * uu(0, 1.0/3, x) - uu(0.5, 5.0/6, x)*uu(-0.5, 5.0/6, x));
+   return 0.5*M_PI * exp(-x) * pow(x, 11.0/3)
+     * (uu(0, 4.0/3, x) * uu(0, 1.0/3, x)
+        - uu(0.5, 5.0/6, x) * uu(-0.5, 5.0/6, x));
 }
 
 /*}}}*/
