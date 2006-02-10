@@ -53,7 +53,7 @@ static void *pop_table (char *file) /*{{{*/
    IC_Table_Type *t = NULL;
    SLang_Array_Type *k=NULL, *x=NULL, *y=NULL;
    double *keys;
-   int status;
+   int status = -1;
 
    if (-1 == SLang_run_hooks ("invc_table_init_hook", 1, file))
      return NULL;
