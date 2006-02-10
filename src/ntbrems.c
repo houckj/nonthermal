@@ -24,13 +24,38 @@
 #include "ntbrems.h"
 #include "ntb_table.h"
 
+static double exp_fcn (double x)
+{
+   double f;
+   
+   if (x > 0.01)
+     f = (1.0 - exp(-x))/x;
+   else
+     {
+        f = 1.0 - (x/2.0)
+            *(1.0 - (x/3.0)
+              *(1.0 - (x/4.0)
+                *(1.0 - (x/5.0)
+                  *(1.0 - (x/6.0)
+                    *(1.0 - (x/7.0)
+                      *(1.0 - (x/8.0)))))));
+     }
+
+   return f;   
+}
+
+static double elwert (double x0, double x1)
+{
+   return exp_fcn(x0) / exp_fcn(x1);
+}
+
 /* electron-ion bremsstrahlung */
 double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{{*/
 {
    double k, g, g0, b, b0, sigma, Z=1.0;
    double r0, L, a, a0, phi_bar;
    double g0g, b0b, g02, g03, g2, g3, b02, b03, b2, b3, t1, t2, x;
-   double xi, xi0, elwert;
+   double xi, xi0;
 
    /* g0 = initial e- gamma   b0 = initial e- beta
     * g  = final e- gamma     b  = final e- beta
@@ -76,9 +101,13 @@ double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{
 #define TWO_PI_ALPHA (2.0 * M_PI * GSL_CONST_NUM_FINE_STRUCTURE)
    xi  = TWO_PI_ALPHA * Z / b;
    xi0 = TWO_PI_ALPHA * Z / b0;
+#if 0   
    elwert = (xi/xi0) * (1.0 - exp(-xi0))/(1.0 - exp(-xi));
    sigma *= elwert;
-
+#else
+   sigma *= elwert (xi0, xi);
+#endif
+   
    return sigma;
 }
 
@@ -108,7 +137,7 @@ static double eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
      e11, /* ct,*/ r44, x12, kq, pm, rk, w44, ro;
    double rq, wq, wr, xq, xr, ww, p1q, rq2, rq4, wq2, rx1, rx2,
      rx3, wq4, wr1, x1q, x2q, x3q, pct, wiq, wwq, wq2q, wq4q;
-   
+
    /* JCH added this to enforce energy conservation */
    if (pen > een)
      return 0.0;
