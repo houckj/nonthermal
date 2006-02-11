@@ -32,8 +32,6 @@ int Pizero_Method = 0;
 #define PIZERO_MASS_FACTOR      (4*SQR_PROTON_REST_ENERGY - SQR_PIZERO_REST_ENERGY)
 #define SQR_PIZERO_MASS_FACTOR  (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
 
-#define DIFF_SQR(a,b)  ((a)-(b))*((a)+(b))
-
 /* Placing MIN_PHOTON_ENERGY just above the threshold
  * eliminates the sharp peak in the photon spectrum near 70 MeV(?)
  */
@@ -44,6 +42,31 @@ int Pizero_Method = 0;
  */
 #define RESONANCE_WIDTH         ((0.115 * GEV)*0.5)
 #define RESONANCE_REST_ENERGY   (1233.0 * MEV)
+
+/* a^2 - b^2 */
+static double diff_sqr (double a, double b)
+{
+   double r, f = 0.0;
+
+   if (a > b)
+     {
+        r = b/a;
+        f = a * a * (1.0 + r) * (1.0 - r);
+     }
+   else if (b > a)
+     {
+        r = a/b;
+        f = b * b * (r + 1.0) * (r - 1.0);
+     }
+
+   return f;
+}
+
+/* sqrt (a^2 - b^2) */
+static double root_diff_sqr (double a, double b)
+{
+   return sqrt(diff_sqr (a,b));
+}
 
 typedef struct
 {
@@ -65,7 +88,7 @@ static void init_collision_info (Collision_Info_Type *info, double T_p, double T
 static double pizero_dermer_total_xsec (double T_p) /*{{{*/
 {
    double ep = T_p + PROTON_REST_ENERGY;
-   double pc = sqrt (DIFF_SQR(ep, PROTON_REST_ENERGY));
+   double pc = root_diff_sqr(ep, PROTON_REST_ENERGY);
    double s, sigma = 0.0;
 
    pc /= GEV;
@@ -79,7 +102,7 @@ static double pizero_dermer_total_xsec (double T_p) /*{{{*/
         tem = 2*PIZERO_REST_ENERGY;
         s = (T_p + TWO_PROTON_REST_ENERGY) / TWO_PROTON_REST_ENERGY;
         x = T_p - SQR_PIZERO_REST_ENERGY / TWO_PROTON_REST_ENERGY;
-        eta2 = DIFF_SQR(x,tem)/(4*SQR_PIZERO_REST_ENERGY*s);
+        eta2 = diff_sqr(x,tem)/(4*SQR_PIZERO_REST_ENERGY*s);
         eta4 = eta2 * eta2;
         sigma = eta2 * (0.032 + eta4 * (0.040 + eta2 * 0.047));
      }
@@ -105,7 +128,7 @@ static double pizero_dermer_total_xsec (double T_p) /*{{{*/
 static double bta (double g) /*{{{*/
 {
    if (g > 1.0)
-     return sqrt(DIFF_SQR(g,1.0))/g;
+     return root_diff_sqr(g ,1.0)/g;
    else return 0.0;
 }
 
@@ -125,8 +148,8 @@ static double gamma_fun (double g1, double g2, int sgn) /*{{{*/
    double root_s = sqrt(s); \
    double g_pi = 1.0 + T_pi / PIZERO_REST_ENERGY; \
    double g_c = root_s / TWO_PROTON_REST_ENERGY; \
-   double g_d_cm = (s + DIFF_SQR(m_d,PIZERO_REST_ENERGY)) / (2 * root_s * m_d); \
-   double g_pi_i = ((m_d * m_d + DIFF_SQR(PIZERO_REST_ENERGY,PROTON_REST_ENERGY)) \
+   double g_d_cm = (s + diff_sqr(m_d,PIZERO_REST_ENERGY)) / (2 * root_s * m_d); \
+   double g_pi_i = ((m_d * m_d + diff_sqr(PIZERO_REST_ENERGY,PROTON_REST_ENERGY)) \
                        / (2 * PIZERO_REST_ENERGY * m_d))
 
 #define PLUS_COMMON \
@@ -375,7 +398,7 @@ static double lidcs_stephens_badhwar (double T_p, double T_pi, double mu, double
 
    /* Max CM frame pion momentum */
    e_max_cm = 0.5*(root_s - PIZERO_MASS_FACTOR / root_s);
-   p_max_cm = sqrt (DIFF_SQR(e_max_cm, PIZERO_REST_ENERGY));
+   p_max_cm = root_diff_sqr (e_max_cm, PIZERO_REST_ENERGY);
 
    /* S&B's cross-section parameterization */
    yp = 1.0 + 4*m_p2/s;
@@ -562,7 +585,7 @@ static int delta_function_approximation (Pizero_Type *p, double *val) /*{{{*/
    double kappa = 0.17;
 
    eproton_delta = PROTON_REST_ENERGY + p->energy /kappa;
-   proton_pc = sqrt (DIFF_SQR(eproton_delta, PROTON_REST_ENERGY));
+   proton_pc = root_diff_sqr (eproton_delta, PROTON_REST_ENERGY);
    (void)(*protons->spectrum)(protons, proton_pc, &np);
 
    beta = proton_pc / eproton_delta;
@@ -656,7 +679,7 @@ static double proton_momentum_threshold (double e_pizero) /*{{{*/
 
    eproton_thresh = 2*e_pizero + PROTON_REST_ENERGY
      + 0.5 * SQR_PIZERO_REST_ENERGY / PROTON_REST_ENERGY;
-   pc = sqrt (DIFF_SQR(eproton_thresh, PROTON_REST_ENERGY));
+   pc = root_diff_sqr (eproton_thresh, PROTON_REST_ENERGY);
 
    return pc;
 }
@@ -785,8 +808,8 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
    Pizero_Type *p = (Pizero_Type *)x;
    double q, s, pc_pizero;
    int status;
-
-   if (e_pizero < PIZERO_REST_ENERGY)
+   
+   if (e_pizero <= PIZERO_REST_ENERGY)
      return 0.0;
 
    if (p->interpolate == 2)
@@ -799,7 +822,7 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
         status = pizero_distribution (p, &q);
      }
 
-   pc_pizero = sqrt (DIFF_SQR(e_pizero, PIZERO_REST_ENERGY));
+   pc_pizero = root_diff_sqr (e_pizero, PIZERO_REST_ENERGY);
    s = q / pc_pizero;
 
    return status ? 0.0 : s;
@@ -820,14 +843,14 @@ static int pizero_min_energy (double photon_energy, double *e_pizero) /*{{{*/
 
 static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
 {
-   double pc_max, ep_max, root_s, e_pizero_cm, gamma_cm;
+   double pc_max, ep_max, e_pizero_cm, gamma_cm, s;
 
    pc_max = (*protons->momentum_max)(protons);
    ep_max = hypot (pc_max, PROTON_REST_ENERGY);
-   root_s = sqrt (TWO_PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max));
+   s = TWO_PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max);
 
    /* CM frame energy:  See Blattnig et al (2000), Appendix A */
-   e_pizero_cm = 0.5 * (root_s - PIZERO_MASS_FACTOR / root_s);
+   e_pizero_cm = 0.5 * sqrt(s) * (1.0 - PIZERO_MASS_FACTOR / s);
 
    /* lab frame max energy */
    gamma_cm = sqrt (0.5*(ep_max/PROTON_REST_ENERGY + 1));
