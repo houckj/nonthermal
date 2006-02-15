@@ -225,11 +225,19 @@ private define boundary_corners ()
         Yleft = s.y;
      }
 
-   variable xx, xlg, ylg, xright;
-   xright = ones(length(Yleft)) * (Log_X_Range[1] + 0.5);
+   variable xx, xlg, ylg;
+#iffalse
+   variable xright = ones(length(Yleft)) * (Log_X_Range[1] + 0.5);
    xlg = [Xleft + X_Epsilon, xright];
    ylg = [Yleft,             Yleft];
    xx = log_to_lglg (xlg, ylg);
+#else   
+   xlg = Xleft + X_Epsilon;
+   ylg = Yleft;
+   xx = log_to_lglg (xlg, ylg);
+   xx = [xx, ones(length(Yleft))*3.0];
+   ylg = [ylg, Yleft];
+#endif   
 
    return (xx, ylg);
 }
@@ -307,7 +315,7 @@ private define compute_table (file)
    fits_close_file(fp);
 }
 
-public define _invc_make_table (file)
+define _invc_make_table (file)
 {
    compute_table(file);
 }

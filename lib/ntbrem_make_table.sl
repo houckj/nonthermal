@@ -313,7 +313,7 @@ private define compute_table(file)
    fits_close_file(fp);
 }
 
-public define _ntbrem_make_table (file)
+define _ntbrem_make_table (file)
 {
    compute_table(file);
 }
