@@ -4,7 +4,7 @@
 # List of modules and associated .sl files to install
 #---------------------------------------------------------------------------
 MODULES = libnonthermal.so nonthermal-module.so 
-SL_FILES = nonthermal.sl sync_make_table.sl
+SL_FILES = nonthermal.sl sync_make_table.sl invc_make_table.sl ntbrem_make_table.sl
 DATA_FILES = syn_table.fits ic_table.fits ntb_ee_table.fits
 
 #---------------------------------------------------------------------------
