@@ -29,14 +29,13 @@
 
 static int blackbody_photons (double e, double t, double *y) /*{{{*/
 {
-   double min_exp = 1.e-13;
    double max_exp = 500.0;
-   double x;
+   double x, f;
 
    *y = 0.0;
 
    if (t <= 0.0)
-     return 0.0;
+     return 0;
 
    /* e: in units of electron rest-energy */
    /* t: Kelvin -> dimensionless */
@@ -44,14 +43,29 @@ static int blackbody_photons (double e, double t, double *y) /*{{{*/
 
    x = e / t;
 
-   if (x < min_exp)
-     *y = e * t;
-   else if (x > max_exp)
-     *y = 0.0;
+   if (x > max_exp)
+     {
+        f = 0.0;
+     }   
+   else if (x > 1.e-3)
+     {
+        f = e * e /(exp (x) - 1.0);
+     }
    else
-     *y = e * e /(exp (x) - 1.0);
+     {
+        double den =
+            1.0 + (x/2)
+            *(1.0 + (x/3)
+              *(1.0 + (x/4)
+                *(1.0 + (x/5)
+                  *(1.0 + (x/6)
+                    *(1.0 + (x/7)
+                      *(1.0 + (x/8)))))));
 
-   *y *= BBODY_COEF;
+        f = e * t / den;
+     }
+
+   *y = f * BBODY_COEF;
 
    return 0;
 }
