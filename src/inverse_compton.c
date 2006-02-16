@@ -47,10 +47,10 @@ static int sigma_klein_nishina (double energy_initial_photon, /*{{{*/
 
    eg = energy_initial_photon * electron_gamma;
    g = 4.0 * eg;
-   q = (energy_final_photon
-        / (g * (electron_gamma - energy_final_photon)));
+   q = (energy_final_photon / g / electron_gamma
+        / (1.0 - energy_final_photon / electron_gamma));
 
-   qmin = 1.0/(4.0*electron_gamma*electron_gamma);
+   qmin = 0.25 / electron_gamma / electron_gamma;
    if (q < qmin || 1.0 < q)
      return 0;
 
