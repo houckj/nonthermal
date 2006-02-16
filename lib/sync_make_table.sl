@@ -1,8 +1,13 @@
+private define fcn (x)
+{
+   return _sync_angular_integral (x, 0);
+}
+
 private define make_entry (x)
 {
    variable t = struct {x, y, next};
    t.x = x;
-   t.y = _sync_angular_integral(x, 0);
+   t.y = fcn(x);
    %() = fprintf (stderr, "%17.8e %17.8e\r", log10(x), log10(t.y));
    return t;
 }
@@ -22,41 +27,63 @@ private define add_entry_after (t)
    return t;
 }
 
-private define need_new_entry (list, tol)
+private define refine_table (list, x_tol, y_tol)
 {
-   foreach (list)
+   variable t = list;
+   variable added_entries = 0;
+
+   forever
      {
-	variable t = ();
+        variable split = 0;
 
 	if (orelse
             {t.next == NULL}
             {t.x >= t.next.x})
-	  return NULL;
+          break;
 
-        % don't let y change too much
-        if (abs(t.next.y - t.y) > tol * abs(t.y))
-	  return t;
+        if (abs(1.0 - t.x/t.next.x) > x_tol)
+          {
+             split = 1;
+          }
+        else
+          {
+             variable ya, yb;
 
-        % don't let x change too much
-        if (abs(t.next.x - t.x) > tol * abs(t.next.x))
-          return t;
+             ya = fcn (sqrt(t.x * t.next.x));
+             yb = sqrt(t.y * t.next.y);
+
+             if (abs(1.0 - yb/ya) > y_tol)
+               {
+                  split = 1;
+               }
+          }
+
+        if (split)
+          {
+             t = add_entry_after (t);
+             added_entries = 1;
+          }
+
+        t = t.next;
      }
 
-   return NULL;
+   return added_entries;
 }
 
-private define make_table (x_min, x_max, tol)
+private define make_table (x_min, x_max, x_tol, y_tol)
 {
    variable t = init_list (x_min, x_max);
-   variable num = 2;
 
-   variable n = t;
    forever
      {
-        n = need_new_entry (n, tol);
-        if (n == NULL)
+        if (0 == refine_table (t, x_tol, y_tol))
           break;
-        n = add_entry_after (n);
+     }
+
+   variable n, num = 0;
+   foreach (t)
+     {
+        n = ();
         num++;
      }
 
@@ -64,10 +91,14 @@ private define make_table (x_min, x_max, tol)
    x = Double_Type[num];
    y = Double_Type[num];
 
-   num = 0;
-   foreach (t)
+   num = 1;
+   x[0] = t.x;
+   y[0] = t.y;
+   foreach (t.next)
      {
         n = ();
+        if (n.x == x[num-1])
+          continue;
         x[num] = n.x;
         y[num] = n.y;
         num++;
@@ -84,8 +115,9 @@ define _sync_make_table ()
 {
    variable x_min = 1.0e-38;
    variable x_max = 100.0;
-   variable y_tol = 0.05;
-   return make_table (x_min, x_max, y_tol);
+   variable x_tol = 0.05;
+   variable y_tol = 1.25e-4;
+   return make_table (x_min, x_max, x_tol, y_tol);
 }
 
 provide ("sync_make_table");
