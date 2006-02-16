@@ -255,8 +255,8 @@ private define compute_table (file)
    xright = x[r];
    yy = y[l];
 
-   variable nx = 512;
-   variable ny = 512;
+   variable nx = 1024;
+   variable ny = 1024;
 
    variable xmn, xmx, xgrid;
    xmn = min(xleft);
@@ -274,7 +274,7 @@ private define compute_table (file)
    _for (0, ny-1, 1)
      {
         j = ();
-        print(j);
+        () = fprintf (stderr, "%d\r", j);
         xl = interpol (ygrid[j], yy, xleft);
         xr = interpol (ygrid[j], yy, xright);
         i = where (xl <= xgrid and xgrid < xr);
@@ -282,6 +282,7 @@ private define compute_table (file)
           continue;
         f[j,i] = fcn_lglg (xgrid[i], ygrid[j]);
      }
+   () = fprintf (stderr, "\n");
 
    variable keys = struct
      {
