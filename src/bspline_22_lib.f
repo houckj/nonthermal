@@ -2,6 +2,37 @@ C-*-fortran-*-
 c
 c John C. Houck <houck@space.mit.edu> made a few changes,
 c all of which are marked with JCH
+
+      integer function ibsearch (t, x, n)
+      double precision t, xt, x(n)
+      integer n0,n1,n2
+
+      if ((t.lt.x(1)) .or. (x(n).le.t)) then
+        ibsearch = 0
+        return
+      endif
+
+      n0 = 1
+      n1 = n
+
+      do while (n1.gt.n0+1)
+        n2 = (n0 + n1) / 2
+        xt = x(n2)
+        if (t .le. xt) then
+          if (xt .eq. t) then
+            ibsearch = n2
+            return
+          endif
+          n1 = n2
+        else
+          n0 = n2
+        endif
+      enddo
+
+      ibsearch = n0
+      
+      return
+      end
 c
 c   VERSION 2.2
 c
@@ -289,17 +320,20 @@ c     check if xknot(i) <= xknot(i+1) and calculation of i so that
 c     xknot(i) <= x < xknot(i+1)
 c
 
-      leftx = 0
+C       leftx = 0
 
-      do 10 ix = 1,nx+kx-1
-         if (xknot(ix) .gt. xknot(ix+1)) then
-             write(6,*) 'subroutine dbsval:'
-             write(6,*) 'xknot(ix) <= xknot(ix+1) required.'
-             write(6,*) ix,xknot(ix),xknot(ix+1)
-          stop
-          endif
-         if((xknot(ix) .le. x) .and. (x .lt. xknot(ix+1))) leftx = ix
-10    continue
+c      do 10 ix = 1,nx+kx-1
+c         if (xknot(ix) .gt. xknot(ix+1)) then
+c             write(6,*) 'subroutine dbsval:'
+c             write(6,*) 'xknot(ix) <= xknot(ix+1) required.'
+c             write(6,*) ix,xknot(ix),xknot(ix+1)
+c          stop
+c          endif
+c         if((xknot(ix) .le. x) .and. (x .lt. xknot(ix+1))) leftx = ix
+c10    continue
+
+cJCH  replaced linear search with binary search
+      leftx = ibsearch (x, xknot, nx+kx)
 
       if(leftx .eq. 0) then
          write(6,*) 'subroutine dbsval:'
@@ -916,37 +950,6 @@ c %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 c %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-      integer function ibsearch (t, x, n)
-      double precision t, xt, x(n)
-      integer n0,n1,n2
-
-      if ((t.lt.x(1)) .or. (x(n).le.t)) then
-        ibsearch = 0
-        return
-      endif
-
-      n0 = 1
-      n1 = n
-
-      do while (n1.gt.n0+1)
-        n2 = (n0 + n1) / 2
-        xt = x(n2)
-        if (t .le. xt) then
-          if (xt .eq. t) then
-            ibsearch = n2
-            return
-          endif
-          n1 = n2
-        else
-          n0 = n2
-        endif
-      enddo
-
-      ibsearch = n0
-      
-      return
-      end
 
       function dbs2vl(x,y,kx,ky,xknot,yknot,nx,ny,bcoef)
 
