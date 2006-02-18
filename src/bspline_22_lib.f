@@ -175,7 +175,7 @@ c         xknot(i) = xvec(nx) * (1.0d0 + eps)
 c 60   continue
 cJCH  original algorithm fails when grid points are not positive
       do 60 i = nx+1,nx+kxord
-        if (xvec(nx) .ne. 0.0) then
+        if (xvec(nx) .ne. 0.0d0) then
           xknot(i) = xvec(nx) + eps * abs(xvec(nx))
         else
           xknot(i) = xvec(nx) + eps * abs(xvec(nx-1))
@@ -1052,9 +1052,9 @@ cJCH  replaced linear search with binary search
       if(lefty .eq. 0) then
          write(6,*) 'subroutine dbs2vl:'
          write(6,*) 'i with yknot(i) <= y < yknot(i+1) required.'
-         write(6,*) 'yknot(i)   = ', yknot(i)
+c         write(6,*) 'yknot(i)   = ', yknot(i)
          write(6,*) '  y        = ', y
-         write(6,*) 'yknot(i+1) = ', yknot(i+1)
+c         write(6,*) 'yknot(i+1) = ', yknot(i+1)
          stop
       endif
       
