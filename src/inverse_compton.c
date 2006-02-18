@@ -152,7 +152,7 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    f.function = &electrons_integrand;
    f.params = ic;
    epsabs = 0.0;
-   epsrel = 1.e-9;
+   epsrel = 1.e-10;
    limit = MAX_QAG_SUBINTERVALS;
 
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);
@@ -164,15 +164,8 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 0
-   status = gsl_integration_qag (&f, pc_min, pc_max, epsabs, epsrel,
-                                 limit, GSL_INTEG_GAUSS31, work,
-                                 val, &abserr);
-#else
-   /* This does a better job near the cutoff */
    status = gsl_integration_qagiu (&f, pc_min, epsabs, epsrel, limit, work,
                                    val, &abserr);
-#endif   
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
