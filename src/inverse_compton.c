@@ -31,7 +31,7 @@ static int sigma_klein_nishina (double energy_initial_photon, /*{{{*/
                                 double electron_gamma,
                                 double energy_final_photon, double *sigma)
 {
-   double q, g, eg, qmin;
+   double q, g, eg, qmin, x;
 
    *sigma = 0.0;
 
@@ -47,15 +47,15 @@ static int sigma_klein_nishina (double energy_initial_photon, /*{{{*/
 
    eg = energy_initial_photon * electron_gamma;
    g = 4.0 * eg;
-   q = (energy_final_photon / g / electron_gamma
-        / (1.0 - energy_final_photon / electron_gamma));
+   x = energy_final_photon / electron_gamma;
+   q = (x/g) / (1.0 - x);
 
    qmin = 0.25 / electron_gamma / electron_gamma;
    if (q < qmin || 1.0 < q)
      return 0;
 
    *sigma = (2.0 * q * log(q)
-             + (1.0 - q) * (1.0 + q * (2.0 + 0.5*g*g*q/(1.0 + g*q))));
+             + (1.0 - q) * (1.0 + (2.0/g + 0.5*x) * x / (1.0 - x)));
 
    *sigma *= (KLEIN_NISHINA_COEF / (eg * electron_gamma));
 
