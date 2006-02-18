@@ -306,6 +306,7 @@ static double _invc_photon_integral (double *gamma, double *energy_final_photon,
    ic.electrons = NULL;
    ic.incident_photons = &incident_photon_spectrum;
    ic.incident_photon_max_energy = incident_photon_max_energy();
+   ic.incident_photon_min_energy = incident_photon_min_energy();
    ic.client_data = ic_client_data;
 
    if (*interpolate)

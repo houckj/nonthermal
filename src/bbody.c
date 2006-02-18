@@ -81,6 +81,14 @@ double incident_photon_max_energy (void)
    return 50.0 * peak_energy;
 }
 
+double incident_photon_min_energy (void)
+{
+   double peak_energy = (Photon_Temperature 
+                         * GSL_CONST_CGSM_BOLTZMANN / GSL_CONST_CGSM_ELECTRON_VOLT);
+   /* min energy that can scatter to an energy of interest */
+   return 1.e-11 * peak_energy;
+}
+
 int incident_photon_spectrum (double e, double *num)
 {
    double t = Photon_Temperature;

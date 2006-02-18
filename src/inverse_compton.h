@@ -8,13 +8,14 @@ typedef struct
    double electron_gamma;
    double energy_final_photon;            /* eV */
    double incident_photon_max_energy;     /* eV */
+   double incident_photon_min_energy;     /* eV */
    int interpolate;
    int complain_on_extrapolate;
    void *client_data;
 }
 Inverse_Compton_Type;
 
-#define NULL_INVERSE_COMPTON_TYPE  {NULL,NULL,0.0,0.0,0.0,0,0,NULL}
+#define NULL_INVERSE_COMPTON_TYPE  {NULL,NULL,0.0,0.0,0.0,0.0,0,0,NULL}
 
 extern int ic_calc_inverse_compton
   (void *vic, double energy_final_photon, double *emissivity);

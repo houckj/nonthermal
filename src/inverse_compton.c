@@ -86,7 +86,7 @@ static double incident_photons_integrand (double energy_initial_photon, void *p)
 int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
                                        double *val)
 {
-   double epsabs, epsrel, abserr, e_max;
+   double epsabs, epsrel, abserr, e_min, e_max;
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
    gsl_function f;
@@ -104,10 +104,12 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
 
    e_max = ic->incident_photon_max_energy;
    e_max *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+   e_min = ic->incident_photon_min_energy;
+   e_min *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   (void) gsl_integration_qag (&f, 0.0, e_max, epsabs, epsrel, limit,
+   (void) gsl_integration_qag (&f, e_min, e_max, epsabs, epsrel, limit,
                                GSL_INTEG_GAUSS61, work,
                                val, &abserr);
 
@@ -154,7 +156,7 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    f.function = &electrons_integrand;
    f.params = ic;
    epsabs = 0.0;
-   epsrel = 1.e-10;
+   epsrel = 1.e-11;
    limit = MAX_QAG_SUBINTERVALS;
 
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);
