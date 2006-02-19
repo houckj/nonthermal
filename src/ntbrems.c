@@ -74,8 +74,8 @@ double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{
    g02 = g0*g0;
     g2 =  g*g;
 
-   b  = sqrt (1.0 - 1.0/g2);
-   b0 = sqrt (1.0 - 1.0/g02);
+   b  = sqrt ((1.0 + 1.0/g) * (1.0 - 1.0/g));
+   b0 = sqrt ((1.0 + 1.0/g0) * (1.0 - 1.0/g0));
 
    r0 = ELECTRON_RADIUS;
    phi_bar = (Z*Z) * (r0*r0) * GSL_CONST_NUM_FINE_STRUCTURE;
@@ -289,7 +289,7 @@ static double eebrems_diff_lab (double een, double pen, double mu) /*{{{*/
    cos_theta_cm = (mu - beta_c)/(1.0 - beta_c * mu);
 
    /* electron (incident energy=gamma along angle=theta=0 in lab frame) */
-   beta = sqrt (1.0 - 1.0/(gamma*gamma));
+   beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
    een_cm = mcq * (gamma_c * gamma * (1.0 - beta_c * beta) - 1.0);
 
    s = eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
@@ -354,7 +354,7 @@ static double eebrems_diff_lab_deltamu (double een, double pen, double delta_mu)
    cos_theta_cm = mmb / ombm;
 
    /* electron (incident energy=gamma along angle=theta=0 in lab frame) */
-   beta = sqrt (1.0 - 1.0/(gamma*gamma));
+   beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
    dbeta = (gamma < GAMMA_THRESH) ? (1.0 - beta) : delta_beta(gamma);
 
    /* x = gamma_c * gamma * (1.0 - beta_c * beta) */
@@ -423,6 +423,25 @@ static void handle_gsl_status (int status) /*{{{*/
 
 /*}}}*/
 
+static double max_photon_energy (double gamma)
+{
+   double kmax, beta;
+
+   if (gamma < GAMMA_THRESH)
+     {
+        beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
+        kmax = (gamma - 1.0)/(gamma *(1.0 - beta) + 1.0);
+     }
+   else
+     {
+        double db = delta_beta (gamma);
+        kmax = ((1.0 - sqrt ((2.0 - db)*db))
+                / (1.0 + sqrt ((2.0 - db)/db)) / db);
+     }
+
+   return kmax;
+}
+
 static int angular_integral (double een, double pen, double *val) /*{{{*/
 {
    gsl_error_handler_t *gsl_error_handler;
@@ -430,7 +449,7 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    gsl_function f;
    struct EE_Type s;
    double epsabs, epsrel, abserr;
-   double k, kmax, gamma, beta, mu_min, eps;
+   double k, gamma, beta, mu_min, eps;
    double mcq = ELECTRON_REST_ENERGY / KEV;
    size_t limit;
    int status;
@@ -448,17 +467,16 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
 
    k = pen / mcq;
    gamma = 1.0 + een / mcq;
-   beta = sqrt (1.0 - 1.0/(gamma*gamma));
 
    /* quick return if photon energy exceeds absolute maximum attainable */
-   kmax = (gamma - 1.0)/(gamma *(1.0 - beta) + 1.0);
-   if (k > kmax)
+   if (k > max_photon_energy (gamma))
      return 0;
 
    /* beaming limits emission to narrow cone in the forward direction
     * mu = cos(theta)
     */
-   mu_min = ((gamma + 1.0)*k - (gamma - 1.0)) / (k * gamma * beta);
+   beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
+   mu_min = ((1.0 + 1.0/gamma)*k - (1.0 - 1.0/gamma)) / (k * beta);
    if (mu_min > 1.0)
      return 0;
    else if (mu_min < -1.0)
@@ -607,7 +625,7 @@ static double ntb_integrand (double pc, void *pt) /*{{{*/
 
    (void)(*elec->spectrum) (elec, pc, &ne);
 
-   beta = sqrt ((gamma + 1.0)*(gamma-1.0))/gamma;
+   beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    return v * ne * s;
