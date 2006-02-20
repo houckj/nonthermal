@@ -27,7 +27,7 @@
 static double exp_fcn (double x)
 {
    double f;
-   
+
    if (x > 0.01)
      f = (1.0 - exp(-x))/x;
    else
@@ -41,7 +41,7 @@ static double exp_fcn (double x)
                       *(1.0 - (x/8.0)))))));
      }
 
-   return f;   
+   return f;
 }
 
 static double elwert (double x0, double x1)
@@ -101,13 +101,13 @@ double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{
 #define TWO_PI_ALPHA (2.0 * M_PI * GSL_CONST_NUM_FINE_STRUCTURE)
    xi  = TWO_PI_ALPHA * Z / b;
    xi0 = TWO_PI_ALPHA * Z / b0;
-#if 0   
+#if 0
    elwert = (xi/xi0) * (1.0 - exp(-xi0))/(1.0 - exp(-xi));
    sigma *= elwert;
 #else
    sigma *= elwert (xi0, xi);
 #endif
-   
+
    return sigma;
 }
 
@@ -138,9 +138,11 @@ static double eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
    double rq, wq, wr, xq, xr, ww, p1q, rq2, rq4, wq2, rx1, rx2,
      rx3, wq4, wr1, x1q, x2q, x3q, pct, wiq, wwq, wq2q, wq4q;
 
+#if 1
    /* JCH added this to enforce energy conservation */
    if (pen > een)
      return 0.0;
+#endif
 
    e11 = een / mcq;
    e1 = e11 + 1.0;
@@ -289,8 +291,12 @@ static double eebrems_diff_lab (double een, double pen, double mu) /*{{{*/
    cos_theta_cm = (mu - beta_c)/(1.0 - beta_c * mu);
 
    /* electron (incident energy=gamma along angle=theta=0 in lab frame) */
-   beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
+#if 0
+   beta = sqrt ((1.0 + 1.0/gamma) * (1.0 - 1.0/gamma));
    een_cm = mcq * (gamma_c * gamma * (1.0 - beta_c * beta) - 1.0);
+#else
+   een_cm = mcq * (gamma_c - 1.0);
+#endif
 
    s = eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
    if (!finite(s))
@@ -353,6 +359,7 @@ static double eebrems_diff_lab_deltamu (double een, double pen, double delta_mu)
    pen_cm = pen * gamma_c * ombm;
    cos_theta_cm = mmb / ombm;
 
+#if 0
    /* electron (incident energy=gamma along angle=theta=0 in lab frame) */
    beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
    dbeta = (gamma < GAMMA_THRESH) ? (1.0 - beta) : delta_beta(gamma);
@@ -361,6 +368,9 @@ static double eebrems_diff_lab_deltamu (double een, double pen, double delta_mu)
    x = 1.0 / sqrt ( dbeta * dbeta_c * (2.0 - dbeta_c) * (2.0 - dbeta));
    x *= (dbeta_c + dbeta - dbeta * dbeta_c);
    een_cm = mcq * (x - 1.0);
+#else
+   een_cm = mcq * (gamma_c - 1.0);
+#endif
 
    s = eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
    if (!finite(s))
@@ -423,23 +433,34 @@ static void handle_gsl_status (int status) /*{{{*/
 
 /*}}}*/
 
-static double max_photon_energy (double gamma)
+static int photon_restricted_to_cone (double k, double gamma)
 {
-   double kmax, beta;
+   double kmin, kmax;
 
    if (gamma < GAMMA_THRESH)
      {
-        beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
-        kmax = (gamma - 1.0)/(gamma *(1.0 - beta) + 1.0);
+        double rg = 1.0/gamma;
+        double beta = sqrt ((1.0 + rg)*(1.0 - rg));
+        kmax = (1.0 - rg)/((1.0 - beta) + rg);
+        kmin = (1.0 - rg)/((1.0 + beta) + rg);
      }
    else
      {
         double db = delta_beta (gamma);
-        kmax = ((1.0 - sqrt ((2.0 - db)*db))
-                / (1.0 + sqrt ((2.0 - db)/db)) / db);
+        double f = sqrt((2.0 - db)*db);
+        kmax = (1.0 - f) / (db + f);
+        kmin = (1.0 - f) / ((2.0-db) + f);
      }
 
-   return kmax;
+   /* kmax is max attainable photon energy */
+   if (kmax < k)
+     return -1;
+
+   /* cone is kmin < k <= kmax */
+   if (kmin < k)
+     return 1;
+
+   return 0;
 }
 
 static int angular_integral (double een, double pen, double *val) /*{{{*/
@@ -449,10 +470,10 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    gsl_function f;
    struct EE_Type s;
    double epsabs, epsrel, abserr;
-   double k, gamma, beta, mu_min, eps;
+   double k, gamma, mu_min, eps;
    double mcq = ELECTRON_REST_ENERGY / KEV;
    size_t limit;
-   int status;
+   int status, cone;
 
    if (val == NULL)
      return -1;
@@ -468,19 +489,30 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    k = pen / mcq;
    gamma = 1.0 + een / mcq;
 
+   cone = photon_restricted_to_cone (k, gamma);
+
    /* quick return if photon energy exceeds absolute maximum attainable */
-   if (k > max_photon_energy (gamma))
+   if (cone == -1)
      return 0;
 
-   /* beaming limits emission to narrow cone in the forward direction
-    * mu = cos(theta)
-    */
-   beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
-   mu_min = ((1.0 + 1.0/gamma)*k - (1.0 - 1.0/gamma)) / (k * beta);
-   if (mu_min > 1.0)
-     return 0;
-   else if (mu_min < -1.0)
-     mu_min = -1.0;
+   if (cone == 0)
+     {
+        mu_min = -1.0;
+     }
+   else
+     {
+        /* beaming limits emission to narrow cone in the forward direction
+         * mu = cos(theta)
+         */
+        double beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
+        mu_min = ((1.0 + 1.0/gamma)*k - (1.0 - 1.0/gamma)) / (k * beta);
+        if (fabs(mu_min) > 1.0)
+          {
+             fprintf (stderr, "*** angular_integral:  mu_min = %19.15e ??\n",
+                      mu_min);
+             exit(1);
+          }
+     }
 
    f.params = &s;
    epsabs = 0.0;
@@ -520,11 +552,11 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
    if (eps > 0.0)
      {
         double eps_val, tmax;
-        
+
         /* This piece requires special handling.
-         * A change of variables and a Taylor series does the trick. 
+         * A change of variables and a Taylor series does the trick.
          */
-        
+
         if (mu_min < (1.0 - eps))
           tmax = eps;
         else tmax = 1.0 - mu_min;
@@ -685,9 +717,9 @@ int ntb_brems (void *vb, double photon_energy, double *emissivity)
 
    if (-1 == integral_over_electrons (b, emissivity))
      return -1;
-   
+
    *emissivity /= ELECTRON_REST_ENERGY;
-   
+
    return 0;
 }
 
