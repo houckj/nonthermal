@@ -29,7 +29,8 @@ int Pizero_Method = 0;
 #define TWO_PROTON_REST_ENERGY   (2 * PROTON_REST_ENERGY)
 #define SQR_PROTON_REST_ENERGY  (PROTON_REST_ENERGY * PROTON_REST_ENERGY)
 #define SQR_PIZERO_REST_ENERGY  (PIZERO_REST_ENERGY * PIZERO_REST_ENERGY)
-#define PIZERO_MASS_FACTOR      (4*SQR_PROTON_REST_ENERGY - SQR_PIZERO_REST_ENERGY)
+#define FOUR_SQR_PROTON_REST_ENERGY  (4 * SQR_PIZERO_REST_ENERGY)
+#define PIZERO_MASS_FACTOR      (FOUR_SQR_PROTON_REST_ENERGY * (1.0 - SQR_PIZERO_REST_ENERGY/FOUR_SQR_PROTON_REST_ENERGY))
 #define SQR_PIZERO_MASS_FACTOR  (PIZERO_MASS_FACTOR * PIZERO_MASS_FACTOR)
 
 /* Placing MIN_PHOTON_ENERGY just above the threshold
@@ -578,20 +579,24 @@ static int delta_function_approximation (Pizero_Type *p, double *val) /*{{{*/
    /* delta-function approximation: see Aharonian and Atoyan (2000) */
    Particle_Type *protons = p->protons;
    double eproton_delta, proton_pc, T_p;
-   double np, beta, sigma, v;
+   double np, beta, sigma, v, x;
 
    /* kappa = mean fraction of proton kinetic energy transferred
     *         to the secondary meson per collision. */
    double kappa = 0.17;
 
-   eproton_delta = PROTON_REST_ENERGY + p->energy /kappa;
-   proton_pc = root_diff_sqr (eproton_delta, PROTON_REST_ENERGY);
+   x = p->energy / PROTON_REST_ENERGY;
+   eproton_delta = PROTON_REST_ENERGY * (1.0 + x/kappa);
+   proton_pc = (PROTON_REST_ENERGY 
+                * root_diff_sqr (eproton_delta / PROTON_REST_ENERGY, 1.0));
    (void)(*protons->spectrum)(protons, proton_pc, &np);
 
    beta = proton_pc / eproton_delta;
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   T_p = eproton_delta - PROTON_REST_ENERGY;
+   /* T_p = eproton_delta - PROTON_REST_ENERGY; */
+   T_p = p->energy / kappa;
+
 #if 1
    sigma = pizero_aa_total_xsec (T_p);
 #else
@@ -673,15 +678,15 @@ static double proton_integrand (double pc, void *x) /*{{{*/
 
 static double proton_momentum_threshold (double e_pizero) /*{{{*/
 {
-   double eproton_thresh, pc;
+   double r = 0.5 * SQR_PIZERO_REST_ENERGY / SQR_PROTON_REST_ENERGY;
+   double pc, x;
 
    /* threshold proton momentum to produce the given pi-zero */
 
-   eproton_thresh = 2*e_pizero + PROTON_REST_ENERGY
-     + 0.5 * SQR_PIZERO_REST_ENERGY / PROTON_REST_ENERGY;
-   pc = root_diff_sqr (eproton_thresh, PROTON_REST_ENERGY);
+   x = e_pizero / PROTON_REST_ENERGY;
+   pc = root_diff_sqr (2*x + 1.0 + r, 1.0);
 
-   return pc;
+   return pc * PROTON_REST_ENERGY;
 }
 
 /*}}}*/
@@ -736,7 +741,7 @@ static int integral_over_proton_momenta (Pizero_Type *p, double *val) /*{{{*/
    gsl_error_handler = gsl_set_error_handler_off ();
 
    status = gsl_integration_qag (&f, pc_thresh, pc_max, epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS15,
+                                 GSL_INTEG_GAUSS31,
                                  work, val, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
@@ -833,7 +838,10 @@ static double pizero_integrand (double e_pizero, void *x) /*{{{*/
 static int pizero_min_energy (double photon_energy, double *e_pizero) /*{{{*/
 {
    if (photon_energy > 0)
-     *e_pizero = photon_energy + 0.25 * SQR_PIZERO_REST_ENERGY / photon_energy;
+     {
+        double x = 0.5 * PIZERO_REST_ENERGY / photon_energy;
+        *e_pizero = photon_energy * (1.0 + x*x);
+     }   
    else return -1;
 
    return 0;
@@ -845,15 +853,16 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
 {
    double pc_max, ep_max, e_pizero_cm, gamma_cm, s;
 
-   pc_max = (*protons->momentum_max)(protons);
-   ep_max = hypot (pc_max, PROTON_REST_ENERGY);
-   s = TWO_PROTON_REST_ENERGY*(PROTON_REST_ENERGY + ep_max);
+   pc_max = (*protons->momentum_max)(protons) / PROTON_REST_ENERGY;
+   ep_max = hypot (pc_max, 1.0);
+   
+   /* lab frame max energy */
+   gamma_cm = sqrt (0.5*(ep_max + 1));
 
    /* CM frame energy:  See Blattnig et al (2000), Appendix A */
+   s = 2.0*SQR_PROTON_REST_ENERGY * (1.0 + ep_max);
    e_pizero_cm = 0.5 * sqrt(s) * (1.0 - PIZERO_MASS_FACTOR / s);
 
-   /* lab frame max energy */
-   gamma_cm = sqrt (0.5*(ep_max/PROTON_REST_ENERGY + 1));
    *e_pizero = gamma_cm * e_pizero_cm;
 
    return 0;
