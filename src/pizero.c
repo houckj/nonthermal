@@ -939,9 +939,14 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    w_min = sqrt (epi_min/PIZERO_REST_ENERGY - 1.0);
    w_max = sqrt (epi_max/PIZERO_REST_ENERGY - 1.0);
 
+#if 1
    status = gsl_integration_qag (&f, w_min, w_max, epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS31,
                                  work, val, &abserr);
+#else
+   status = gsl_integration_qagiu (&f, w_min, epsabs, epsrel, limit, work,
+                                   val, &abserr);
+#endif   
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
