@@ -75,10 +75,10 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
      g += pt->curvature * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
-#if 0
+#if 1
    f = pow (x, g) * exp ((GEV-T)/e0);
 #endif
-#if 1
+#if 0
    /* cutoff in momentum => pion-decay with delta-function approx
     * should satisfy the same recurrence relation as the other processes */
    f = pow (x, g) * exp ((GEV-pc)/e0);
