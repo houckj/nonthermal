@@ -49,7 +49,7 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int default_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+static int pc_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double x, g, e0, f;
 
@@ -104,7 +104,6 @@ static int ke_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
    T = mc2 * (sq - 1.0);
 
    /* dn/d(Pc) (norm factored out) */
-   /* OLD default -- deprecated as of March 2006 */
    f = pow (x, g) * exp ((GEV-T)/e0);
 
    if (!finite(f))
@@ -198,12 +197,13 @@ int init_particle_spectrum (Particle_Type *pt) /*{{{*/
      return -1;
 
    /* silence compiler complaints about unused functions */
-   if (0) {(void) &default_particle_spectrum;}
+   
+   if (0) {(void) &pc_cutoff_particle_spectrum;} /* <- default */
    if (0) {(void) &ke_cutoff_particle_spectrum;}
    if (0) {(void) &mori_particle_spectrum;}
    if (0) {(void) &dermer_particle_spectrum;}
 
-   pt->spectrum = &default_particle_spectrum;
+   pt->spectrum = &pc_cutoff_particle_spectrum;
    pt->momentum_min = &particle_momentum_min;
    pt->momentum_max = &particle_momentum_max;
 

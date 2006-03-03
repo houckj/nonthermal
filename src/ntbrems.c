@@ -24,7 +24,7 @@
 #include "ntbrems.h"
 #include "ntb_table.h"
 
-static double exp_fcn (double x)
+static double exp_fcn (double x) /*{{{*/
 {
    double f;
 
@@ -44,10 +44,14 @@ static double exp_fcn (double x)
    return f;
 }
 
-static double elwert (double x0, double x1)
+/*}}}*/
+
+static double elwert (double x0, double x1) /*{{{*/
 {
    return exp_fcn(x0) / exp_fcn(x1);
 }
+
+/*}}}*/
 
 /* electron-ion bremsstrahlung */
 double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{{*/
@@ -277,7 +281,7 @@ struct EE_Type
 static double eebrems_diff_lab (double een, double pen, double mu) /*{{{*/
 {
    double s, een_cm, pen_cm, cos_theta_cm;
-   double gamma, beta, gamma_c, gc2, beta_c;
+   double gamma, gamma_c, gc2, beta_c;
    double mcq = ELECTRON_REST_ENERGY / KEV;
 
    /* transform variables to cms */
@@ -338,9 +342,9 @@ static double delta_beta (double gamma) /*{{{*/
 static double eebrems_diff_lab_deltamu (double een, double pen, double delta_mu) /*{{{*/
 {
    double s, een_cm, pen_cm, cos_theta_cm;
-   double gamma, beta, gamma_c, gc2, beta_c;
+   double gamma, gamma_c, gc2, beta_c;
    double mcq = ELECTRON_REST_ENERGY / KEV;
-   double dbeta, dbeta_c, ombm, mmb, x;
+   double dbeta_c, ombm, mmb;
 
    /* transform variables to cms */
    gamma = 1.0 + een/mcq;
@@ -433,7 +437,7 @@ static void handle_gsl_status (int status) /*{{{*/
 
 /*}}}*/
 
-static int photon_restricted_to_cone (double k, double gamma)
+static int photon_restricted_to_cone (double k, double gamma) /*{{{*/
 {
    double kmin, kmax;
 
@@ -462,6 +466,8 @@ static int photon_restricted_to_cone (double k, double gamma)
 
    return 0;
 }
+
+/*}}}*/
 
 static int angular_integral (double een, double pen, double *val) /*{{{*/
 {
@@ -681,7 +687,7 @@ static int integral_over_electrons (Brems_Type *b, double *val) /*{{{*/
    f.function = &ntb_integrand;
    f.params = b;
    epsabs = 0.0;
-   epsrel = 1.e-9;
+   epsrel = 1.e-10;
    limit = MAX_QAG_SUBINTERVALS;
 
    if (NULL == (work = gsl_integration_workspace_alloc (limit)))
