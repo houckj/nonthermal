@@ -860,7 +860,15 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
    double pc_max, gp_max, x;
    /* double e_pizero_cm, gamma_cm, s; */
 
+   /* If we use GAMMA_MAX_DEFAULT here, the spectrum model
+    * satisfies the recurrence relation more accurately 
+    * near photon_energy = 0.5*pizero_rest_mass
+    */ 
+#if 0
    pc_max = (*protons->momentum_max)(protons) / PROTON_REST_ENERGY;
+#else
+   pc_max = GAMMA_MAX_DEFAULT;
+#endif   
    gp_max = hypot (pc_max, 1.0);
 
 #if 0
