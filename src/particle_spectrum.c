@@ -49,23 +49,83 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
+static int default_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
-   double mc2, E, T, e0, r, sq, x, g, f;
+   double x, g, e0, f;
 
    if (pt == NULL || ne == NULL)
      return -1;
 
    *ne = 0.0;
 
-   mc2 = pt->mass * C_SQUARED;
+   x = pc / GEV;
+   g = pt->index;
    e0  = pt->cutoff_energy * TEV;
 
+   /* no curvature below 1 GeV */
+   if ((pt->curvature != 0.0) && (x > Min_Curvature_Pc))
+     g += pt->curvature * log10(x);
+
+   /* dn/d(Pc) (norm factored out) */
+   f = pow (x, g) * exp ((GEV-pc)/e0);
+
+   if (!finite(f))
+     f = 0.0;
+
+   *ne = f;
+
+   return 0;
+}
+
+/*}}}*/
+
+static int ke_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+{
+   double x, g, f;
+   double mc2, e0, r, sq, T;
+
+   if (pt == NULL || ne == NULL)
+     return -1;
+
+   *ne = 0.0;
+
+   x = pc / GEV;
+   g = pt->index;
+   e0  = pt->cutoff_energy * TEV;
+
+   /* no curvature below 1 GeV */
+   if ((pt->curvature != 0.0) && (x > Min_Curvature_Pc))
+     g += pt->curvature * log10(x);
+
+   mc2 = pt->mass * C_SQUARED;
    r = pc/mc2;
    sq = sqrt (1.0 + r*r);
-   E = mc2 * sq;
    /* r >> 1 so no worries about precision loss here */
    T = mc2 * (sq - 1.0);
+
+   /* dn/d(Pc) (norm factored out) */
+   /* OLD default -- deprecated as of March 2006 */
+   f = pow (x, g) * exp ((GEV-T)/e0);
+
+   if (!finite(f))
+     f = 0.0;
+
+   *ne = f;
+
+   return 0;
+}
+
+/*}}}*/
+
+static int dermer_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+{
+   double x, g, f;
+   double mc2, r, E;
+
+   if (pt == NULL || ne == NULL)
+     return -1;
+
+   *ne = 0.0;
 
    x = pc / GEV;
    g = pt->index;
@@ -74,35 +134,53 @@ static int particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
    if ((pt->curvature != 0.0) && (x > Min_Curvature_Pc))
      g += pt->curvature * log10(x);
 
+   mc2 = pt->mass * C_SQUARED;
+   r = pc/mc2;
+   E = mc2 * sqrt (1.0 + r*r);
+
    /* dn/d(Pc) (norm factored out) */
-#if 1
-   f = pow (x, g) * exp ((GEV-T)/e0);
-#endif
-#if 0
-   /* cutoff in momentum => pion-decay with delta-function approx
-    * should satisfy the same recurrence relation as the other processes */
-   f = pow (x, g) * exp ((GEV-pc)/e0);
-#endif
-#if 0
+
    /* Dermer 1986 proton spectrum */
    f = pow (E/GEV, g);
-#endif
-#if 0
+
+   if (!finite(f))
+     f = 0.0;
+
+   *ne = f;
+
+   return 0;
+}
+
+/*}}}*/
+
+static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+{
+   double f0 = 4*M_PI/GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   double mc2, r, E, f;
+
+   if (pt == NULL || ne == NULL)
+     return -1;
+
+   *ne = 0.0;
+
+   mc2 = pt->mass * C_SQUARED;
+   r = pc/mc2;
+   E = mc2 * sqrt (1.0 + r*r);
+
+   /* dn/d(Pc) (norm factored out) */
+
+   /* Mori 1997 proton spectrum */
+   if (E >= 100.0 * GEV)
      {
-        /* Mori 1997 proton spectrum */
-        double f0 = 4*M_PI/GSL_CONST_CGSM_SPEED_OF_LIGHT;
-        if (E >= 100.0 * GEV)
-          {
-             double t = 2.5 * GEV/ pc;
-             f = 1.67*pow(pc/GEV, -2.7) /sqrt(1.0 + t*t);
-          }
-        else
-          {
-             f = 6.65e-6*pow(E/(100.0*GEV), -2.75);
-          }
-        f *= f0;
+        double t = 2.5 * GEV/ pc;
+        f = 1.67*pow(pc/GEV, -2.7) /sqrt(1.0 + t*t);
      }
-#endif
+   else
+     {
+        f = 6.65e-6*pow(E/(100.0*GEV), -2.75);
+     }
+
+   f *= f0;
 
    if (!finite(f))
      f = 0.0;
@@ -119,7 +197,13 @@ int init_particle_spectrum (Particle_Type *pt) /*{{{*/
    if (pt == NULL)
      return -1;
 
-   pt->spectrum = &particle_spectrum;
+   /* silence compiler complaints about unused functions */
+   if (0) {(void) &default_particle_spectrum;}
+   if (0) {(void) &ke_cutoff_particle_spectrum;}
+   if (0) {(void) &mori_particle_spectrum;}
+   if (0) {(void) &dermer_particle_spectrum;}
+
+   pt->spectrum = &default_particle_spectrum;
    pt->momentum_min = &particle_momentum_min;
    pt->momentum_max = &particle_momentum_max;
 
