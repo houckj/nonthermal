@@ -788,7 +788,7 @@ static int delta_function_approximation (Pizero_Type *p, double *val) /*{{{*/
 
    x = T_p / PROTON_REST_ENERGY;
    proton_pc = sqrt (x * (x + 2.0));
-   beta = proton_pc / (1.0 + T_p);
+   beta = proton_pc / (1.0 + x);
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    pc = proton_pc * PROTON_REST_ENERGY;
@@ -835,6 +835,9 @@ static double pizero_integrand (double w, void *x) /*{{{*/
 
    s = q / sqrt (w*w + 2.0);
 
+   /* from change of variables */
+   s *= 2.0; 
+
    return status ? 0.0 : s;
 }
 
@@ -857,8 +860,8 @@ static int pizero_min_energy (double photon_energy, double *e_pizero) /*{{{*/
 
 static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
 {
-   double pc_max, gp_max, x;
-   /* double e_pizero_cm, gamma_cm, s; */
+   double gp_max, x;
+   /* double e_pizero_cm, gamma_cm, pc_max, s; */
 
    /* If we use GAMMA_MAX_DEFAULT here, the spectrum model
     * satisfies the recurrence relation more accurately 
@@ -866,10 +869,11 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
     */ 
 #if 0
    pc_max = (*protons->momentum_max)(protons) / PROTON_REST_ENERGY;
-#else
-   pc_max = GAMMA_MAX_DEFAULT;
-#endif   
    gp_max = hypot (pc_max, 1.0);
+#else
+   (void) protons;
+   gp_max = GAMMA_MAX_DEFAULT;
+#endif   
 
 #if 0
    /* lab frame max energy */
