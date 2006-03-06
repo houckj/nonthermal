@@ -36,7 +36,7 @@ public define invc_table_init_hook (file) %{{{
    b.x = t.xgrid;
    b.y = t.ygrid;
    b.f = t.f;
-   variable p = bspline_open_intrin (NULL, b, 5, 5);
+   variable p = bspline_open_intrin (NULL, b, 4, 4);
    return (p, bdry.xleft, bdry.yleft, keys);
 }
 

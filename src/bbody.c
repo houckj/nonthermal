@@ -46,24 +46,31 @@ static int blackbody_photons (double e, double t, double *y) /*{{{*/
    if (x > max_exp)
      {
         f = 0.0;
+     }  
+   else 
+     {
+#if 1
+        f = e * e / expm1(x);
+#else   
+        if (x > 1.e-2)
+          {
+             f = e * e /(exp (x) - 1.0);
+          }
+        else
+          {
+             double den =
+               1.0 + (x/2)
+                 *(1.0 + (x/3)
+                   *(1.0 + (x/4)
+                     *(1.0 + (x/5)
+                       *(1.0 + (x/6)
+                         *(1.0 + (x/7)
+                           *(1.0 + (x/8)))))));
+             
+             f = e * t / den;
+          }        
+#endif
      }   
-   else if (x > 1.e-3)
-     {
-        f = e * e /(exp (x) - 1.0);
-     }
-   else
-     {
-        double den =
-            1.0 + (x/2)
-            *(1.0 + (x/3)
-              *(1.0 + (x/4)
-                *(1.0 + (x/5)
-                  *(1.0 + (x/6)
-                    *(1.0 + (x/7)
-                      *(1.0 + (x/8)))))));
-
-        f = e * t / den;
-     }
 
    *y = f * BBODY_COEF;
 
@@ -78,7 +85,7 @@ double incident_photon_max_energy (void)
 {
    double peak_energy = (Photon_Temperature 
                          * GSL_CONST_CGSM_BOLTZMANN / GSL_CONST_CGSM_ELECTRON_VOLT);
-   return 50.0 * peak_energy;
+   return 100.0 * peak_energy;
 }
 
 double incident_photon_min_energy (void)
@@ -86,7 +93,7 @@ double incident_photon_min_energy (void)
    double peak_energy = (Photon_Temperature 
                          * GSL_CONST_CGSM_BOLTZMANN / GSL_CONST_CGSM_ELECTRON_VOLT);
    /* min energy that can scatter to an energy of interest */
-   return 1.e-11 * peak_energy;
+   return 1.e-12 * peak_energy;
 }
 
 int incident_photon_spectrum (double e, double *num)
