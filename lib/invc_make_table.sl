@@ -1,4 +1,5 @@
 require ("nonthermal");
+require ("gsl");
 
 % jch "borrowed" this bisection routine from John Davis
 %!%+
@@ -161,6 +162,45 @@ private define fcn_lglg (xx, ylg)
    return array_map (Double_Type, &_fcn_lglg, xx, ylg);
 }
 
+private define interpolate_peak (ylg)
+{
+   % the peak location must be smoothly varying,
+   % so try to be accurate
+   variable x, f, imax, xmn, xmx;
+
+   % coarse position
+   x = [Log_X_Range[0]:Log_X_Range[1]:0.1];
+   f = fcn(x, ylg);
+   imax = where (max(f) == f)[0];
+
+   % map neighborhood on finer grid
+   if (imax-1 >= 0)
+     xmn = x[imax-1];
+   else xmn = x[imax];
+   if (imax+1 < length(f))
+     xmx = x[imax+1];
+   else xmx = x[imax];
+
+   x = [xmn : xmx : (xmx-xmn)/32.0];
+   f = fcn(x, ylg);
+   imax = where (max(f) == f)[0];
+
+   % interpolate close neighborhood on finer grid.
+   if (imax-1 >= 0)
+     xmn = x[imax-1];
+   else xmn = x[imax];
+   if (imax+1 < length(f))
+     xmx = x[imax+1];
+   else xmx = x[imax];
+
+   variable x_fine, f_fine;
+   x_fine = [xmn : xmx : (xmx-xmn)/128.0];
+   f_fine = interp_cspline (x_fine, x, f);
+   imax = where (max(f_fine) == f_fine)[0];
+
+   return (x_fine[imax], f_fine[imax]);
+}
+
 private variable Y_value;
 private variable Smallest_Useful_F;
 
@@ -171,18 +211,13 @@ private define rootfun (xlg)
 
 private define find_root (ylg)
 {
-   variable _x = [Log_X_Range[0]:Log_X_Range[1]:0.1];
-   variable _f = fcn(_x, ylg);
-   variable imax = where (max(_f) == _f)[0];
+   variable x_peak, f_peak;
+   (x_peak, f_peak) = interpolate_peak (ylg);
 
    Y_value = ylg;
-   Smallest_Useful_F = max(_f) - 12.0;  % log-scale
+   Smallest_Useful_F = f_peak - 12.0;  % log-scale
 
-   variable ylg_max = ylg + 0.2 * (Log_Y_Range[1]-Log_Y_Range[0]);
-   if (ylg_max > Log_Y_Range[1])
-     ylg_max = Log_Y_Range[1];
-
-   return bisection (&rootfun, Log_X_Range[0], _x[imax]);
+   return bisection (&rootfun, Log_X_Range[0], x_peak);
 }
 
 private define save_boundary (fp, x, y)
@@ -231,13 +266,13 @@ private define boundary_corners ()
    xlg = [Xleft + X_Epsilon, xright];
    ylg = [Yleft,             Yleft];
    xx = log_to_lglg (xlg, ylg);
-#else   
+#else
    xlg = Xleft + X_Epsilon;
    ylg = Yleft;
    xx = log_to_lglg (xlg, ylg);
    xx = [xx, ones(length(Yleft))*3.0];
    ylg = [ylg, Yleft];
-#endif   
+#endif
 
    return (xx, ylg);
 }
