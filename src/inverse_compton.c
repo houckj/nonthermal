@@ -64,10 +64,13 @@ static int sigma_klein_nishina (double energy_initial_photon, /*{{{*/
 
 /*}}}*/
 
-static double incident_photons_integrand (double energy_initial_photon, void *p) /*{{{*/
+static double incident_photons_integrand (double lg_ei, void *p) /*{{{*/
 {
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)p;
-   double sigma_kn, num_photons;
+   double sigma_kn, num_photons, energy_initial_photon, val;
+   
+   /* changed integration variable */
+   energy_initial_photon = exp (lg_ei);
    
    (void) (*ic->incident_photons) (energy_initial_photon, &num_photons);
    if (num_photons == 0.0)
@@ -77,8 +80,11 @@ static double incident_photons_integrand (double energy_initial_photon, void *p)
                                ic->electron_gamma,
                                ic->energy_final_photon,
                                &sigma_kn);
+   
+   val = num_photons * sigma_kn;
 
-   return num_photons * sigma_kn;
+   /* changed integration variable */
+   return val * energy_initial_photon;  
 }
 
 /*}}}*/
@@ -109,7 +115,7 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   (void) gsl_integration_qag (&f, e_min, e_max, epsabs, epsrel, limit,
+   (void) gsl_integration_qag (&f, log(e_min), log(e_max), epsabs, epsrel, limit,
                                GSL_INTEG_GAUSS61, work,
                                val, &abserr);
 
@@ -156,7 +162,7 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    f.function = &electrons_integrand;
    f.params = ic;
    epsabs = 0.0;
-   epsrel = 1.e-10;
+   epsrel = 1.e-11;
    limit = MAX_QAG_SUBINTERVALS;
 
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);
