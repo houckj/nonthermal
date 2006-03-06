@@ -241,7 +241,7 @@ private define boundary_corners ()
 
    if (NULL == stat_file (file))
      {
-        variable num = 1024;
+        variable num = 4096;
         vmessage ("Finding min(gamma) vs. E_final...[%d points]", num);
         variable t = [0:num-1]/(num*1.0);  % don't want t[-1]=1
         Yleft = Log_Y_Range[0] + (Log_Y_Range[1]-Log_Y_Range[0])*t;
