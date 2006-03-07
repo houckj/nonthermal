@@ -27,9 +27,8 @@
 
 /*}}}*/
 
-static int sigma_klein_nishina (double energy_initial_photon, /*{{{*/
-                                double electron_gamma,
-                                double energy_final_photon, double *sigma)
+static int sigma_klein_nishina (double omega_i, double gamma_e, /*{{{*/
+                                double omega, double *sigma)
 {
    double q, g, eg, qmin, x;
 
@@ -37,27 +36,25 @@ static int sigma_klein_nishina (double energy_initial_photon, /*{{{*/
 
    /* energies in units of me*c^2 */
 
-   if ((energy_initial_photon <= 0.0)
-       || (electron_gamma <= 0.0)
-       || (energy_final_photon <= 0.0))
+   if ((omega_i <= 0.0) || (gamma_e <= 0.0) || (omega <= 0.0))
      return -1;
 
-   if (energy_initial_photon > energy_final_photon)
+   if (omega_i > omega)
      return 0;
 
-   eg = energy_initial_photon * electron_gamma;
+   eg = omega_i * gamma_e;
    g = 4.0 * eg;
-   x = energy_final_photon / electron_gamma;
+   x = omega / gamma_e;
    q = (x/g) / (1.0 - x);
 
-   qmin = 0.25 / electron_gamma / electron_gamma;
+   qmin = 0.25 / gamma_e / gamma_e;
    if (q < qmin || 1.0 < q)
      return 0;
 
    *sigma = (2.0 * q * log(q)
              + (1.0 - q) * (1.0 + (2.0/g + 0.5*x) * x / (1.0 - x)));
 
-   *sigma *= (KLEIN_NISHINA_COEF / (eg * electron_gamma));
+   *sigma *= (KLEIN_NISHINA_COEF / (eg * gamma_e));
 
    return 0;
 }
@@ -67,24 +64,24 @@ static int sigma_klein_nishina (double energy_initial_photon, /*{{{*/
 static double incident_photons_integrand (double lg_ei, void *p) /*{{{*/
 {
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)p;
-   double sigma_kn, num_photons, energy_initial_photon, val;
-   
+   double sigma_kn, num_photons, omega_i, val;
+
    /* changed integration variable */
-   energy_initial_photon = exp (lg_ei);
-   
-   (void) (*ic->incident_photons) (energy_initial_photon, &num_photons);
+   omega_i = exp (lg_ei);
+
+   (void) (*ic->incident_photons) (omega_i, &num_photons);
    if (num_photons == 0.0)
      return 0.0;
 
-   (void) sigma_klein_nishina (energy_initial_photon,
+   (void) sigma_klein_nishina (omega_i,
                                ic->electron_gamma,
                                ic->energy_final_photon,
                                &sigma_kn);
-   
+
    val = num_photons * sigma_kn;
 
    /* changed integration variable */
-   return val * energy_initial_photon;  
+   return val * omega_i;
 }
 
 /*}}}*/
@@ -191,9 +188,7 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
 /*}}}*/
 
-int ic_calc_inverse_compton (void *vic, /*{{{*/
-                             double energy_final_photon,
-                             double *emissivity)
+int ic_calc_inverse_compton (void *vic, double omega, double *emissivity) /*{{{*/
 {
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)vic;
    double integral = 0.0;
@@ -202,8 +197,8 @@ int ic_calc_inverse_compton (void *vic, /*{{{*/
      return -1;
 
    /* eV -> dimensionless */
-   energy_final_photon *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
-   ic->energy_final_photon = energy_final_photon;
+   omega *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+   ic->energy_final_photon = omega;
 
    if (-1 == integral_over_electrons (ic, &integral))
      return -1;
