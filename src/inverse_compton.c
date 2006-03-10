@@ -113,7 +113,7 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
    gsl_error_handler = gsl_set_error_handler_off ();
 
    (void) gsl_integration_qag (&f, log(e_min), log(e_max), epsabs, epsrel, limit,
-                               GSL_INTEG_GAUSS61, work,
+                               GSL_INTEG_GAUSS31, work,
                                val, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
