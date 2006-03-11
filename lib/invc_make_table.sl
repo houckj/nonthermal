@@ -235,6 +235,25 @@ private define save_boundary (fp, x, y)
    fits_update_key (fp, "xepsilon", Sigma0, "xepsilon");
 }
 
+define make_ygrid (ny)
+{
+   variable ymn, ymx, ygrid;
+   ymn = Log_Y_Range[0];
+   ymx = Log_Y_Range[1];
+#iffalse   
+   ygrid = ymn + (ymx - ymn) * [0:ny-1]/(ny-1.0);
+#else
+   message ("Using non-uniform ygrid ");
+   variable _fy, dty, _ty;
+   _fy = [0:ny-1]/(ny - 1.0);
+   dty = exp(-3*_fy^2);
+   _ty = cumsum(dty) / sum(dty);
+   ygrid = ymn + (ymx - ymn) * _ty;
+#endif
+   
+   return ygrid;
+}
+
 private define boundary_corners ()
 {
    variable fp, file = "invc_bdry.fits";
@@ -243,8 +262,14 @@ private define boundary_corners ()
      {
         variable num = 4096;
         vmessage ("Finding min(gamma) vs. E_final...[%d points]", num);
+#iffalse        
         variable t = [0:num-1]/(num*1.0);  % don't want t[-1]=1
         Yleft = Log_Y_Range[0] + (Log_Y_Range[1]-Log_Y_Range[0])*t;
+#else
+        Yleft = make_ygrid (num);
+        % shift last point slightly away from the boundary
+        Yleft[-1] = 0.5*(Yleft[-2] + Yleft[-1]);  
+#endif        
         Xleft = array_map (Double_Type, &find_root, Yleft);
         vmessage ("writing %s", file);
         fp = fits_open_file (file, "c");
@@ -290,18 +315,24 @@ private define compute_table (file)
    xright = x[r];
    yy = y[l];
 
-   variable nx = 1024;
-   variable ny = 1024;
+   variable nx = 512;
+   variable ny = 2048;
 
    variable xmn, xmx, xgrid;
    xmn = min(xleft);
    xmx = max(xright);
+#iftrue
    xgrid = xmn + (xmx - xmn) * [0:nx-1]/(nx-1.0);
+#else
+   message ("Using non-uniform xgrid ");
+   variable _fx, dtx, _tx;
+   _fx = [0:nx-1]/(nx - 1.0);
+   dtx = exp(-3*_fx^2);
+   _tx = cumsum(dtx) / sum(dtx);
+   xgrid = xmn + (xmx - xmn) * _tx;
+#endif   
 
-   variable ymn, ymx, ygrid;
-   ymn = Log_Y_Range[0];
-   ymx = Log_Y_Range[1];
-   ygrid = ymn + (ymx - ymn) * [0:ny-1]/(ny-1.0);
+   variable ygrid = make_ygrid (ny);
 
    variable xl, xr, i, j, xlg, ylg, xx;
    variable f = Double_Type[ny,nx];
@@ -337,16 +368,17 @@ private define compute_table (file)
    bdry.yleft = Yleft;
    bdry.xleft = Xleft;
 
-   variable t = struct
-     {
-        xgrid, ygrid, f
-     };
-   t.xgrid = xgrid;
-   t.ygrid = ygrid;
-   t.f = f;
+   variable tf = struct {f};
+   variable tx = struct {xgrid};
+   variable ty = struct {ygrid};
+   tx.xgrid = xgrid;
+   ty.ygrid = ygrid;
+   tf.f = f;
 
    variable fp = fits_open_file (file, "c");
-   fits_write_binary_table (fp, "TABLE", t, keys, NULL);
+   fits_write_binary_table (fp, "TABLE", tf, keys, NULL);
+   fits_write_binary_table (fp, "XGRID", tx);
+   fits_write_binary_table (fp, "YGRID", ty);
    fits_write_binary_table (fp, "BOUNDARY", bdry, keys, NULL);
    fits_close_file(fp);
 }

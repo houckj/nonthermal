@@ -159,7 +159,7 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    f.function = &electrons_integrand;
    f.params = ic;
    epsabs = 0.0;
-   epsrel = 1.e-11;
+   epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);

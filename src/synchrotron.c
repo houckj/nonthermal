@@ -210,7 +210,7 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    f.function = &synchrotron_integrand;
    f.params = s;
    epsabs = 0.0;
-   epsrel = 1.e-10;
+   epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
    pc_min = (*s->electrons->momentum_min) (s->electrons);

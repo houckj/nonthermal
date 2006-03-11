@@ -116,7 +116,7 @@ define _sync_make_table ()
    variable x_min = 1.0e-38;
    variable x_max = 100.0;
    variable x_tol = 0.05;
-   variable y_tol = 1.25e-4;
+   variable y_tol = 1.25e-5;
    return make_table (x_min, x_max, x_tol, y_tol);
 }
 
