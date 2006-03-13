@@ -787,7 +787,7 @@ static int delta_function_approximation (Pizero_Type *p, double *val) /*{{{*/
      return 0;
 
    x = T_p / PROTON_REST_ENERGY;
-   proton_pc = sqrt (x * (x + 2.0));
+   proton_pc = x * sqrt (1.0 + 2.0/x);
    beta = proton_pc / (1.0 + x);
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
@@ -816,6 +816,9 @@ static double pizero_integrand (double w, void *x) /*{{{*/
    Pizero_Type *p = (Pizero_Type *)x;
    double q, s, e_pizero;
    int status;
+   
+   /* use log-variable in integral */
+   w = exp(w);
 
    /* changed integration variable to remove
     * singularity at pizero rest energy
@@ -833,10 +836,13 @@ static double pizero_integrand (double w, void *x) /*{{{*/
         status = pizero_distribution (p, &q);
      }
 
-   s = q / sqrt (w*w + 2.0);
+   s = q / w / sqrt (1.0 + 2.0/w/w);
 
-   /* from change of variables */
-   s *= 2.0; 
+   /* from change of variables removing singularity */
+   s *= 2.0;
+   
+   /* from change to log integration interval */
+   s *= w;
 
    return status ? 0.0 : s;
 }
@@ -863,7 +869,7 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
    double gp_max, x;
    /* double e_pizero_cm, gamma_cm, pc_max, s; */
 
-   /* If we use GAMMA_MAX_DEFAULT here, the spectrum model
+   /* If we use a constant here, the spectrum model
     * satisfies the recurrence relation more accurately 
     * near photon_energy = 0.5*pizero_rest_mass
     */ 
@@ -872,7 +878,7 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
    gp_max = hypot (pc_max, 1.0);
 #else
    (void) protons;
-   gp_max = GAMMA_MAX_DEFAULT;
+   gp_max = 1.e12;
 #endif   
 
 #if 0
@@ -939,14 +945,9 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    w_min = sqrt (epi_min/PIZERO_REST_ENERGY - 1.0);
    w_max = sqrt (epi_max/PIZERO_REST_ENERGY - 1.0);
 
-#if 1
-   status = gsl_integration_qag (&f, w_min, w_max, epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS31,
+   status = gsl_integration_qag (&f, log(w_min), log(w_max), epsabs, epsrel, limit,
+                                 GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
-#else
-   status = gsl_integration_qagiu (&f, w_min, epsabs, epsrel, limit, work,
-                                   val, &abserr);
-#endif   
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
