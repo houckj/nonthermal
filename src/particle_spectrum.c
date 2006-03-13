@@ -191,7 +191,7 @@ static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
 
 /*}}}*/
 
-int init_particle_spectrum (Particle_Type *pt) /*{{{*/
+int init_particle_spectrum (Particle_Type *pt)
 {
    if (pt == NULL)
      return -1;
@@ -210,5 +210,5 @@ int init_particle_spectrum (Particle_Type *pt) /*{{{*/
    return 0;
 }
 
-/*}}}*/
+
 
