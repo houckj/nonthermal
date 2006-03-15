@@ -177,6 +177,9 @@ static double synchrotron_integrand (double pc, void *pt) /*{{{*/
    Synchrotron_Type *s = (Synchrotron_Type *)pt;
    Particle_Type *elec = s->electrons;
    double pcomc2, gamma2, x, y, ne;
+   
+   /* change integration variable */
+   pc = exp(pc);
 
    pcomc2 = pc / (elec->mass * C_SQUARED);
    gamma2 = 1.0 + pcomc2*pcomc2;
@@ -188,6 +191,9 @@ static double synchrotron_integrand (double pc, void *pt) /*{{{*/
    (void) eval_angular_integral (x, pt, &y);
    (void) (*elec->spectrum) (elec, pc, &ne);
 
+   /* change integration variable */
+   y *= pc;
+   
    return ne * y;
 }
 
@@ -200,7 +206,7 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    gsl_integration_workspace *work;
    gsl_function f;
    double epsabs, epsrel, abserr, integral, eph;
-   double pc_min, pc_max;
+   double gmin, xmax, pc_min, pc_max;
    size_t limit;
    int status;
 
@@ -213,16 +219,29 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
-   pc_min = (*s->electrons->momentum_min) (s->electrons);
+#if 0   
    pc_max = (*s->electrons->momentum_max) (s->electrons);
+   pc_min = (*s->electrons->momentum_min) (s->electrons);
+#else
+   /* Coefficient chosen by trying several values at random 
+    * to see which one satisfied the recurrence relation best.
+    * If you don't like it, change it. */ 
+   pc_max = 1.e3 * (*s->electrons->momentum_max) (s->electrons);
+   /* FIXME:  xmax value is set by lookup table coverage. */
+   xmax = 100.0;    
+   gmin = s->photon_energy / SYNCHROTRON_CRIT_ENERGY_COEF / s->B_tot / xmax;
+   if (gmin > GAMMA_MIN_DEFAULT)
+     pc_min = ELECTRON_REST_ENERGY * sqrt((gmin + 1.0) * (gmin - 1.0));
+#endif
 
    if (NULL == (work = gsl_integration_workspace_alloc (limit)))
      return -1;
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qagiu (&f, pc_min, epsabs, epsrel, limit, work,
-                                   &integral, &abserr);
+   status = gsl_integration_qag (&f, log(pc_min), log(pc_max), epsabs, epsrel, limit,
+                                 GSL_INTEG_GAUSS31,
+                                 work, &integral, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
