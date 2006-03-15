@@ -206,7 +206,7 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    gsl_integration_workspace *work;
    gsl_function f;
    double epsabs, epsrel, abserr, integral, eph;
-   double gmin, xmax, pc_min, pc_max;
+   double gmin2, xmax, pc_min, pc_max;
    size_t limit;
    int status;
 
@@ -219,7 +219,7 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
-#if 0   
+#if 0
    pc_max = (*s->electrons->momentum_max) (s->electrons);
    pc_min = (*s->electrons->momentum_min) (s->electrons);
 #else
@@ -229,9 +229,9 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    pc_max = 1.e3 * (*s->electrons->momentum_max) (s->electrons);
    /* FIXME:  xmax value is set by lookup table coverage. */
    xmax = 100.0;    
-   gmin = s->photon_energy / SYNCHROTRON_CRIT_ENERGY_COEF / s->B_tot / xmax;
-   if (gmin > GAMMA_MIN_DEFAULT)
-     pc_min = ELECTRON_REST_ENERGY * sqrt((gmin + 1.0) * (gmin - 1.0));
+   gmin2 = s->photon_energy / SYNCHROTRON_CRIT_ENERGY_COEF / s->B_tot / xmax;
+   if (sqrt(gmin2) > GAMMA_MIN_DEFAULT)
+     pc_min = ELECTRON_REST_ENERGY * sqrt(gmin2 - 1.0);
 #endif
 
    if (NULL == (work = gsl_integration_workspace_alloc (limit)))
