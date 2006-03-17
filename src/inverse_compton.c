@@ -105,17 +105,14 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
 
 /*}}}*/
 
-static double Exponent = 3.0;
-
-static double electrons_integrand (double pc, void *pt) /*{{{*/
+static double electrons_integrand (double t, void *pt) /*{{{*/
 {
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)pt;
    Particle_Type *elec = ic->electrons;
-   double pcomc2, x, ne;
-   
+   double pcomc2, x, ne, pc;
+
    /* changed integration variable */
-   double arg = pc;
-   pc = pow (pc, Exponent);
+   pc = t * t;
 
    pcomc2 = pc / ELECTRON_REST_ENERGY;
    ic->electron_gamma = sqrt (1.0 + pcomc2*pcomc2);
@@ -128,8 +125,8 @@ static double electrons_integrand (double pc, void *pt) /*{{{*/
    (void) (*elec->spectrum) (elec, pc, &ne);
 
    /* changed integration variable */
-   x *= Exponent * pc / arg;
-   
+   x *= 2 * t;
+
    return ne * x;
 }
 
@@ -143,6 +140,8 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    gsl_function f;
    double epsabs, epsrel, abserr;
    double pc_min, pc_max;
+   double pcm, gamma_min, max_omega_i;
+   double omega = ic->energy_final_photon;
    size_t limit;
    int status;
 
@@ -152,26 +151,20 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
-   pc_max = (*ic->electrons->momentum_max) (ic->electrons);
+   /* pc_max = (*ic->electrons->momentum_max) (ic->electrons); */
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);
-
-   {
-      double pcm, gamma_min, max_omega_i;
-      double omega = ic->energy_final_photon;
 #if 0
-      /* lowest possible threshold occurs for largest omega_i */
-      max_omega_i = (incident_photon_max_energy ()
-                     * GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+   /* lowest possible threshold occurs for largest omega_i */
+   max_omega_i = (incident_photon_max_energy ()
+                  * GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
 #else
-      /* FIXME:  Omega0 from lookup table */
-      max_omega_i = 1.48981689186384e-08;
+   /* FIXME:  Omega0 from lookup table */
+   max_omega_i = 1.48981689186384e-08;
 #endif
-
-      gamma_min = 0.5 * (omega + sqrt (omega * (omega + 1.0/max_omega_i)));
-      pcm = ELECTRON_REST_ENERGY * sqrt((gamma_min + 1.0) * (gamma_min - 1.0));
-      if (pcm > pc_min)
-        pc_min = pcm;
-   }
+   gamma_min = 0.5 * (omega + sqrt (omega * (omega + 1.0/max_omega_i)));
+   pcm = ELECTRON_REST_ENERGY * sqrt((gamma_min + 1.0) * (gamma_min - 1.0));
+   if (pcm > pc_min)
+     pc_min = pcm;
 
    work = gsl_integration_workspace_alloc (limit);
    if (work == NULL)
@@ -179,8 +172,8 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qagiu (&f, pow(pc_min, 1.0/Exponent), epsabs, epsrel, limit, work,
-                                   val, &abserr);
+   status = gsl_integration_qagiu (&f, sqrt(pc_min), epsabs, epsrel, limit,
+                                   work, val, &abserr);
 
    *val /= ELECTRON_REST_ENERGY;
 
