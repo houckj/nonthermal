@@ -105,6 +105,8 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
 
 /*}}}*/
 
+static double Exponent = 3.0;
+
 static double electrons_integrand (double pc, void *pt) /*{{{*/
 {
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)pt;
@@ -112,7 +114,8 @@ static double electrons_integrand (double pc, void *pt) /*{{{*/
    double pcomc2, x, ne;
    
    /* changed integration variable */
-   /* pc = exp(pc); */
+   double arg = pc;
+   pc = pow (pc, Exponent);
 
    pcomc2 = pc / ELECTRON_REST_ENERGY;
    ic->electron_gamma = sqrt (1.0 + pcomc2*pcomc2);
@@ -125,7 +128,7 @@ static double electrons_integrand (double pc, void *pt) /*{{{*/
    (void) (*elec->spectrum) (elec, pc, &ne);
 
    /* changed integration variable */
-   /* x *= pc; */
+   x *= Exponent * pc / arg;
    
    return ne * x;
 }
@@ -151,18 +154,23 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    pc_max = (*ic->electrons->momentum_max) (ic->electrons);
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);
-   
+
    {
-      double pcm, gamma_min, omega = ic->energy_final_photon;
-      double max_omega_i = incident_photon_max_energy ();
+      double pcm, gamma_min, max_omega_i;
+      double omega = ic->energy_final_photon;
+#if 0
       /* lowest possible threshold occurs for largest omega_i */
-      max_omega_i *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+      max_omega_i = (incident_photon_max_energy ()
+                     * GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+#else
+      /* FIXME:  Omega0 from lookup table */
+      max_omega_i = 1.48981689186384e-08;
+#endif
+
       gamma_min = 0.5 * (omega + sqrt (omega * (omega + 1.0/max_omega_i)));
       pcm = ELECTRON_REST_ENERGY * sqrt((gamma_min + 1.0) * (gamma_min - 1.0));
-#if 1  /* FIXME!!! comment/uncomment this line and error hops from invc to ntbrem */
       if (pcm > pc_min)
         pc_min = pcm;
-#endif
    }
 
    work = gsl_integration_workspace_alloc (limit);
@@ -171,15 +179,9 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 1
-   status = gsl_integration_qagiu (&f, pc_min, epsabs, epsrel, limit, work,
+   status = gsl_integration_qagiu (&f, pow(pc_min, 1.0/Exponent), epsabs, epsrel, limit, work,
                                    val, &abserr);
-#else
-   status = gsl_integration_qag (&f, pc_min, pc_max, epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS31, 
-                                 work, val, &abserr);
-#endif
-   
+
    *val /= ELECTRON_REST_ENERGY;
 
    gsl_set_error_handler (gsl_error_handler);
@@ -187,7 +189,8 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    if (status)
      {
-        fprintf (stderr, "*** invc:  %s\n", gsl_strerror (status));
+        if (status != GSL_EROUND)
+          fprintf (stderr, "*** invc:  %s\n", gsl_strerror (status));
      }
 
    return 0;

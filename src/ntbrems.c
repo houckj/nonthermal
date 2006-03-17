@@ -705,7 +705,7 @@ static int integral_over_electrons (Brems_Type *b, double *val) /*{{{*/
    if (status)
      {
         if (status != GSL_EROUND)
-          fprintf (stderr, "*** %s\n", gsl_strerror (status));
+          fprintf (stderr, "*** ntbrem: %s\n", gsl_strerror (status));
      }
 
    return 0;
