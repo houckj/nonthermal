@@ -838,7 +838,7 @@ c
 
 c$$$      parameter(nxmax=130,kxmax=8,nymax=130,kymax=8)
 c FIXME      
-      parameter(nxmax=2048,kxmax=8,nymax=2048,kymax=8)
+      parameter(nxmax=1024,kxmax=8,nymax=1024,kymax=8)
 
 c
 c     dimensions should be
