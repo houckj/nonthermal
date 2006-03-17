@@ -100,7 +100,7 @@ define make_ygrid (ny)
    variable ymn, ymx, ygrid;
    ymn = Log_Y_Range[0];
    ymx = Log_Y_Range[1];
-#iffalse
+#iftrue
    ygrid = ymn + (ymx - ymn) * [0:ny-1]/(ny-1.0);
 #else
    message ("Using non-uniform ygrid ");
@@ -132,8 +132,8 @@ private define boundary_corners (num)
 
 private define compute_table (file)
 {
-   variable nx = 512;
-   variable ny = 2048;
+   variable nx = 1024;
+   variable ny = 1024;
 
    variable x, y;
    (x,y) = boundary_corners (ny);
