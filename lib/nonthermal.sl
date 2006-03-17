@@ -18,27 +18,26 @@ private define push_array_values (a) %{{{
 
 public define invc_table_init_hook (file) %{{{
 {
-#iffalse   
-   variable t = fits_read_table (file);
-#else
    variable tf = fits_read_table (sprintf ("%s[TABLE]", file));
-   variable tx = fits_read_table (sprintf ("%s[XGRID]", file));
-   variable ty = fits_read_table (sprintf ("%s[YGRID]", file));
-   variable t = struct {xgrid,ygrid,f};
-   t.xgrid = tx.xgrid;
-   t.ygrid = ty.ygrid;
-   t.f = tf.f;
-#endif   
-   variable bdry_hdu = sprintf ("%s[BOUNDARY]", file);
-   variable bdry = fits_read_table (bdry_hdu);
-   variable key_names = ["gammin", "gammax", "efnmin", "efnmax", "sigma0", "xepsilon"];
-   variable s = fits_read_key_struct (bdry_hdu, push_array_values(key_names));
+   
+   variable keys_hdu = sprintf ("%s[TABLE]", file);
+   variable key_names = ["gammin", "gammax", "efnmin", "efnmax", 
+                         "sigma0", "omega0", "xepsilon"];
+   variable s = fits_read_key_struct (keys_hdu, push_array_values(key_names));
    variable keys = Double_Type[length(key_names)];
    _for (0, length(key_names)-1, 1)
      {
         variable k = ();
         keys[k] = get_struct_field (s, key_names[k]);
      }
+   
+   variable tx = fits_read_table (sprintf ("%s[XGRID]", file));
+   variable ty = fits_read_table (sprintf ("%s[YGRID]", file));
+   variable t = struct {xgrid,ygrid,f};
+   t.xgrid = tx.xgrid;
+   t.ygrid = ty.ygrid;
+   t.f = tf.f;
+
    variable b = struct
      {
         x, y, f
@@ -47,7 +46,8 @@ public define invc_table_init_hook (file) %{{{
    b.y = t.ygrid;
    b.f = t.f;
    variable p = bspline_open_intrin (NULL, b, 5, 5);
-   return (p, bdry.xleft, bdry.yleft, keys);
+   
+   return (p, keys);
 }
 
 %}}}
@@ -72,7 +72,7 @@ public define ntbrem_table_init_hook (file) %{{{
    b.x = t.xgrid;
    b.y = t.ygrid;
    b.f = t.f;
-   variable p = bspline_open_intrin (NULL, b, 3,3);
+   variable p = bspline_open_intrin (NULL, b, 3, 3);
    return (p, bdry.xleft, bdry.yleft, keys);
 }
 
