@@ -26,10 +26,8 @@ struct IC_Table_Type
    Bspline_Info_Type *q;
    double xscale_log10[2];
    double yscale_log10[2];
-   double *x_bdry, *y_bdry;
-   double sigma0, xlg_epsilon;
+   double sigma0, omega0, xlg_epsilon;
    double dilution_factor;
-   unsigned int n;
 };
 
 void ic_free_client_data (void *v) /*{{{*/
@@ -40,7 +38,6 @@ void ic_free_client_data (void *v) /*{{{*/
      {
         IC_Table_Type *next = sa->next;
         bspline_free (sa->q);
-        free(sa->x_bdry);
         free(sa);
         sa = next;
      }
@@ -51,7 +48,7 @@ void ic_free_client_data (void *v) /*{{{*/
 static void *pop_table (char *file) /*{{{*/
 {
    IC_Table_Type *t = NULL;
-   SLang_Array_Type *k=NULL, *x=NULL, *y=NULL;
+   SLang_Array_Type *k=NULL;
    double *keys;
    int status = -1;
 
@@ -64,14 +61,10 @@ static void *pop_table (char *file) /*{{{*/
         return NULL;
      }
 
-   if ((-1 == SLang_pop_array_of_type (&k, SLANG_DOUBLE_TYPE))
-       || (-1 == SLang_pop_array_of_type (&y, SLANG_DOUBLE_TYPE))
-       || (-1 == SLang_pop_array_of_type (&x, SLANG_DOUBLE_TYPE)))
+   if (-1 == SLang_pop_array_of_type (&k, SLANG_DOUBLE_TYPE))
      goto return_error;
 
-   if ((k == NULL || x == NULL || y == NULL)
-       || (x->num_elements != y->num_elements)
-       || (k->num_elements != 6))
+   if ((k == NULL) || (k->num_elements != 7))
      goto return_error;
 
    if (NULL == (t = malloc (sizeof *t)))
@@ -86,15 +79,8 @@ static void *pop_table (char *file) /*{{{*/
    t->yscale_log10[0] = keys[2];
    t->yscale_log10[1] = keys[3];
    t->sigma0          = keys[4];
-   t->xlg_epsilon     = keys[5];
-
-   t->n = x->num_elements;
-   if (NULL == (t->x_bdry = malloc (2*t->n * sizeof(double))))
-     goto return_error;
-   t->y_bdry = t->x_bdry + t->n;
-
-   memcpy ((char *)t->x_bdry, (char *)x->data, t->n * sizeof(double));
-   memcpy ((char *)t->y_bdry, (char *)y->data, t->n * sizeof(double));
+   t->omega0          = keys[5];
+   t->xlg_epsilon     = keys[6];
 
    if (NULL == (t->q = copy_bspline_info ()))
      goto return_error;
@@ -103,8 +89,6 @@ static void *pop_table (char *file) /*{{{*/
    return_error:
 
    SLang_free_array (k);
-   SLang_free_array (y);
-   SLang_free_array (x);
    if (status)
      {
         ic_free_client_data ((void *)t);
@@ -230,67 +214,14 @@ void *ic_init_client_data (const char *file) /*{{{*/
 
 /*}}}*/
 
-static int bsearch_d (double t, double *x, int n) /*{{{*/
-{
-   int n0, n1, n2;
-   double xt;
-
-   n0 = 0;
-   n1 = n;
-
-   while (n1 > n0 + 1)
-     {
-        n2 = (n0 + n1) / 2;
-        xt = x[n2];
-        if (t <= xt)
-          {
-             if (xt == t) return n2;
-             n1 = n2;
-          }
-        else n0 = n2;
-     }
-
-   return n0;
-}
-
-/*}}}*/
-
-/* taken from jdmath by John Davis <davis@space.mit.edu> */
-static double interpolate_d (double x, double *xp, double *yp, unsigned int n) /*{{{*/
-{
-   unsigned int n0, n1;
-   double x0, x1;
-
-   n0 = bsearch_d (x, xp, n);
-
-   x0 = xp[n0];
-   n1 = n0 + 1;
-
-   if (x == x0)
-     return yp[n0];
-   if (n1 == n)
-     {
-        if (n0 == 0)
-          return yp[n0];
-        n1 = n0 - 1;
-     }
-
-   x1 = xp[n1];
-   if (x1 == x0) return yp[n0];
-
-   return yp[n0] + (yp[n1] - yp[n0]) / (x1 - x0) * (x - x0);
-}
-
-/*}}}*/
-
 static int interp_photon_integral (IC_Table_Type *t, int complain, /*{{{*/
                                    double gamma, double efinal,
                                    double *value)
 {
    double *xscale = t->xscale_log10;
    double *yscale = t->yscale_log10;
-   double xlg, ylg, xb, xx, f;
-   
+   double xlg, ylg, xb, xx, f, gamma_min;
+
    (void) complain;
 
    *value = 0.0;
@@ -309,7 +240,8 @@ static int interp_photon_integral (IC_Table_Type *t, int complain, /*{{{*/
    if ((ylg < yscale[0]) || (yscale[1] < ylg))
      return 0;
 
-   xb = interpolate_d (ylg, t->y_bdry, t->x_bdry, t->n);
+   gamma_min = 0.5 * (efinal + sqrt (efinal * (efinal + 1.0 / t->omega0)));
+   xb = log10(gamma_min);
 
    if (xlg - xb > t->xlg_epsilon)
      xx = log (xlg - xb);

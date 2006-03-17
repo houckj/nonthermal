@@ -27,61 +27,31 @@
 
 /*}}}*/
 
-static int sigma_klein_nishina (double omega_i, double gamma_e, /*{{{*/
-                                double omega, double *sigma)
-{
-   double q, g, eg, qmin, x;
-
-   *sigma = 0.0;
-
-   /* energies in units of me*c^2 */
-
-   if ((omega_i <= 0.0) || (gamma_e <= 0.0) || (omega <= 0.0))
-     return -1;
-
-   if (omega_i > omega)
-     return 0;
-
-   eg = omega_i * gamma_e;
-   g = 4.0 * eg;
-   x = omega / gamma_e;
-   q = (x/g) / (1.0 - x);
-
-   qmin = 0.25 / gamma_e / gamma_e;
-   if (q < qmin || 1.0 < q)
-     return 0;
-
-   *sigma = (2.0 * q * log(q)
-             + (1.0 - q) * (1.0 + (2.0/g + 0.5*x) * x / (1.0 - x)));
-
-   *sigma *= (KLEIN_NISHINA_COEF / (eg * gamma_e));
-
-   return 0;
-}
-
-/*}}}*/
-
-static double incident_photons_integrand (double lg_ei, void *p) /*{{{*/
+static double incident_photons_integrand (double q, void *p) /*{{{*/
 {
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)p;
-   double sigma_kn, num_photons, omega_i, val;
+   double omega = ic->energy_final_photon;
+   double gamma = ic->electron_gamma;
+   double x, omega_i, gq, f_kn, num_photons, val;
 
    /* changed integration variable */
-   omega_i = exp (lg_ei);
+   q = exp(q);
+
+   x = omega/gamma;
+   gq = x / (1.0 - x);
+   omega_i = gq / (4 * gamma) / q;
+   f_kn = 2 * q * log(q) + (1.0 - q) * (1.0 + 2*q + 0.5*gq*gq/(1.0 + gq));
 
    (void) (*ic->incident_photons) (omega_i, &num_photons);
    if (num_photons == 0.0)
      return 0.0;
 
-   (void) sigma_klein_nishina (omega_i,
-                               ic->electron_gamma,
-                               ic->energy_final_photon,
-                               &sigma_kn);
-
-   val = num_photons * sigma_kn;
+   val = num_photons * f_kn / q;
 
    /* changed integration variable */
-   return val * omega_i;
+   val *= q;
+
+   return val;
 }
 
 /*}}}*/
@@ -89,11 +59,25 @@ static double incident_photons_integrand (double lg_ei, void *p) /*{{{*/
 int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
                                        double *val)
 {
-   double epsabs, epsrel, abserr, e_min, e_max;
+   double epsabs, epsrel, abserr;
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
    gsl_function f;
    size_t limit;
+   double x, h, min_omega_i, max_omega_i, q_min, q_max;
+   double gamma = ic->electron_gamma;
+   double omega = ic->energy_final_photon;
+
+   *val = 0.0;
+
+   x = omega / gamma;
+   if (x > 1.0)
+     return 0;
+
+   h = 0.25 * x / (1.0 - x) / gamma;
+   max_omega_i = ic->incident_photon_max_energy;
+   max_omega_i *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+   q_min = h / max_omega_i;
 
    f.function = &incident_photons_integrand;
    f.params = ic;
@@ -105,16 +89,13 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
    if (work == NULL)
      return -1;
 
-   e_max = ic->incident_photon_max_energy;
-   e_max *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
-   e_min = ic->incident_photon_min_energy;
-   e_min *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
-
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   (void) gsl_integration_qag (&f, log(e_min), log(e_max), epsabs, epsrel, limit,
+   (void) gsl_integration_qag (&f, log(q_min), 0.0, epsabs, epsrel, limit,
                                GSL_INTEG_GAUSS31, work,
                                val, &abserr);
+
+   *val *= KLEIN_NISHINA_COEF / gamma / gamma;
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
@@ -129,6 +110,9 @@ static double electrons_integrand (double pc, void *pt) /*{{{*/
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)pt;
    Particle_Type *elec = ic->electrons;
    double pcomc2, x, ne;
+   
+   /* changed integration variable */
+   /* pc = exp(pc); */
 
    pcomc2 = pc / ELECTRON_REST_ENERGY;
    ic->electron_gamma = sqrt (1.0 + pcomc2*pcomc2);
@@ -140,13 +124,16 @@ static double electrons_integrand (double pc, void *pt) /*{{{*/
 
    (void) (*elec->spectrum) (elec, pc, &ne);
 
-   return ne * (x / ELECTRON_REST_ENERGY);
+   /* changed integration variable */
+   /* x *= pc; */
+   
+   return ne * x;
 }
 
 /*}}}*/
 
-static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
-                                    double *val)
+static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
+                                       double *val)
 {
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
@@ -162,8 +149,21 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
-   pc_min = (*ic->electrons->momentum_min) (ic->electrons);
    pc_max = (*ic->electrons->momentum_max) (ic->electrons);
+   pc_min = (*ic->electrons->momentum_min) (ic->electrons);
+   
+   {
+      double pcm, gamma_min, omega = ic->energy_final_photon;
+      double max_omega_i = incident_photon_max_energy ();
+      /* lowest possible threshold occurs for largest omega_i */
+      max_omega_i *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+      gamma_min = 0.5 * (omega + sqrt (omega * (omega + 1.0/max_omega_i)));
+      pcm = ELECTRON_REST_ENERGY * sqrt((gamma_min + 1.0) * (gamma_min - 1.0));
+#if 1  /* FIXME!!! comment/uncomment this line and error hops from invc to ntbrem */
+      if (pcm > pc_min)
+        pc_min = pcm;
+#endif
+   }
 
    work = gsl_integration_workspace_alloc (limit);
    if (work == NULL)
@@ -171,16 +171,23 @@ static int integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
+#if 1
    status = gsl_integration_qagiu (&f, pc_min, epsabs, epsrel, limit, work,
                                    val, &abserr);
+#else
+   status = gsl_integration_qag (&f, pc_min, pc_max, epsabs, epsrel, limit,
+                                 GSL_INTEG_GAUSS31, 
+                                 work, val, &abserr);
+#endif
+   
+   *val /= ELECTRON_REST_ENERGY;
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
 
    if (status)
      {
-        if (! ((ic->interpolate != 0) && (status == GSL_EROUND)))
-          fprintf (stderr, "*** %s\n", gsl_strerror (status));
+        fprintf (stderr, "*** invc:  %s\n", gsl_strerror (status));
      }
 
    return 0;
@@ -200,7 +207,7 @@ int ic_calc_inverse_compton (void *vic, double omega, double *emissivity) /*{{{*
    omega *= (GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
    ic->energy_final_photon = omega;
 
-   if (-1 == integral_over_electrons (ic, &integral))
+   if (-1 == ic_integral_over_electrons (ic, &integral))
      return -1;
 
    *emissivity = GSL_CONST_CGSM_SPEED_OF_LIGHT * integral;
