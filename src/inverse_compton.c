@@ -140,10 +140,12 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    gsl_function f;
    double epsabs, epsrel, abserr;
    double pc_min, pc_max;
-   double pcm, gamma_min, max_omega_i;
+   double pcm, gamma_min, max_omega_i, tmin, s;
    double omega = ic->energy_final_photon;
    size_t limit;
-   int status;
+   int status = 0;
+
+   *val = 0.0;
 
    f.function = &electrons_integrand;
    f.params = ic;
@@ -173,10 +175,27 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qagiu (&f, sqrt(pc_min), epsabs, epsrel, limit,
-                                   work, val, &abserr);
+   /* because the photon integral drops off exponentially,
+    * computing the electron integral in panels reduces the
+    * loss of significant digits by summing terms of more
+    * equal magnitude
+    */
+   s = 0.0;
+   tmin = sqrt(pc_min);
+   do
+     {
+        double ds, tmax = 1.e2 * tmin;
+        int istatus;
+        istatus = gsl_integration_qag (&f, tmin, tmax, epsabs, epsrel, limit,
+                                       GSL_INTEG_GAUSS31,
+                                       work, &ds, &abserr);
+        if (status == 0) status = istatus;
+        s += ds;
+        tmin = tmax;
+     }
+   while (tmin < sqrt(pc_max));
 
-   *val /= ELECTRON_REST_ENERGY;
+   *val = s / ELECTRON_REST_ENERGY;
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
