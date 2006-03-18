@@ -153,14 +153,15 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    /* pc_max = (*ic->electrons->momentum_max) (ic->electrons); */
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);
-#if 0
+
    /* lowest possible threshold occurs for largest omega_i */
-   max_omega_i = (incident_photon_max_energy ()
-                  * GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
-#else
-   /* FIXME:  Omega0 from lookup table */
-   max_omega_i = 1.48981689186384e-08;
-#endif
+   if (ic->interpolate)
+     max_omega_i = ic_omega0 (ic);
+   else
+     {
+        max_omega_i = (incident_photon_max_energy ()
+                       * GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY);
+     }
    gamma_min = 0.5 * (omega + sqrt (omega * (omega + 1.0/max_omega_i)));
    pcm = ELECTRON_REST_ENERGY * sqrt((gamma_min + 1.0) * (gamma_min - 1.0));
    if (pcm > pc_min)

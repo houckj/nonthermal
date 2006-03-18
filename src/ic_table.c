@@ -214,6 +214,15 @@ void *ic_init_client_data (const char *file) /*{{{*/
 
 /*}}}*/
 
+double ic_omega0 (Inverse_Compton_Type *ic)
+{
+   IC_Table_Type *t = (IC_Table_Type *)ic->client_data;
+   if (t == NULL)
+     return DBL_MAX;
+   /* FIXME:  support linked list? */
+   return t->omega0;
+}
+
 static int interp_photon_integral (IC_Table_Type *t, int complain, /*{{{*/
                                    double gamma, double efinal,
                                    double *value)
