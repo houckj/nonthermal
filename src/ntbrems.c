@@ -24,6 +24,15 @@
 #include "ntbrems.h"
 #include "ntb_table.h"
 
+/* Using Haug's code for ee-brems, the most accurate approach
+ * is to compute the CM frame cross-section and apply a Lorentz
+ * transformation to get the lab-frame cross-section.  His lab-frame
+ * code is more strongly affected by loss of significant figures
+ * than the CM frame code.  The CM frame code is less affected
+ * because \gamma_c = sqrt((\gamma+1)/2) -- the relevant gamma
+ * values are _much_ smaller
+ */
+
 static double exp_fcn (double x) /*{{{*/
 {
    double f;
@@ -125,7 +134,7 @@ double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{
  *    ct = cos (theta), theta = photon angle
  */
 
-static double eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
+static double haug_eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
 {
     /* Initialized data */
 
@@ -141,12 +150,6 @@ static double eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
      e11, /* ct,*/ r44, x12, kq, pm, rk, w44, ro;
    double rq, wq, wr, xq, xr, ww, p1q, rq2, rq4, wq2, rx1, rx2,
      rx3, wq4, wr1, x1q, x2q, x3q, pct, wiq, wwq, wq2q, wq4q;
-
-#if 1
-   /* JCH added this to enforce energy conservation */
-   if (pen > een)
-     return 0.0;
-#endif
 
    e11 = een / mcq;
    e1 = e11 + 1.0;
@@ -185,7 +188,11 @@ static double eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
    h2 = w * wr + ro * ww;
    h5 = 2.0 / wq4q * (wq * wq2 * rq4 - rq2 - rq2 + rq * 4.0 / wq);
    a2 = zpia * rq2 / (ro * wr);
+#if 0
    f = a2 * (exp(a1) - 1.0) / (a1 * (exp(a2) - 1.0));
+#else
+   f = (a2/a1) * expm1(a1)/expm1(a2);
+#endif
 
    /* ct = cos(th); */
    m = 1;
@@ -273,6 +280,23 @@ static double eebrems_diff_cms (double een, double pen, double ct) /*{{{*/
 
 /*}}}*/
 
+static double eebrems_diff_cms (double een_cm, double pen_cm, double cos_theta_cm)
+{
+   double s;
+
+   s = haug_eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
+   if (!finite(s))
+     {
+#if 0
+        fprintf (stderr, "*** eebrems_diff_cms => s(%g,%g,%g)=%g\n",
+                 een_cm, pen_cm, cos_theta_cm, s);
+#endif
+        s = 0.0;
+     }
+
+   return s;
+}
+
 struct EE_Type
 {
    double een, pen;
@@ -303,13 +327,6 @@ static double eebrems_diff_lab (double een, double pen, double mu) /*{{{*/
 #endif
 
    s = eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
-   if (!finite(s))
-     {
-        fprintf (stderr, "*** eebrems_diff_lab: eebrems_diff_cms => s(%g,%g,%g)=%g\n",
-                 een_cm, pen_cm, cos_theta_cm, s);
-        exit(1);
-     }
-
    s /= gamma_c * (1.0 - beta_c * mu);
 
    return s;
@@ -377,13 +394,6 @@ static double eebrems_diff_lab_deltamu (double een, double pen, double delta_mu)
 #endif
 
    s = eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
-   if (!finite(s))
-     {
-        fprintf (stderr, "*** eebrems_diff_lab_deltamu: eebrems_diff_cms => s(%g,%g,%g)=%g\n",
-                 een_cm, pen_cm, cos_theta_cm, s);
-        exit(1);
-     }
-
    s /= gamma_c * ombm;
 
    return s;
@@ -469,6 +479,8 @@ static int photon_restricted_to_cone (double k, double gamma) /*{{{*/
 
 /*}}}*/
 
+/* Integral over lab-frame cross-section obtained by applying
+ * Lorentz transformation to Haug's CM-frame differential cross-section */
 static int angular_integral (double een, double pen, double *val) /*{{{*/
 {
    gsl_error_handler_t *gsl_error_handler;
@@ -591,10 +603,279 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
 
 /*}}}*/
 
-static int eebrems_lab (double gm1, double e_ph, double *s) /*{{{*/
+static double haug_eebrems_diff_lab (double en1, double pen, double cos_theta) /*{{{*/
+{
+   /*  electron-electron bremsstrahlung, diff. cross section lab system  */
+   double pi = M_PI;
+   double alpha = GSL_CONST_NUM_FINE_STRUCTURE;
+   double mcq = ELECTRON_REST_ENERGY / KEV;
+   double ar0 = GSL_CONST_NUM_FINE_STRUCTURE*ELECTRON_RADIUS*ELECTRON_RADIUS / BARN;
+
+   double s1[3],s2[3];
+   double a1,a2,ct,ct0,e1,e11,f1,f2,g0,g1,g2;
+   double g3,g4,g5,h1,h2,h3,h4,h5,h6,h7,h8,k,kmax,kq,l,l1,l2,l3,l4;
+   double p1,p1q,pm,r1,r2,r44,rk,ro,rq,rq2,rq4,rx1,rx2,rx3,s;
+   double w,w2,w4,w44,wiq,wiqc,wq,wq2,wq2q,wq4,wq4q,wr;
+   double wr1,ww,wwq,x,x1,x1q,x2,x2q,x3,x3q,x12,xq,xr,zpia;
+   int m;
+
+   zpia = 2 * pi * alpha;
+
+   /* en1, pen in keV */
+   k = pen/mcq;
+   e11 = en1/mcq;
+
+   e1 = e11 + 1;
+   p1q = e11 * (e11 + 2);
+   p1 = sqrt(p1q);
+   wq2 = e1 + e1;
+   wq2q = wq2 * wq2;
+   wq = wq2 + 2;
+   w = sqrt(wq);
+   wq4 = wq2 - 2;
+   wq4q = wq4 * wq4;
+   w44 = 0.25 * wq4;
+   ww = sqrt(wq4);
+   wwq = wq * wq4;
+   a1 = zpia * wq2/(w * ww);
+   f1 = expm1(a1)/a1;
+   kmax = e11/(e1 - p1 + 1);
+
+   /* pm = maximum photon energy [keV] */
+   pm = kmax * mcq;
+
+   if(k > kmax)
+     return 0.0;
+
+   kq = k * k;
+   rk = 1/k;
+
+   ct0 = (e1 + 1 - e11/k)/p1;
+   if (ct0 < -1)
+     ct0 = -1.0;
+
+   if (cos_theta < ct0)
+     return 0.0;
+
+   ct = cos_theta;
+
+   m = 1;
+   x1 = k * (e1 - p1 * ct);
+#if 1
+   /* JCH added this to avoid division by zero
+    * which can happen because of severe loss of precision
+    * when e11 >> 1, e.g. 1.e8
+    */
+   if (x1 == 0.0)
+     {
+        /* fprintf (stderr, "%15.8e %15.8e %15.8e %15.8e\n", x1, e1, p1, ct); */
+        return 0.0;
+     }
+#endif
+   x2 = k;
+   x1q = x1 * x1;
+   rx1 = 1/x1;
+   x3 = x1;
+   x3q = x1q;
+   rx3 = rx1;
+   x2q = kq;
+   rx2 = rk;
+   x12 = x1 * x2;
+   x = x1 + x2;
+   xq = x * x;
+   h1 = (x1 - x2)/x;
+   rq = wq - x - x;
+   ro = sqrt(rq);
+   rq2 = rq - 2;
+   rq4 = rq - 4;
+   r44 = 0.25 * rq4;
+   wr = sqrt(rq4);
+   a2 = zpia * rq2/(ro * wr);
+   f2 = expm1(a2)/a2;
+   xr = x12/rq;
+   l1 = log(0.5 * (ro + wr));
+   w4 = ww * sqrt(w44 * rq4 + 4 * xr);
+   h2 = w * wr + ro * ww;
+   l3 = log(0.125 * h2 * h2/x);
+   l4 = log(1 + (0.25 * wr * w4 + 2 * w44 * r44)/xr);
+   h3 = 0.125 * rq2/x * (rq4 + wq) * (rq4 + wq);
+   h4 = 4 + 8.0 * wq2/wq4q + 0.5 * rq * rq2/x
+     + 0.25 * x/x12 * (wq2q + rq2 * rq4 - 8.0 * rq2/wq4);
+   h5 = 2/wq4q * (wq * wq2 * rq4 - rq2 - rq2 + 4 * rq/wq);
+   h6 = 1 + 0.125 * rq2/x12
+     * (wq2q + rq2 * rq2 - 6.0 * (wq4 + rq)
+        + 16.0 * x/wq4) + 2/x12 + rq4/wq4 - 8.0/wq4q;
+   h7 = 0.25 * (rq + wq)/x12 * h1 * h1 - 0.25 * (rx1 - rx2)*(rx1 - rx2)
+     - 0.5 * rq/xq + 2/(wq4q * xr) * (1 + wq4);
+   h8 = rq/wwq * (12.0 * wq2q/wq4 * x12-xq * (8.0 + 48.0/wwq));
+
+   next_term:
+
+   r1 = rq4 + 4 * (x1 + x1q/rq);
+   wr1 = sqrt(r1);
+   r2 = rq4 + x1 + x1;
+   w2 = sqrt(r44 * x2q + 2 * x * xr);
+   l = log(0.25 * ro * rx1 * (r2 + wr * wr1));
+   l2 = log(1 + rq * rx1/x * (r44 * x2 + 0.5 * wr * w2));
+   g0 = h7 + h8/(x1q * x1q)-rq * x/(w44 * x1q * x1)
+     + rq/x1q * (4/wq-1.5 -(8.0/wq4-wq2 * x)/wwq)-rq * rx1/wq4
+     + ((wq-4 * x2)/rq -0.25 * wwq/x12-4 * rx1
+        + (wq-0.5 * wq2 * rq)/x1q)/r1;
+   g1 = 4 + (9.0-e1) * rx2-2 * rx1 * (wq + wq-x2 + 4) + 0.75 * wwq/x12
+     + 4 * rx1/r2 * (x2-3.0 * x1 + 4 + (rq + rq-6.0) * rx1) + rx1/r1
+     * (wq4-4 * xr) * (0.25 * wq * r2 * rx2-rq2-x1-x1);
+   g2 = ro * ((rq + 2)/xq + 8.0/x1q);
+   g3 = 2 * wq2 * rx2-(rq2-x2) * rx1 + 0.5 * rq2 * (rq + x1)/x + wq4/r2-2
+     + h3 * rx1 + rx1/r2 * (rq2 * ((wq2-x) * x2-wq2)-x2q-x2q-4 * x2)
+       + (rq2 * (1.5 * rq4-0.5 * wq * (rq-5)) + x1q + x1q-6.0 * x1
+          + wq2 * x2)/(r2 * x);
+   g4 = h4-1.5 * wq2 * rx2 + rx1 * (x2q-wq-wq-wq * x2 + x2 + 0.5 * wq2q)
+     -0.5 * x2 * wq2/x-0.25 * rx2 * (wq4 + rq)/x * wq2q + 4 * xq * rx1/wwq
+     -(2 * rq2 * x2 + wq4 * x-4 * wq2 + 0.5 * rx1 * (8.0-rq) * wq2)/r2
+     + (0.5 * rq2 * (3.0 * rq4-wq * (rq-5))-x1 * (wq-x1-x1 + 4))/(x * r2)
+       + h5 * rx1
+     + wq2 * x/(w44 * x1q) * (12.0 * x/wwq + x-e1) * (1-x * rx1/wq);
+   g5 = h6-(2 + x1 + x1) * rx2;
+   s = wr * g0 + g1 * l/wr1 + g2 * l1 + g3 * l2/w2
+     + 2 * g4 * ro * l3/(w * ww * x1) -g5 * l4/w4;
+   s1[m] = s;
+   s2[m] = s/f2;
+   if(m != 2)
+     {
+        m = 2;
+        x1 = x2;
+        x1q = x2q;
+        rx1 = rx2;
+        x2 = x3;
+        x2q = x3q;
+        rx2 = rx3;
+        goto next_term;
+     }
+
+   /* cross-section in barns /keV /ster */
+   wiq = ar0 * k * (s1[1] + s1[2])/(pi * ro * w * ww * mcq);
+   wiqc = ar0 * k * f1 * (s2[1] + s2[2])/(pi * ro * w * ww * mcq);
+
+   return wiqc;
+}
+
+/*}}}*/
+
+static double lab_mu_integrand (double mu, void *p) /*{{{*/
+{
+   struct EE_Type *info = (struct EE_Type *)p;
+   double s;
+
+   /* changed integration variable */
+   mu = 1.0 - mu;
+
+   /* mu = cos(theta) */
+   s = haug_eebrems_diff_lab (info->een, info->pen, mu);
+   if (!finite(s))
+     {
+#if 0
+        fprintf (stderr, "*** haug_eebrems_diff_lab => s(%g,%g,%g)=%g\n",
+                 een_cm, pen_cm, cos_theta_cm, s);
+#endif
+        s = 0.0;
+     }
+
+   return s;
+}
+
+/*}}}*/
+
+/* Angular integral over Haug's lab-frame differential cross-section */
+static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
+{
+   gsl_error_handler_t *gsl_error_handler;
+   gsl_integration_workspace *work;
+   gsl_function f;
+   struct EE_Type s;
+   double epsabs, epsrel, abserr;
+   double k, gamma, mu_min;
+   double mcq = ELECTRON_REST_ENERGY / KEV;
+   size_t limit;
+   int status, cone;
+
+   if (val == NULL)
+     return -1;
+
+   *val = 0.0;
+
+   s.een = een;  /* incident electron kinetic energy (keV) */
+   s.pen = pen;  /* photon energy (keV) */
+
+   if ((een <= 0.0) || (pen <= 0.0))
+     return -1;
+
+   k = pen / mcq;
+   gamma = 1.0 + een / mcq;
+
+   cone = photon_restricted_to_cone (k, gamma);
+
+   /* quick return if photon energy exceeds absolute maximum attainable */
+   if (cone == -1)
+     return 0;
+
+   if (cone == 0)
+     {
+        mu_min = -1.0;
+     }
+   else
+     {
+        /* beaming limits emission to narrow cone in the forward direction
+         * mu = cos(theta)
+         */
+        double beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
+        mu_min = ((1.0 + 1.0/gamma)*k - (1.0 - 1.0/gamma)) / (k * beta);
+        if (fabs(mu_min) > 1.0)
+          {
+             fprintf (stderr, "*** lab_angular_integral:  mu_min = %19.15e ??\n",
+                      mu_min);
+             exit(1);
+          }
+     }
+
+   f.params = &s;
+   epsabs = 0.0;
+   epsrel = 1.e-12;
+   limit = MAX_QAG_SUBINTERVALS;
+
+   if (NULL == (work = gsl_integration_workspace_alloc (limit)))
+     return -1;
+
+   gsl_error_handler = gsl_set_error_handler_off ();
+
+   f.function = &lab_mu_integrand;
+
+   status = gsl_integration_qag (&f, 0.0, 1.0 - mu_min, epsabs, epsrel,
+                                 limit, GSL_INTEG_GAUSS15,
+                                 work, val, &abserr);
+   handle_gsl_status (status);
+
+   gsl_set_error_handler (gsl_error_handler);
+   gsl_integration_workspace_free (work);
+
+   /* Cross-section is per unit solid angle
+    *        d\Omega = d(phi) d(cos(theta))
+    * which, with azimuthal symmetry, is
+    *        d\Omega = 2*PI* d(cos(theta))
+    */
+
+   *val *= 2 * M_PI;
+
+   return 0;
+}
+
+/*}}}*/
+
+static int eebrems_lab (int (*angular_integral_method)(double, double, double *),
+                        double gm1, double e_ph, double *s) /*{{{*/
 {
    double mcq = ELECTRON_REST_ENERGY / KEV;
    double een, pen;
+   int status;
 
    /* een = electron kinetic energy (keV) */
    een = gm1 * mcq;
@@ -602,7 +883,9 @@ static int eebrems_lab (double gm1, double e_ph, double *s) /*{{{*/
    /* pen = photon energy (keV) */
    pen = e_ph * mcq;
 
-   return angular_integral (een, pen, s);
+   status = (*angular_integral_method) (een, pen, s);
+
+   return status;
 }
 
 /*}}}*/
@@ -611,9 +894,26 @@ double _ntb_ee_sigma_haug (double gm1, double e_ph) /*{{{*/
 {
    double s;
 
-   if (-1 == eebrems_lab (gm1, e_ph, &s))
+   if (-1 == eebrems_lab (&angular_integral, gm1, e_ph, &s))
      {
         fprintf (stderr, "*** _ntb_ee_sigma_haug:  angular integration failed\n");
+        return -1.0;
+     }
+
+   s *= BARN * ELECTRON_REST_ENERGY / KEV;
+
+   return s;
+}
+
+/*}}}*/
+
+double _ntb_ee_sigma_haug_lab (double gm1, double e_ph) /*{{{*/
+{
+   double s;
+
+   if (-1 == eebrems_lab (&lab_angular_integral, gm1, e_ph, &s))
+     {
+        fprintf (stderr, "*** _ntb_ee_sigma_haug_lab:  angular integration failed\n");
         return -1.0;
      }
 
