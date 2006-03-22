@@ -202,7 +202,7 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
 
    if (status)
      {
-        if (status != GSL_EROUND)
+        if ((status != GSL_EROUND) && (status != GSL_ESING))
           fprintf (stderr, "*** invc:  %s\n", gsl_strerror (status));
      }
 
