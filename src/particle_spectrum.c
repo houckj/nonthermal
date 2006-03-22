@@ -155,7 +155,7 @@ static int dermer_particle_spectrum (Particle_Type *pt, double pc, double *ne) /
 static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double f0 = 4*M_PI/GSL_CONST_CGSM_SPEED_OF_LIGHT;
-   double mc2, r, E, f;
+   double mc2, r, E, f, beta;
 
    if (pt == NULL || ne == NULL)
      return -1;
@@ -165,6 +165,8 @@ static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
    mc2 = pt->mass * C_SQUARED;
    r = pc/mc2;
    E = mc2 * sqrt (1.0 + r*r);
+   
+   beta = E/pc;
 
    /* dn/d(Pc) (norm factored out) */
 
@@ -179,7 +181,7 @@ static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
         f = 6.65e-6*pow(E/(100.0*GEV), -2.75);
      }
 
-   f *= f0;
+   f *= f0 / beta;
 
    if (!finite(f))
      f = 0.0;
