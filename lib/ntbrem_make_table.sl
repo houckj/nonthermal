@@ -3,7 +3,7 @@ require ("nonthermal");
 private variable Xsec;
 private define Choose_Cross_Section ()
 {
-#if 1
+#iftrue
    % Haug's lab-frame cross-section
    Xsec = &_ee_haug1_lab;
 #else
