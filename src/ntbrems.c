@@ -24,15 +24,6 @@
 #include "ntbrems.h"
 #include "ntb_table.h"
 
-/* Using Haug's code for ee-brems, the most accurate approach
- * is to compute the CM frame cross-section and apply a Lorentz
- * transformation to get the lab-frame cross-section.  His lab-frame
- * code is more strongly affected by loss of significant figures
- * than the CM frame code.  The CM frame code is less affected
- * because \gamma_c = sqrt((\gamma+1)/2) -- the relevant gamma
- * values are _much_ smaller
- */
-
 static double exp_fcn (double x) /*{{{*/
 {
    double f;
@@ -603,7 +594,7 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
 
 /*}}}*/
 
-static double haug_eebrems_diff_lab (double en1, double pen, double cos_theta) /*{{{*/
+static double haug_eebrems_diff_lab (double en1, double pen, double one_minus_mu) /*{{{*/
 {
    /*  electron-electron bremsstrahlung, diff. cross section lab system  */
    double pi = M_PI;
@@ -618,6 +609,8 @@ static double haug_eebrems_diff_lab (double en1, double pen, double cos_theta) /
    double w,w2,w4,w44,wiq,wiqc,wq,wq2,wq2q,wq4,wq4q,wr;
    double wr1,ww,wwq,x,x1,x1q,x2,x2q,x3,x3q,x12,xq,xr,zpia;
    int m;
+
+   double cos_theta = 1.0 - one_minus_mu;
 
    zpia = 2 * pi * alpha;
 
@@ -660,17 +653,27 @@ static double haug_eebrems_diff_lab (double en1, double pen, double cos_theta) /
    ct = cos_theta;
 
    m = 1;
+#if 0
+   /* in ultra-relativistic regime, this subtraction incurs a huge
+    * loss of significant digits */
    x1 = k * (e1 - p1 * ct);
-#if 1
-   /* JCH added this to avoid division by zero
-    * which can happen because of severe loss of precision
-    * when e11 >> 1, e.g. 1.e8
-    */
-   if (x1 == 0.0)
-     {
-        /* fprintf (stderr, "%15.8e %15.8e %15.8e %15.8e\n", x1, e1, p1, ct); */
-        return 0.0;
-     }
+#else
+   {
+      double beta_cos = p1 * ct / e1;
+      if (e1 < 10.0)
+        x1 = k * e1 * (1.0 - beta_cos);
+      else
+        {
+           double gamma = e1;
+           double rgam2 = 1.0 /gamma /gamma;
+           double _f = 0.5 * rgam2
+             * (1.0 + (1.0 * rgam2/4.0)
+                * (1.0 + (3.0 * rgam2/6.0)
+                   * (1.0 + (5.0 * rgam2/8.0)
+                      * (1.0 + (7.0 * rgam2/10.0)))));
+           x1 = k * e1 * (_f + one_minus_mu - _f * one_minus_mu);
+        }
+   }
 #endif
    x2 = k;
    x1q = x1 * x1;
@@ -761,16 +764,13 @@ static double haug_eebrems_diff_lab (double en1, double pen, double cos_theta) /
 
 /*}}}*/
 
-static double lab_mu_integrand (double mu, void *p) /*{{{*/
+static double lab_mu_integrand (double one_minus_mu, void *p) /*{{{*/
 {
    struct EE_Type *info = (struct EE_Type *)p;
    double s;
 
-   /* changed integration variable */
-   mu = 1.0 - mu;
-
    /* mu = cos(theta) */
-   s = haug_eebrems_diff_lab (info->een, info->pen, mu);
+   s = haug_eebrems_diff_lab (info->een, info->pen, one_minus_mu);
    if (!finite(s))
      {
 #if 0

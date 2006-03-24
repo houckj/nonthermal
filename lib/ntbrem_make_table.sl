@@ -1,5 +1,19 @@
 require ("nonthermal");
 
+private variable Xsec;
+private define Choose_Cross_Section ()
+{
+#if 1
+   % Haug's lab-frame cross-section
+   Xsec = &_ee_haug1_lab;
+#else
+   % Haug's CM-frame xsec + numerical Lorentz
+   % transform to the lab-frame
+   Xsec = &_ee_haug1;
+#endif
+}
+Choose_Cross_Section();
+
 % jch "borrowed" this bisection routine from John Davis
 %!%+
 %\function{bisection}
@@ -140,11 +154,11 @@ private define fcn (xlg, ylg)
    variable f;
    if (length(ekin) == 1)
      {
-        f = _ee_haug1 (ekin, eph);
+        f = (@Xsec)(ekin, eph);
      }
    else
      {
-        f = array_map (Double_Type, &_ee_haug1, ekin, eph);
+        f = array_map (Double_Type, Xsec, ekin, eph);
      }
 
    return safe_log10 (f / Sigma0);
@@ -280,7 +294,7 @@ private define compute_table(file)
           continue;
         f[j,i] = fcn_lglg (xgrid[i], ygrid[j]);
      }
-   () = fprintf (stderr, "\n");   
+   () = fprintf (stderr, "\n");
 
    variable keys = struct
      {
