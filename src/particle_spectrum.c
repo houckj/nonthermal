@@ -16,7 +16,7 @@ double Min_Curvature_Pc = 1.0;  /* GeV */
 
 static double momentum (double gamma, double mass) /*{{{*/
 {
-   return mass * C_SQUARED * sqrt ((gamma + 1.0) * (gamma - 1.0));
+   return mass * C_SQUARED * gamma * sqrt ((1.0 + 1.0/gamma) * (1.0 - 1.0/gamma));
 }
 
 /*}}}*/
