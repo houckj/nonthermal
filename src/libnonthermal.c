@@ -153,6 +153,7 @@ static void set_bin_integral_method (int method) /*{{{*/
 
 /*}}}*/
 
+#if 0
 static int _nt_binned_contin (void *cl, /*{{{*/
                               int (*eval_contin)(void *, double, double *),
                               double *val, Isis_Hist_t *g, double *par, unsigned int npar)
@@ -198,6 +199,68 @@ static int _nt_binned_contin (void *cl, /*{{{*/
 }
 
 /*}}}*/
+#else
+/* caching bin-edge function values gives 30% speedup */
+static int _nt_binned_contin (void *cl, /*{{{*/
+                              int (*eval_contin)(void *, double, double *),
+                              double *val, Isis_Hist_t *g, double *par, unsigned int npar)
+{
+   double norm = par[0];
+   double saved_el, saved_sl;
+   int i;
+
+   (void) npar;
+
+   if (norm == 0.0)
+     {
+        for (i = 0; i < g->n_notice; i++)
+          {
+             val[i] = 0.0;
+          }
+
+        return 0;
+     }
+
+   saved_el = DBL_MAX;
+   saved_sl = 0.0;
+
+    for (i=0; i < g->n_notice; i++)
+     {
+        double el, em, eh, de, sl, sm, sh, area;
+        int n;
+
+        n = g->notice_list[i];
+
+        /* Angstrom -> eV */
+        el = EV_ANGSTROM / g->bin_hi[n];
+        eh = EV_ANGSTROM / g->bin_lo[n];
+
+        de = eh - el;
+
+        (void) (*eval_contin)(cl, el, &sl);
+        (void) (*eval_contin)(cl, 0.5*(el+eh), &sm);
+
+        if (eh != saved_el)
+          (void) (*eval_contin)(cl, eh, &sh);
+        else sh = saved_sl;
+
+        saved_el = el;
+        saved_sl = sl;
+
+        /* Simpson's rule */
+        area = de * (sl + 4*sm + sh) / 6.0;
+
+        /* norm = (V/4*pi*D^2) * n0 (cm^-2 GeV^-1)
+         * s(E)dE = s(y)dy = photons cm^-2 s^-1
+         */
+        val[i] = norm * (area * 1.e-9);
+     }
+
+   return 0;
+}
+
+/*}}}*/
+#endif
 
 static int _nt_contin (void *cl, /*{{{*/
                        int (*eval_contin)(void *, double, double *),
@@ -785,7 +848,7 @@ static SLang_Intrin_Fun_Type Ntb_Intrinsics [] =
    MAKE_INTRINSIC_2("_ntb_set_process_weights", _ntb_set_process_weights, V, D,D),
    MAKE_INTRINSIC("_ep_heitler", _ep_heitler, V, 0),
    MAKE_INTRINSIC("_ee_haug", _ee_haug, V, 0),
-   MAKE_INTRINSIC("_ee_interp", _ee_interp, V, 0),   
+   MAKE_INTRINSIC("_ee_interp", _ee_interp, V, 0),
    MAKE_INTRINSIC_2("_ep_heitler1", _ep_heitler1, D, D,D),
    MAKE_INTRINSIC_2("_ee_haug1", _ee_haug1, D, D,D),
    MAKE_INTRINSIC_2("_ee_haug1_lab", _ee_haug1_lab, D, D,D),
@@ -893,7 +956,7 @@ static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{
    proton->curvature = par[2];
    proton->cutoff_energy = par[3];
    proton->mass = GSL_CONST_CGSM_MASS_PROTON;
-   
+
    p->protons = proton;
    p->interpolate = Pizero_Method ? Pizero_Interpolate : 0;
    p->client_data = pizero_alloc_table (PIZERO_TABLE_SIZE);
@@ -915,34 +978,34 @@ static void pizero_distribution_intrin (void) /*{{{*/
        || (sl_par == NULL)
        || (sl_par->num_elements != 4))
      {
-        SLang_set_error (SL_INTRINSIC_ERROR);        
+        SLang_set_error (SL_INTRINSIC_ERROR);
         return;
-     }   
-   
+     }
+
    if ((-1 == SLang_pop_array_of_type (&sl_energies, SLANG_DOUBLE_TYPE))
        || (sl_energies == NULL))
      {
         SLang_free_array (sl_par);
-        SLang_set_error (SL_INTRINSIC_ERROR);        
+        SLang_set_error (SL_INTRINSIC_ERROR);
         return;
-     }   
-   
+     }
+
    n = sl_energies->num_elements;
-   
+
    if (NULL == (sl_qpi = SLang_create_array (SLANG_DOUBLE_TYPE, 0, NULL, &n, 1)))
      {
         SLang_free_array (sl_energies);
         SLang_free_array (sl_par);
         SLang_set_error (SL_INTRINSIC_ERROR);
         return;
-     }   
+     }
 
    par = (double *)sl_par->data;
    init_pizero (par, &p, &proton);
-   
+
    energies = (double *)sl_energies->data;
    qpi = (double *)sl_qpi->data;
-   
+
    for (i = 0; i < n; i++)
      {
         p.energy = energies[i] * GSL_CONST_CGSM_ELECTRON_VOLT;
@@ -950,9 +1013,9 @@ static void pizero_distribution_intrin (void) /*{{{*/
           qpi[i] = 0.0;
      }
 
-   pizero_free_table (p.client_data);   
-   
-   SLang_push_array (sl_qpi, 1);   
+   pizero_free_table (p.client_data);
+
+   SLang_push_array (sl_qpi, 1);
    SLang_free_array (sl_par);
    SLang_free_array (sl_energies);
 }
