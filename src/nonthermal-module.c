@@ -592,8 +592,6 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
 
 static SLang_IConstant_Type Intrin_Const [] =
 {
-   MAKE_ICONSTANT("GSL", GSL),
-   MAKE_ICONSTANT("FAST", FAST),
    MAKE_ICONSTANT("PROTON", PROTON),
    MAKE_ICONSTANT("ELECTRON", ELECTRON),
    MAKE_ICONSTANT("_nonthermal_module_version", MODULE_VERSION_NUMBER),

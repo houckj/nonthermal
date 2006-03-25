@@ -30,27 +30,21 @@
    ((GSL_CONST_CGSM_PLANCKS_CONSTANT_H * GSL_CONST_CGSM_SPEED_OF_LIGHT) \
        / (1.e-8 * GSL_CONST_CGSM_ELECTRON_VOLT))
 
-typedef int Bin_Integral_Method_Type (double, double, void *,
-                                      int (*)(void *, double, double *),
-                                      double *);
-
 static void *ic_client_data = NULL;
 static void *sync_client_data = NULL;
 static void *ntb_client_data = NULL;
 
 static int Syn_Interpolate;
-static int Syn_Bin_Integral_Method = FAST;
 
 static int IC_Interpolate;
 static int IC_Complain_On_Extrapolation;
-static int IC_Bin_Integral_Method = FAST;
 
 static int Ntb_Interpolate = 1;
 
 static int Pizero_Interpolate = 0;
 
-#define X_HE (0.1)
-#define X_H  (1.0 - X_HE)
+#define X_HE (0.1/1.1)
+#define X_H  (1.0/1.1)
 static double Ntb_ee_weight = (X_H + 2*X_HE);
 static double Ntb_ep_weight = (X_H + 4*X_HE);   /* ep goes like Z^2 */
 
@@ -72,135 +66,6 @@ void SLang_set_error (int err) /*{{{*/
 /*}}}*/
 #endif
 
-static int (*Eval_Continuum)(void *, double, double *);
-static double integrand (double e, void *cl) /*{{{*/
-{
-   double y;
-   (void)(*Eval_Continuum)(cl, e, &y);
-   return y;
-}
-
-/*}}}*/
-
-static int bin_integral_gsl (double el, double eh, void *cl, /*{{{*/
-                             int (*eval_contin)(void *, double, double *),
-                             double *area)
-{
-   gsl_error_handler_t *gsl_error_handler;
-   gsl_function f;
-   double abserr;
-   size_t neval;
-   int ret;
-
-   f.function = &integrand;
-   f.params = cl;
-   Eval_Continuum = eval_contin;
-
-   gsl_error_handler = gsl_set_error_handler_off ();
-   ret = gsl_integration_qng (&f, el, eh, 0.0, 1.e-4, area, &abserr, &neval);
-   gsl_set_error_handler (gsl_error_handler);
-
-   if (ret < 0)
-     fprintf (stderr, "*** area = %12.4e  abserr = %12.4e  neval = %3d\r",
-              *area, abserr, neval);
-
-   return ret;
-}
-
-/*}}}*/
-
-static int bin_integral_fast (double el, double eh, void *cl, /*{{{*/
-                              int (*eval_contin)(void *, double, double *),
-                              double *area)
-{
-   double de, sl, sm, sh;
-
-   de = eh - el;
-
-   (void) (*eval_contin) (cl, el, &sl);
-   (void) (*eval_contin) (cl, eh, &sh);
-
-#if 0
-   (void) sm;
-   /* trapezoid rule */
-   *area = de * (sl + sh) / 2.0;
-#else
-   /* Simpson's rule */
-   (void) (*eval_contin) (cl, 0.5*(el+eh), &sm);
-   *area = de * (sl + 4*sm + sh) / 6.0;
-#endif
-
-   return 0;
-}
-
-/*}}}*/
-
-static Bin_Integral_Method_Type *Bin_Integral_Method = &bin_integral_fast;
-
-static void set_bin_integral_method (int method) /*{{{*/
-{
-   switch (method)
-     {
-      case GSL:
-        Bin_Integral_Method = &bin_integral_gsl;
-        break;
-
-      default:
-        Bin_Integral_Method = &bin_integral_fast;
-        break;
-     }
-}
-
-/*}}}*/
-
-#if 0
-static int _nt_binned_contin (void *cl, /*{{{*/
-                              int (*eval_contin)(void *, double, double *),
-                              double *val, Isis_Hist_t *g, double *par, unsigned int npar)
-{
-   double norm = par[0];
-   int i;
-
-   (void) npar;
-
-   if (Bin_Integral_Method == NULL)
-     return -1;
-
-   if (norm == 0.0)
-     {
-        for (i = 0; i < g->n_notice; i++)
-          {
-             val[i] = 0.0;
-          }
-
-        return 0;
-     }
-
-    for (i=0; i < g->n_notice; i++)
-     {
-        double el, eh, area;
-        int n;
-
-        n = g->notice_list[i];
-
-        /* Angstrom -> eV */
-        el = EV_ANGSTROM / g->bin_hi[n];
-        eh = EV_ANGSTROM / g->bin_lo[n];
-
-        (void) (*Bin_Integral_Method)(el, eh, cl, eval_contin, &area);
-
-        /* norm = (V/4*pi*D^2) * n0 (cm^-2 GeV^-1)
-         * s(E)dE = s(y)dy = photons cm^-2 s^-1
-         */
-        val[i] = norm * (area * 1.e-9);
-     }
-
-   return 0;
-}
-
-/*}}}*/
-#else
-/* caching bin-edge function values gives 30% speedup */
 static int _nt_binned_contin (void *cl, /*{{{*/
                               int (*eval_contin)(void *, double, double *),
                               double *val, Isis_Hist_t *g, double *par, unsigned int npar)
@@ -226,7 +91,7 @@ static int _nt_binned_contin (void *cl, /*{{{*/
 
     for (i=0; i < g->n_notice; i++)
      {
-        double el, em, eh, de, sl, sm, sh, area;
+        double el, em, eh, sl, sm, sh, area;
         int n;
 
         n = g->notice_list[i];
@@ -235,11 +100,10 @@ static int _nt_binned_contin (void *cl, /*{{{*/
         el = EV_ANGSTROM / g->bin_hi[n];
         eh = EV_ANGSTROM / g->bin_lo[n];
 
-        de = eh - el;
-
         (void) (*eval_contin)(cl, el, &sl);
         (void) (*eval_contin)(cl, 0.5*(el+eh), &sm);
 
+        /* caching bin-edge value saves 30% */
         if (eh != saved_el)
           (void) (*eval_contin)(cl, eh, &sh);
         else sh = saved_sl;
@@ -248,7 +112,7 @@ static int _nt_binned_contin (void *cl, /*{{{*/
         saved_sl = sl;
 
         /* Simpson's rule */
-        area = de * (sl + 4*sm + sh) / 6.0;
+        area = (eh - el) * (sl + 4*sm + sh) / 6.0;
 
         /* norm = (V/4*pi*D^2) * n0 (cm^-2 GeV^-1)
          * s(E)dE = s(y)dy = photons cm^-2 s^-1
@@ -260,7 +124,6 @@ static int _nt_binned_contin (void *cl, /*{{{*/
 }
 
 /*}}}*/
-#endif
 
 static int _nt_contin (void *cl, /*{{{*/
                        int (*eval_contin)(void *, double, double *),
@@ -323,8 +186,6 @@ static void init_sync (double *par, Synchrotron_Type *s, Particle_Type *elec) /*
    s->electrons = elec;
    s->client_data = sync_client_data;
    s->interpolate = Syn_Interpolate;
-
-   set_bin_integral_method (Syn_Bin_Integral_Method);
 }
 
 /*}}}*/
@@ -399,8 +260,6 @@ static void init_invc (double *par, Inverse_Compton_Type *ic, Particle_Type *ele
    ic->client_data = ic_client_data;
    ic->interpolate = IC_Interpolate;
    ic->complain_on_extrapolate = IC_Complain_On_Extrapolation;
-
-   set_bin_integral_method (IC_Bin_Integral_Method);
 }
 
 /*}}}*/
@@ -447,7 +306,6 @@ static void sync_free_client_data (void) /*{{{*/
 static SLang_Intrin_Var_Type Sync_Intrin_Vars [] =
 {
    MAKE_VARIABLE("Syn_Interpolate", &Syn_Interpolate, I, 0),
-   MAKE_VARIABLE("Syn_Bin_Integral_Method", &Syn_Bin_Integral_Method, I, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
 
@@ -555,7 +413,6 @@ static SLang_Intrin_Var_Type Invc_Intrin_Vars [] =
 {
    MAKE_VARIABLE("IC_Interpolate", &IC_Interpolate, I, 0),
    MAKE_VARIABLE("IC_Complain_On_Extrapolation", &IC_Complain_On_Extrapolation, I, 0),
-   MAKE_VARIABLE("IC_Bin_Integral_Method", &IC_Bin_Integral_Method, I, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
 

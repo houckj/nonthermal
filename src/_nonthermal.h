@@ -52,12 +52,6 @@
 
 enum
 {
-   FAST = 0,
-   GSL = 1
-};
-
-enum
-{
    ELECTRON,
    PROTON
 };
