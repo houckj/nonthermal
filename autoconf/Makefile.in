@@ -18,7 +18,7 @@ install:
 #
 #  These targets are used by the maintainer
 #
-configure: autoconf/aclocal.m4 autoconf/configure.in
+configure: autoconf/aclocal.m4 autoconf/configure.ac
 	cd autoconf && autoconf && /bin/rm -rf autom4te.cache && mv ./configure ..
 update: autoconf/config.sub autoconf/config.guess
 autoconf/config.guess: /usr/share/misc/config.guess
