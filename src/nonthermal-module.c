@@ -381,7 +381,7 @@ static double pc_inj (Particle_Type *pt) /*{{{*/
 
    mc2 = pt->mass * C_SQUARED;
    gamma = T_inj/ mc2 + 1.0;
-   pc = mc2 * sqrt ((gamma + 1.0)*(gamma - 1.0));
+   pc = gamma * mc2 * sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
 
    return pc;
 }
