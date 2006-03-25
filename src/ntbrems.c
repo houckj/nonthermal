@@ -310,12 +310,7 @@ static double eebrems_diff_lab (double een, double pen, double mu) /*{{{*/
    cos_theta_cm = (mu - beta_c)/(1.0 - beta_c * mu);
 
    /* electron (incident energy=gamma along angle=theta=0 in lab frame) */
-#if 0
-   beta = sqrt ((1.0 + 1.0/gamma) * (1.0 - 1.0/gamma));
-   een_cm = mcq * (gamma_c * gamma * (1.0 - beta_c * beta) - 1.0);
-#else
    een_cm = mcq * (gamma_c - 1.0);
-#endif
 
    s = eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
    s /= gamma_c * (1.0 - beta_c * mu);
@@ -371,18 +366,7 @@ static double eebrems_diff_lab_deltamu (double een, double pen, double delta_mu)
    pen_cm = pen * gamma_c * ombm;
    cos_theta_cm = mmb / ombm;
 
-#if 0
-   /* electron (incident energy=gamma along angle=theta=0 in lab frame) */
-   beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
-   dbeta = (gamma < GAMMA_THRESH) ? (1.0 - beta) : delta_beta(gamma);
-
-   /* x = gamma_c * gamma * (1.0 - beta_c * beta) */
-   x = 1.0 / sqrt ( dbeta * dbeta_c * (2.0 - dbeta_c) * (2.0 - dbeta));
-   x *= (dbeta_c + dbeta - dbeta * dbeta_c);
-   een_cm = mcq * (x - 1.0);
-#else
    een_cm = mcq * (gamma_c - 1.0);
-#endif
 
    s = eebrems_diff_cms (een_cm, pen_cm, cos_theta_cm);
    s /= gamma_c * ombm;
