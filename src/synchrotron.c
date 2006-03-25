@@ -225,7 +225,7 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
 #else
    /* Coefficient chosen by trying several values at random 
     * to see which one satisfied the recurrence relation best.
-    * If you don't like it, change it. */ 
+    */
    pc_max = 1.e3 * (*s->electrons->momentum_max) (s->electrons);
    /* FIXME:  xmax value is set by lookup table coverage. */
    xmax = 100.0;    
