@@ -916,8 +916,8 @@ static double ntb_integrand (double pc, void *pt) /*{{{*/
 
    s = 0.0;
 
-   if (pc <= 0.0)
-     return s;
+   /* changed integration variable */
+   pc = exp(pc);
 
    pcomc2 = pc / ELECTRON_REST_ENERGY;
    gamma = sqrt (1.0 + pcomc2 * pcomc2);
@@ -950,6 +950,9 @@ static double ntb_integrand (double pc, void *pt) /*{{{*/
    beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
    v = beta * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
+   /* changed integration variable */
+   s *= pc;
+
    return v * ne * s;
 }
 
@@ -979,7 +982,7 @@ static int integral_over_electrons (Brems_Type *b, double *val) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qag (&f, pc_min, pc_max, epsabs, epsrel,
+   status = gsl_integration_qag (&f, log(pc_min), log(pc_max), epsabs, epsrel,
                                  limit, GSL_INTEG_GAUSS31, work,
                                  val, &abserr);
 
@@ -988,7 +991,7 @@ static int integral_over_electrons (Brems_Type *b, double *val) /*{{{*/
 
    if (status)
      {
-        if (status != GSL_EROUND)
+        if ((status != GSL_EROUND) && (status != GSL_ESING))
           fprintf (stderr, "*** ntbrem: %s\n", gsl_strerror (status));
      }
 
