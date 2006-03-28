@@ -115,12 +115,14 @@ int syn_angular_integral (double x, double *y) /*{{{*/
 
 #include <gsl/gsl_sf_hyperg.h>
 
-static double uu (double kappa, double mu, double x)
+static double uu (double kappa, double mu, double x) /*{{{*/
 {
    return gsl_sf_hyperg_U (0.5+mu-kappa, 1+2*mu, x);
 }
 
-static double R_factored (double x)
+/*}}}*/
+
+static double R_factored (double x) /*{{{*/
 {
    double a, u1, u2, s;
 
