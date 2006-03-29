@@ -116,6 +116,34 @@ static int ke_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
 
 /*}}}*/
 
+/* use etot_particle_spectrum for testing sync analytic solution */
+static int etot_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+{
+   double mc2, r, e, x, g, f;
+
+   if (pt == NULL || ne == NULL)
+     return -1;
+
+   *ne = 0.0;
+
+   mc2 = pt->mass * C_SQUARED;
+   r = pc/mc2;
+   e = mc2 * sqrt (1.0 + r*r);
+   x = e / GEV;
+   g = pt->index;
+
+   f = pow (x, g);
+
+   if (!finite(f))
+     f = 0.0;
+
+   *ne = f;
+
+   return 0;
+}
+
+/*}}}*/
+
 static int dermer_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double x, g, f;
@@ -165,7 +193,7 @@ static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
    mc2 = pt->mass * C_SQUARED;
    r = pc/mc2;
    E = mc2 * sqrt (1.0 + r*r);
-   
+
    beta = E/pc;
 
    /* dn/d(Pc) (norm factored out) */
@@ -199,8 +227,9 @@ int init_particle_spectrum (Particle_Type *pt)
      return -1;
 
    /* silence compiler complaints about unused functions */
-   
+
    if (0) {(void) &pc_cutoff_particle_spectrum;} /* <- default */
+   if (0) {(void) &etot_particle_spectrum;}
    if (0) {(void) &ke_cutoff_particle_spectrum;}
    if (0) {(void) &mori_particle_spectrum;}
    if (0) {(void) &dermer_particle_spectrum;}
@@ -211,6 +240,4 @@ int init_particle_spectrum (Particle_Type *pt)
 
    return 0;
 }
-
-
 
