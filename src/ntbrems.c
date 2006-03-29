@@ -5,11 +5,13 @@
  *
  * Implementation based on
  *   Haug, E., 1975, Z. Naturforsch. 30a, 1099
+ *   Haug, E., 1997, A&A, 326, 417
  *   Dermer, C.D., 1984, ApJ, 280, 328
  *   Alexanian, M., 1968, Phys. Rev., 165, 253.
  *   Heitler, W., 1953, "The Quantum Theory of Radiation",
  *         3rd edition (Dover), p 245
  *   Baring, M.G., et al, 1999, ApJ, 513, 311
+ *   Koch & Motz, 1959, Rev. Mod. Phys. 31, 920
 */
 
 #include "config.h"
@@ -23,6 +25,8 @@
 #include "_nonthermal.h"
 #include "ntbrems.h"
 #include "ntb_table.h"
+
+#define TWO_PI_ALPHA (2.0 * M_PI * GSL_CONST_NUM_FINE_STRUCTURE)
 
 static double exp_fcn (double x) /*{{{*/
 {
@@ -46,9 +50,13 @@ static double exp_fcn (double x) /*{{{*/
 
 /*}}}*/
 
-static double elwert (double x0, double x1) /*{{{*/
+static double elwert (double x0, double x) /*{{{*/
 {
-   return exp_fcn(x0) / exp_fcn(x1);
+#if 0
+   return (x/x0) * (1.0 - exp(-x0))/(1.0 - exp(-x));
+#else
+   return exp_fcn(x0) / exp_fcn(x);
+#endif
 }
 
 /*}}}*/
@@ -56,6 +64,7 @@ static double elwert (double x0, double x1) /*{{{*/
 /* electron-ion bremsstrahlung */
 double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{{*/
 {
+   /* Bethe-Heitler cross-section */
    double k, g, g0, b, b0, sigma, Z=1.0;
    double r0, L, a, a0, phi_bar;
    double g0g, b0b, g02, g03, g2, g3, b02, b03, b2, b3, t1, t2, x;
@@ -101,16 +110,16 @@ double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{
                               - (g0 + g*b2)*a/(g2*b3) + 2.0*k/(g0g*b02*b2)));
    sigma = (phi_bar/k) * ((g*b)/(g0*b0)) * (4.0/3.0 - t1 + t2 + L*x);
 
-   /* Elwert correction to low-energy cross-section: */
-#define TWO_PI_ALPHA (2.0 * M_PI * GSL_CONST_NUM_FINE_STRUCTURE)
+   /* Koch & Motz (1959) and earlier references argue that
+    * the Elwert correction applies only at non-relativistic
+    * energies but Haug (1997) says that it yields accurate results
+    * in the whole energy range for low-Z target nuclei which
+    * are dominant in astrophysical applications.
+    * Haug refers to Pratt & Tseng, 1975, Phys Rev A, 11, 1797
+    */
    xi  = TWO_PI_ALPHA * Z / b;
    xi0 = TWO_PI_ALPHA * Z / b0;
-#if 0
-   elwert = (xi/xi0) * (1.0 - exp(-xi0))/(1.0 - exp(-xi));
-   sigma *= elwert;
-#else
    sigma *= elwert (xi0, xi);
-#endif
 
    return sigma;
 }
