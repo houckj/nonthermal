@@ -64,7 +64,7 @@ static int pc_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
 
    /* no curvature below 1 GeV */
    if ((pt->curvature != 0.0) && (x > Min_Curvature_Pc))
-     g += pt->curvature * log10(x);
+     g -= pt->curvature * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
    f = pow (x, -g) * exp ((GEV-pc)/e0);
@@ -95,7 +95,7 @@ static int ke_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
 
    /* no curvature below 1 GeV */
    if ((pt->curvature != 0.0) && (x > Min_Curvature_Pc))
-     g += pt->curvature * log10(x);
+     g -= pt->curvature * log10(x);
 
    mc2 = pt->mass * C_SQUARED;
    r = pc/mc2;
@@ -159,7 +159,7 @@ static int dermer_particle_spectrum (Particle_Type *pt, double pc, double *ne) /
 
    /* no curvature below 1 GeV */
    if ((pt->curvature != 0.0) && (x > Min_Curvature_Pc))
-     g += pt->curvature * log10(x);
+     g -= pt->curvature * log10(x);
 
    mc2 = pt->mass * C_SQUARED;
    r = pc/mc2;
