@@ -67,7 +67,7 @@ static int pc_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
      g += pt->curvature * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
-   f = pow (x, g) * exp ((GEV-pc)/e0);
+   f = pow (x, -g) * exp ((GEV-pc)/e0);
 
    if (!finite(f))
      f = 0.0;
@@ -104,7 +104,7 @@ static int ke_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
    T = mc2 * (sq - 1.0);
 
    /* dn/d(Pc) (norm factored out) */
-   f = pow (x, g) * exp ((GEV-T)/e0);
+   f = pow (x, -g) * exp ((GEV-T)/e0);
 
    if (!finite(f))
      f = 0.0;
@@ -132,7 +132,7 @@ static int etot_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
    x = e / GEV;
    g = pt->index;
 
-   f = pow (x, g);
+   f = pow (x, -g);
 
    if (!finite(f))
      f = 0.0;
@@ -168,7 +168,7 @@ static int dermer_particle_spectrum (Particle_Type *pt, double pc, double *ne) /
    /* dn/d(Pc) (norm factored out) */
 
    /* Dermer 1986 proton spectrum */
-   f = pow (E/GEV, g);
+   f = pow (E/GEV, -g);
 
    if (!finite(f))
      f = 0.0;

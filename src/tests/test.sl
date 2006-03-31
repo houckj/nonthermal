@@ -10,7 +10,7 @@ define fixup_units (e_MeV, index)
    %  His N(E) = (pc/ 1 MeV)^(-Gamma) exp (-E/Ecut) cm^-3 MeV^-1
    %  My  N(E) = (pc/ 1 GeV)^(-Gamma) exp ((1 GeV - E)/Ecut) cm^-3 GeV^-1
    %  so:
-   variable per_gev = 10.0^(3.0*(-index-1.0));
+   variable per_gev = 10.0^(3.0*(index-1.0));
    variable MeV = 1.0e6;
 
    variable y = e_MeV^2 * (1.e-3 * get_cfun (e_MeV * MeV)) / per_gev;
@@ -28,7 +28,7 @@ define plot_comparison (index)
 {
    vmessage ("index = %g", index);
 
-   variable nn = int (-index*10);
+   variable nn = int (index*10);
 
    variable dir;
    %dir = "/nfs/triassic/d0/gea/science/analysis/sn1006/chandra/00732/anal01/models/";
@@ -145,10 +145,10 @@ define main ()
    variable device, indices;
 #iftrue
    device = "t.ps/cps";
-   indices = [-1.8, -2.0, -2.3];
+   indices = [1.8, 2.0, 2.3];
 #else
    device = "x.ps/cps";
-   indices = [-1.8, -2.0, -2.3];
+   indices = [1.8, 2.0, 2.3];
    Ntb_Interpolate=0;   
 #endif   
    
