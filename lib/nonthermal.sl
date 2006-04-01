@@ -418,4 +418,22 @@ define invc_set_dilution_factors (f) %{{{
 
 %}}}
 
+define nontherm_pdf () %{{{
+{
+   if (_NARGS != 1)
+     {
+        message ("Usage:  nontherm_pdf (name);\n");
+        message ("    NULL | default | etot | mori | ke_cutoff | dermer ");
+        return;
+     }
+   
+   variable name = ();
+   if (name == NULL)
+     name = "";
+
+   nontherm_pdf_intrin (name);
+}
+
+%}}}
+
 provide ("nonthermal");

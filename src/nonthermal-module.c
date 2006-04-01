@@ -564,7 +564,7 @@ char *Particle_Distribution = NULL;
 static void set_pdf_method_intrin (char *name)
 {
    char *s = NULL;
-   if (name)
+   if ((name != NULL) && (*name != 0))
      {
         if (NULL == (s = malloc(1 + strlen(name))))
           {
@@ -591,7 +591,7 @@ static void set_pdf_method_intrin (char *name)
 
 static SLang_Intrin_Fun_Type Intrinsics [] =
 {
-   MAKE_INTRINSIC_1("nontherm_pdf", set_pdf_method_intrin, V, S),
+   MAKE_INTRINSIC_1("nontherm_pdf_intrin", set_pdf_method_intrin, V, S),
    MAKE_INTRINSIC_1("_gamma", gamma_function, D, D),
    MAKE_INTRINSIC("sync_F", synchrotron1, V, 0),
    MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
