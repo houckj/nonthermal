@@ -49,6 +49,13 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
+static double etot_particle_momentum_max (Particle_Type *pt) /*{{{*/
+{
+   return momentum (1.e25, pt->mass);
+}
+
+/*}}}*/
+
 static int pc_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double x, g, e0, f;
@@ -128,7 +135,7 @@ static int etot_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
 
    mc2 = pt->mass * C_SQUARED;
    r = pc/mc2;
-   e = mc2 * sqrt (1.0 + r*r);
+   e = mc2 * r * sqrt (1.0 + 1.0 /r /r);
    x = e / GEV;
    g = pt->index;
 
@@ -221,23 +228,56 @@ static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
 
 /*}}}*/
 
-int init_particle_spectrum (Particle_Type *pt)
+static struct Particle_Type Particle_Methods[] =
 {
+   PARTICLE_METHODS("default",
+                    pc_cutoff_particle_spectrum,
+                    particle_momentum_min,
+                    particle_momentum_max),
+   PARTICLE_METHODS("etot",
+                    etot_particle_spectrum,
+                    particle_momentum_min,
+                    etot_particle_momentum_max),
+   PARTICLE_METHODS("ke_cutoff",
+                    ke_cutoff_particle_spectrum,
+                    particle_momentum_min,
+                    particle_momentum_max),
+   PARTICLE_METHODS("mori",
+                    mori_particle_spectrum,
+                    particle_momentum_min,
+                    particle_momentum_max),
+   PARTICLE_METHODS("dermer",
+                    dermer_particle_spectrum,
+                    particle_momentum_min,
+                    particle_momentum_max),
+   NULL_PARTICLE_TYPE
+};
+
+int init_particle_spectrum (Particle_Type *pt, char *method)
+{
+   Particle_Type *t = Particle_Methods;
+   Particle_Type *q;
+
    if (pt == NULL)
      return -1;
 
-   /* silence compiler complaints about unused functions */
+   if (method == NULL)
+     {
+        /* struct copy */
+        *pt = t[0];
+        return 0;
+     }
+   
+   for (q = t; q->method != NULL; q++)
+     {
+        if (strcmp(q->method,method) == 0)
+          {
+             /* struct copy */
+             *pt = *q;
+             return 0;
+          }
+     }
 
-   if (0) {(void) &pc_cutoff_particle_spectrum;} /* <- default */
-   if (0) {(void) &etot_particle_spectrum;}
-   if (0) {(void) &ke_cutoff_particle_spectrum;}
-   if (0) {(void) &mori_particle_spectrum;}
-   if (0) {(void) &dermer_particle_spectrum;}
-
-   pt->spectrum = &pc_cutoff_particle_spectrum;
-   pt->momentum_min = &particle_momentum_min;
-   pt->momentum_max = &particle_momentum_max;
-
-   return 0;
+   return -1;
 }
 

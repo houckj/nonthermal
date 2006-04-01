@@ -59,6 +59,7 @@ enum
 typedef struct Particle_Type Particle_Type;
 struct Particle_Type
 {
+   char *method;
    int (*spectrum)(Particle_Type *, double, double *);
    double (*momentum_min)(Particle_Type *);
    double (*momentum_max)(Particle_Type *);
@@ -68,9 +69,11 @@ struct Particle_Type
    double mass;
 };
 
-#define NULL_PARTICLE_TYPE {NULL,NULL,NULL,0.0,0.0,0.0,0.0}
+#define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,0.0,0.0,0.0,0.0}
+#define PARTICLE_METHODS(n,m,mn,mx) {(n),m,mn,mx,0.0,0.0,0.0,0.0}
+extern char *Particle_Distribution;
 
-extern int init_particle_spectrum (Particle_Type *p);
+extern int init_particle_spectrum (Particle_Type *p, char *method);
 extern int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp);
 
 /* S-Lang-2 compatibility */

@@ -175,7 +175,7 @@ static double _sync_angular_integral (double *x, int *interpolate) /*{{{*/
 
 static void init_sync (double *par, Synchrotron_Type *s, Particle_Type *elec) /*{{{*/
 {
-   (void) init_particle_spectrum (elec);
+   (void) init_particle_spectrum (elec, Particle_Distribution);
 
    elec->index = par[2];
    elec->curvature = par[3];
@@ -245,7 +245,7 @@ static double _invc_photon_integral (double *gamma, double *energy_final_photon,
 
 static void init_invc (double *par, Inverse_Compton_Type *ic, Particle_Type *elec) /*{{{*/
 {
-   (void) init_particle_spectrum (elec);
+   (void) init_particle_spectrum (elec, Particle_Distribution);
 
    elec->index = par[1];
    elec->curvature = par[2];
@@ -496,7 +496,7 @@ static void _ntb_free_client_data (void) /*{{{*/
 
 static void init_brem (double *par, Brems_Type *b, Particle_Type *elec) /*{{{*/
 {
-   (void) init_particle_spectrum (elec);
+   (void) init_particle_spectrum (elec, Particle_Distribution);
 
    elec->index = par[1];
    elec->curvature = par[2];
@@ -807,7 +807,7 @@ static int pizero_init_client_data (void) /*{{{*/
 
 static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{{{*/
 {
-   (void) init_particle_spectrum (proton);
+   (void) init_particle_spectrum (proton, Particle_Distribution);
 
    proton->index = par[1];
    proton->curvature = par[2];

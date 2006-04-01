@@ -8,6 +8,7 @@
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_integration.h>
@@ -38,6 +39,8 @@ static int pop_density_info (Density_Info *di) /*{{{*/
    Particle_Type *p = &di->particle;
    int particle_type;
 
+   (void) init_particle_spectrum (p, Particle_Distribution);
+
    if (-1 == POP_DOUBLE (&di->n_th)
        || -1 == POP_DOUBLE (&di->kT)
        || -1 == POP_DOUBLE (&di->n_GeV)
@@ -48,8 +51,6 @@ static int pop_density_info (Density_Info *di) /*{{{*/
      {
         return -1;
      }
-
-   (void) init_particle_spectrum (p);
 
    switch (particle_type)
      {
@@ -98,7 +99,7 @@ static double particle_distrib (double *pc, double *index, /*{{{*/
    Particle_Type pt;
    double f;
 
-   (void) init_particle_spectrum (&pt);
+   (void) init_particle_spectrum (&pt, Particle_Distribution);
 
    pt.index = *index;
    pt.curvature = *curvature;
@@ -559,6 +560,23 @@ static double gamma_function (double *x) /*{{{*/
 
 /*}}}*/
 
+char *Particle_Distribution = NULL;
+static void set_pdf_method_intrin (char *name)
+{
+   char *s = NULL;
+   if (name)
+     {
+        if (NULL == (s = malloc(1 + strlen(name))))
+          {
+             fprintf (stderr, "malloc failed -- PDF not changed\n");
+             return;
+          }
+        strcpy (s, name);
+     }
+   free(Particle_Distribution);
+   Particle_Distribution = s;
+}
+
 /* DUMMY_CLASS_TYPE is a temporary hack that will be modified to the true
   * id once the interpreter provides it when the class is registered.  See below
   * for details.  The reason for this is simple: for a module, the type-id
@@ -569,9 +587,11 @@ static double gamma_function (double *x) /*{{{*/
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
 #define V SLANG_VOID_TYPE
+#define S SLANG_STRING_TYPE
 
 static SLang_Intrin_Fun_Type Intrinsics [] =
 {
+   MAKE_INTRINSIC_1("nontherm_pdf", set_pdf_method_intrin, V, S),
    MAKE_INTRINSIC_1("_gamma", gamma_function, D, D),
    MAKE_INTRINSIC("sync_F", synchrotron1, V, 0),
    MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
@@ -589,6 +609,7 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
 #undef D
 #undef I
 #undef V
+#undef S
 
 static SLang_IConstant_Type Intrin_Const [] =
 {
