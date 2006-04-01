@@ -42,20 +42,20 @@
 
 /*}}}*/
 
-#define DO_ANGULAR_INTEGRAL 0
+#define DO_ANGULAR_INTEGRAL 1
 
 #if DO_ANGULAR_INTEGRAL
-static double angular_integrand (double t, void *p) /*{{{*/
+static double angular_integrand (double w, void *p) /*{{{*/
 {
-   double x = *(double *)p;
    gsl_sf_result f;
+   double s, t, x = *(double *)p;
 
-   if (t == 0.0 || t == 1.0)
-     return 0.0;
-
+   t = sqrt ((1.0 + w)*(1.0 - w));
    (void) gsl_sf_synchrotron_1_e (x/t, &f);
 
-   return f.val * t*t / sqrt ((1.0 + t)*(1.0 - t));
+   s = f.val * t;
+
+   return s;
 }
 
 /*}}}*/
@@ -67,41 +67,31 @@ int syn_angular_integral (double x, double *y) /*{{{*/
    gsl_integration_workspace *work;
    gsl_function f;
    size_t limit;
+   int status;
 
    *y = 0.0;
 
    f.function = &angular_integrand;
    f.params = &x;
    epsabs = 0.0;
-   epsrel = 1.e-10;
+   epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
-   work = gsl_integration_workspace_alloc (limit);
-   if (work == NULL)
+   if (NULL == (work = gsl_integration_workspace_alloc (limit)))
      return -1;
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-#if 0
-   (void) gsl_integration_qag (&f, 0.0, 1.0, epsabs, epsrel, limit,
-                               GSL_INTEG_GAUSS31,
-                               work, y, &abserr);
-#else
-   {
-      double pts[] = {0.0, 1.0};
-      int status;
-
-      status = gsl_integration_qagp (&f, pts, 2, epsabs, epsrel, limit,
-                                     work, y, &abserr);
-      if (status)
-        {
-           if (status != GSL_EROUND)
-             fprintf (stderr, "status = %d:  %s\n",
-                      status,
-                      gsl_strerror (status));
-        }
-   }
-#endif
+   status = gsl_integration_qag (&f, 0.0, 1.0, epsabs, epsrel, limit,
+                                 GSL_INTEG_GAUSS31,
+                                 work, y, &abserr);
+   if (status)
+     {
+        if (status != GSL_EROUND)
+          fprintf (stderr, "status = %d:  %s\n",
+                   status,
+                   gsl_strerror (status));
+     }
 
    gsl_set_error_handler (gsl_error_handler);
 
