@@ -140,7 +140,29 @@ static double R_factored (double x) /*{{{*/
 
 int syn_angular_integral (double x, double *y) /*{{{*/
 {
-   *y = R_factored(x);
+#undef USE_ASYMPTOTIC
+#ifdef USE_ASYMPTOTIC
+   /* These asymptotic forms are from
+    * Crusius and Schlickeiser (1986) A&A, 164, L16
+    * They don't seem very accurate...
+    */
+   if (x < 1.e-21)
+     {
+        /* (2^(1/3)/5) * \Gamma^2(1/3) */
+        *y = 1.808418021102803e+00 * pow (x, 1.0/3);
+     }
+   else if (x < 30.0)
+     {
+#endif
+        *y = R_factored (x);
+#ifdef USE_ASYMPTOTIC
+     }
+   else
+     {
+        *y = 0.5*M_PI * exp(-x) * (1.0 - 99.0/162.0/x);
+     }
+#endif
+
    return 0;
 }
 /*}}}*/
@@ -187,6 +209,8 @@ static double synchrotron_integrand (double t, void *pt) /*{{{*/
    t = exp(t);
    t2 = t*t;
    x = 1.0/t2/t2/t2;
+
+   /* Note that x/Coef = 1/gamma^2 */
    pc = ELECTRON_REST_ENERGY * sqrt (Coef/x - 1.0);
 
    (void) eval_angular_integral (x, pt, &y);
@@ -195,7 +219,23 @@ static double synchrotron_integrand (double t, void *pt) /*{{{*/
    val = ne * y;
 
    /* changed integration variable */
+
+   /* Including the sqrt(1-x/Coef) = sqrt(1-1/gamma^2) factor
+    * is "exact" but is inconsistent with the assumptions used
+    * in deriving the analytic solution and therefore leads to
+    * disagreement with it at low-frequencies and
+    * and especially for large B_tot.  That's because the
+    * analytic solution assumes ultra-relativistic electrons
+    * but also extends the gamma integral to zero.
+    * Letting sqrt(1-1/gamma^2)=1 is necessary to match
+    * the analytic solution to "machine precision" at all
+    * frequencies
+    */
+#if 0
    val *= 6 * t2 / sqrt (1.0 - x/Coef);
+#else
+   val *= 6 * t2;
+#endif
    val *= t;
 
    return val;
@@ -232,8 +272,7 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    xmax = 30.0;
    xmin = 1.e-40;
 
-   /* x = (photon energy) / (critical energy)
-    */
+   /* x = (photon energy) / (critical energy) */
    status = gsl_integration_qag
      (&f, -log(xmax)/6, -log(xmin)/6,
       epsabs, epsrel, limit, GSL_INTEG_GAUSS31, work, &integral, &abserr);
