@@ -177,28 +177,28 @@ static void handle_status (int status) /*{{{*/
 
 static double Coef;
 
-static double synchrotron_integrand (double pc, void *pt) /*{{{*/
+static double synchrotron_integrand (double t, void *pt) /*{{{*/
 {
    Synchrotron_Type *s = (Synchrotron_Type *)pt;
    Particle_Type *elec = s->electrons;
-   double r, gamma2, x, y, ne;
+   double x, pc, y, ne, t2, val;
 
-   /* change integration variable */
-   pc = exp(pc);
-
-   r = pc / ELECTRON_REST_ENERGY;
-   gamma2 = 1.0 + r*r;
-
-   /* x = (photon energy) / (critical energy) */
-   x = Coef / gamma2;
+   /* changed integration variable */
+   t = exp(t);
+   t2 = t*t;
+   x = 1.0/t2/t2/t2;
+   pc = ELECTRON_REST_ENERGY * sqrt (Coef/x - 1.0);
 
    (void) eval_angular_integral (x, pt, &y);
    (void) (*elec->spectrum) (elec, pc, &ne);
 
-   /* change integration variable */
-   y *= pc;
+   val = ne * y;
 
-   return ne * y;
+   /* changed integration variable */
+   val *= 6 * t2 / sqrt (1.0 - x/Coef);
+   val *= t;
+
+   return val;
 }
 
 /*}}}*/
@@ -210,21 +210,13 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    gsl_integration_workspace *work;
    gsl_function f;
    double epsabs, epsrel, abserr, integral, eph;
-   double xmax, pc_min, pc_max;
+   double xmin, xmax;
    size_t limit;
    int status = 0;
 
    /* eV */
    s->photon_energy = photon_energy;
    Coef = s->photon_energy / SYNCHROTRON_CRIT_ENERGY_COEF / s->B_tot;
-
-   /* FIXME:  xmax value is set by lookup table coverage. */
-   xmax = 30.0;
-   if (sqrt(Coef/xmax) > GAMMA_MIN_DEFAULT)
-     {
-        pc_min = ELECTRON_REST_ENERGY * sqrt(Coef/xmax - 1.0);
-     }
-   pc_max = (*s->electrons->momentum_max) (s->electrons);
 
    f.function = &synchrotron_integrand;
    f.params = s;
@@ -236,9 +228,19 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
      return -1;
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qag (&f, log(pc_min), log(pc_max), epsabs, epsrel, limit,
-                                 GSL_INTEG_GAUSS31,
-                                 work, &integral, &abserr);
+   /* FIXME -- x range from lookup table */
+   xmax = 30.0;
+   xmin = 1.e-40;
+
+   /* x = (photon energy) / (critical energy)
+    */
+   status = gsl_integration_qag
+     (&f, -log(xmax)/6, -log(xmin)/6,
+      epsabs, epsrel, limit, GSL_INTEG_GAUSS31, work, &integral, &abserr);
+
+   /* constant coefficient from change of integration variable */
+   integral *= 0.5 * sqrt (Coef) * ELECTRON_REST_ENERGY;
+
    handle_status (status);
 
    gsl_set_error_handler (gsl_error_handler);
