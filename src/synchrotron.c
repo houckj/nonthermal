@@ -203,12 +203,10 @@ static double synchrotron_integrand (double t, void *pt) /*{{{*/
 {
    Synchrotron_Type *s = (Synchrotron_Type *)pt;
    Particle_Type *elec = s->electrons;
-   double x, pc, y, ne, t2, val;
+   double x, pc, y, ne, val;
 
    /* changed integration variable */
-   t = exp(t);
-   t2 = t*t;
-   x = 1.0/t2/t2/t2;
+   x = exp(t);
 
    /* Note that x/Coef = 1/gamma^2 */
    pc = ELECTRON_REST_ENERGY * sqrt (Coef/x - 1.0);
@@ -219,6 +217,7 @@ static double synchrotron_integrand (double t, void *pt) /*{{{*/
    val = ne * y;
 
    /* changed integration variable */
+   val /= sqrt(x);
 
    /* Including the sqrt(1-x/Coef) = sqrt(1-1/gamma^2) factor
     * is "exact" but is inconsistent with the assumptions used
@@ -229,14 +228,11 @@ static double synchrotron_integrand (double t, void *pt) /*{{{*/
     * but also extends the gamma integral to zero.
     * Letting sqrt(1-1/gamma^2)=1 is necessary to match
     * the analytic solution to "machine precision" at all
-    * frequencies
+    * frequencies.
     */
 #if 0
-   val *= 6 * t2 / sqrt (1.0 - x/Coef);
-#else
-   val *= 6 * t2;
+   val /= sqrt (1.0 - x/Coef);
 #endif
-   val *= t;
 
    return val;
 }
@@ -272,11 +268,11 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    xmax = 30.0;
    xmin = 1.e-40;
 
-   /* Changed momentum integration variable to t=x^{-1/6}
+   /* Changed momentum integration variable to
     * x = (photon energy) / (critical energy)
     */
    status = gsl_integration_qag
-     (&f, -log(xmax)/6, -log(xmin)/6,
+     (&f, log(xmin), log(xmax),
       epsabs, epsrel, limit, GSL_INTEG_GAUSS31, work, &integral, &abserr);
 
    /* constant coefficient from change of integration variable */
