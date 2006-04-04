@@ -140,7 +140,7 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    gsl_function f;
    double epsabs, epsrel, abserr;
    double pc_min, pc_max;
-   double pcm, gamma_min, max_omega_i, tmin, s;
+   double pcm, gamma_min, max_omega_i, tmin, tmax1, s;
    double omega = ic->energy_final_photon;
    size_t limit;
    int status = 0;
@@ -182,10 +182,13 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
     */
    s = 0.0;
    tmin = sqrt(pc_min);
+   tmax1 = sqrt(pc_max);
    do
      {
-        double ds, tmax = 1.e2 * tmin;
+        double ds, tmax;
         int istatus;
+        tmax = 1.e2 * tmin;
+        if (tmax > tmax1) tmax = tmax1;
         istatus = gsl_integration_qag (&f, tmin, tmax, epsabs, epsrel, limit,
                                        GSL_INTEG_GAUSS31,
                                        work, &ds, &abserr);
@@ -193,7 +196,7 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
         s += ds;
         tmin = tmax;
      }
-   while (tmin < sqrt(pc_max));
+   while (tmin < tmax1);
 
    *val = s / ELECTRON_REST_ENERGY;
 
