@@ -272,7 +272,9 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
    xmax = 30.0;
    xmin = 1.e-40;
 
-   /* x = (photon energy) / (critical energy) */
+   /* Changed momentum integration variable to t=x^{-1/6}
+    * x = (photon energy) / (critical energy)
+    */
    status = gsl_integration_qag
      (&f, -log(xmax)/6, -log(xmin)/6,
       epsabs, epsrel, limit, GSL_INTEG_GAUSS31, work, &integral, &abserr);
