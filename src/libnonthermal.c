@@ -91,7 +91,7 @@ static int _nt_binned_contin (void *cl, /*{{{*/
 
     for (i=0; i < g->n_notice; i++)
      {
-        double el, em, eh, sl, sm, sh, area;
+        double el, eh, sl, sm, sh, area;
         int n;
 
         n = g->notice_list[i];

@@ -17,6 +17,7 @@
 #include <gsl/gsl_integration.h>
 
 #include "_nonthermal.h"
+#include "photons.h"
 #include "inverse_compton.h"
 #include "ic_table.h"
 
@@ -64,7 +65,7 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
    gsl_integration_workspace *work;
    gsl_function f;
    size_t limit;
-   double x, h, min_omega_i, max_omega_i, q_min, q_max;
+   double x, h, max_omega_i, q_min;
    double gamma = ic->electron_gamma;
    double omega = ic->energy_final_photon;
 
@@ -153,7 +154,7 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    epsrel = 1.e-12;
    limit = MAX_QAG_SUBINTERVALS;
 
-   /* pc_max = (*ic->electrons->momentum_max) (ic->electrons); */
+   pc_max = (*ic->electrons->momentum_max) (ic->electrons);
    pc_min = (*ic->electrons->momentum_min) (ic->electrons);
 
    /* lowest possible threshold occurs for largest omega_i */
