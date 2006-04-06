@@ -183,7 +183,7 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
     */
    s = 0.0;
    tmin = sqrt(pc_min);
-   tmax1 = sqrt(pc_max);
+   tmax1 = sqrt(pc_max*1.e3);
    do
      {
         double ds, tmax;
