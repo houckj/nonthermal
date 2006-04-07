@@ -260,7 +260,7 @@ static int eval_nontherm_integral (gsl_function *f, double *value) /*{{{*/
      return -1;
 
    gsl_error_handler = gsl_set_error_handler_off ();
-   status = gsl_integration_qag (f, pc_min, pc_max, epsabs, epsrel, limit,
+   status = gsl_integration_qag (f, log(pc_min), log(pc_max), epsabs, epsrel, limit,
                                  GSL_INTEG_GAUSS31,
                                  work, value, &abserr);
 
@@ -305,6 +305,9 @@ static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
    Particle_Type *pt = &di->particle;
    double mc2 = pt->mass * C_SQUARED;
    double ne, x, gamma, e_kinetic;
+   
+   /* changed integration variable */
+   pc = exp(pc);
 
    /* dn/d(Pc) */
    (void) (*pt->spectrum)(pt, pc, &ne);
@@ -313,6 +316,9 @@ static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
    x = pc / mc2;
    gamma = sqrt (1.0 + x * x);
    e_kinetic = (gamma - 1.0) * mc2;
+   
+   /* changed integration variable */
+   ne *= pc;
 
    return ne * e_kinetic;
 }
@@ -324,11 +330,17 @@ static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
    Density_Info *di = (Density_Info *)cd;
    Particle_Type *pt = &di->particle;
    double ne;
+   
+   /* changed integration variable */
+   pc = exp(pc);
 
    /* relativistic momentum = Pc = gamma * m * v */
 
    /* dn/d(Pc) */
    (void) (*pt->spectrum)(pt, pc, &ne);
+   
+   /* changed integration variable */   
+   ne *= pc;
 
    return ne;
 }
