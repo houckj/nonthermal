@@ -863,8 +863,8 @@ static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
 
 /*}}}*/
 
-static int eebrems_lab (int (*angular_integral_method)(double, double, double *),
-                        double gm1, double e_ph, double *s) /*{{{*/
+static int eebrems_lab (int (*angular_integral_method)(double, double, double *), /*{{{*/
+                        double gm1, double e_ph, double *s) 
 {
    double mcq = ELECTRON_REST_ENERGY / KEV;
    double een, pen;
