@@ -236,7 +236,7 @@ private define boundary_corners ()
         save_boundary (fp, Xleft, Yleft);
         fits_close_file (fp);
         vmessage ("... done");
-        exit(0);
+        %exit(0);
      }
    else
      {
