@@ -10,8 +10,8 @@ where p = \gamma * m * v
       E = \gamma * m * c^2
       
 n0 = 1.0 cm^-3 MeV^-1 @ 1 MeV
-nH = 0.1 cm^-3
-ionization fraction = 1.0
+nH = 0.1 cm^-3  nHe = 0.01 cm^-3  (n_tot = 0.11)
+ionization fraction = 1.0  
 B = 1.0e-6 G
 Ecut = 10 TeV
 
