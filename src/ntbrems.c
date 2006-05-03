@@ -786,7 +786,7 @@ static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
    gsl_function f;
    struct EE_Type s;
    double epsabs, epsrel, abserr;
-   double k, gamma, mu_min;
+   double k, gamma, mu_min, one_minus_mu_min;
    double mcq = ELECTRON_REST_ENERGY / KEV;
    size_t limit;
    int status, cone;
@@ -814,12 +814,14 @@ static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
    if (cone == 0)
      {
         mu_min = -1.0;
+        one_minus_mu_min = 2.0;
      }
    else
      {
         /* beaming limits emission to narrow cone in the forward direction
          * mu = cos(theta)
          */
+        double rg2 = 1.0/gamma/gamma;
         double beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
         mu_min = ((1.0 + 1.0/gamma)*k - (1.0 - 1.0/gamma)) / (k * beta);
         if (fabs(mu_min) > 1.0)
@@ -828,6 +830,12 @@ static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
                       mu_min);
              exit(1);
           }
+        one_minus_mu_min = (1.0 - 1.0/gamma) / k / beta - 1.0 / gamma/ beta
+          - 0.5 * rg2 * (1.0 + (3*rg2/4)
+                         * (1.0 + (5*rg2/6)
+                            * (1.0 + (7*rg2/8)
+                               * (1.0 + (9*rg2/10)
+                                  * (1.0 + (11*rg2/12))))));
      }
 
    f.params = &s;
@@ -842,7 +850,7 @@ static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
 
    f.function = &lab_mu_integrand;
 
-   status = gsl_integration_qag (&f, 0.0, 1.0 - mu_min, epsabs, epsrel,
+   status = gsl_integration_qag (&f, 0.0, one_minus_mu_min, epsabs, epsrel,
                                  limit, GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
    handle_gsl_status (status);
