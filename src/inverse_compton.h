@@ -17,6 +17,7 @@ Inverse_Compton_Type;
 
 #define NULL_INVERSE_COMPTON_TYPE  {NULL,NULL,0.0,0.0,0.0,0.0,0,0,NULL}
 
+extern double ic_knlimit_constant (double p);
 extern int ic_calc_inverse_compton
   (void *vic, double energy_final_photon, double *emissivity);
 

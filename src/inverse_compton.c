@@ -21,27 +21,140 @@
 #include "inverse_compton.h"
 #include "ic_table.h"
 
-/*{{{ physical constants */
-
 #define KLEIN_NISHINA_COEF \
    (2 * M_PI * ELECTRON_RADIUS * ELECTRON_RADIUS)
 
+/*{{{ Compute constant appearing in asymptotic solution
+ * for the extreme Klein-Nishina limit.
+ * Blumenthal & Gould, equations 2.85 and 2.86
+ */ 
+
+static double dratio (double x, double p) /*{{{*/
+{
+   double f = 0.5 + 0.5 * sqrt(x/(1.0+x));
+   double g = 1.0 + 1.0/x;
+   return pow (f, p+2) * pow(g, 0.5*(p+3));
+}
+
 /*}}}*/
 
-static double incident_photons_integrand (double q, void *p) /*{{{*/
+static double c01_integrand (double x, void *v) /*{{{*/
+{
+   double p = *((double *)v);
+   return ((1.0 + 2*x) / x / x ) / dratio(x, p);
+}
+
+/*}}}*/
+
+static double c1i_integrand (double x, void *v) /*{{{*/
+{
+   double p = *((double *)v);
+   return ((1.0 + 2*x) / x / x ) * (1.0/dratio(x, p) - 1.0);
+}
+
+/*}}}*/
+
+static int c01 (double p, double *val) /*{{{*/
+{
+   double epsabs, epsrel, abserr;
+   gsl_error_handler_t *gsl_error_handler;
+   gsl_integration_workspace *work;
+   gsl_function f;
+   size_t limit;
+
+   *val = 0.0;
+
+   f.function = &c01_integrand;
+   f.params = &p;
+   epsabs = 0.0;
+   epsrel = 1.e-12;
+   limit = MAX_QAG_SUBINTERVALS;
+
+   work = gsl_integration_workspace_alloc (limit);
+   if (work == NULL)
+     return -1;
+
+   gsl_error_handler = gsl_set_error_handler_off ();
+
+   (void) gsl_integration_qags (&f, 0, 1, epsabs, epsrel, limit,
+                               work, val, &abserr);
+
+   gsl_set_error_handler (gsl_error_handler);
+   gsl_integration_workspace_free (work);
+
+   return 0;
+}
+
+/*}}}*/
+
+static int c1i (double p, double *val) /*{{{*/
+{
+   double epsabs, epsrel, abserr;
+   gsl_error_handler_t *gsl_error_handler;
+   gsl_integration_workspace *work;
+   gsl_function f;
+   size_t limit;
+
+   *val = 0.0;
+
+   f.function = &c1i_integrand;
+   f.params = &p;
+   epsabs = 0.0;
+   epsrel = 1.e-12;
+   limit = MAX_QAG_SUBINTERVALS;
+
+   work = gsl_integration_workspace_alloc (limit);
+   if (work == NULL)
+     return -1;
+
+   gsl_error_handler = gsl_set_error_handler_off ();
+
+   (void) gsl_integration_qagiu (&f, 1, epsabs, epsrel, limit,
+                                 work, val, &abserr);
+
+   gsl_set_error_handler (gsl_error_handler);
+   gsl_integration_workspace_free (work);
+
+   return 0;
+}
+
+/*}}}*/
+
+double ic_knlimit_constant (double p) /*{{{*/
+{
+   double g, h, c_p;
+
+   if (-1 ==  c01 (p, &g))
+     fprintf (stderr, "c01 failed\n");
+   if (-1 == c1i (p, &h))
+     fprintf (stderr, "c1i failed\n");
+   c_p = 0.5 * (g + h - 1.0);
+
+   return c_p;
+}
+
+/*}}}*/
+
+/*}}}*/
+
+static double incident_photons_integrand (double lnq, void *p) /*{{{*/
 {
    Inverse_Compton_Type *ic = (Inverse_Compton_Type *)p;
    double omega = ic->energy_final_photon;
    double gamma = ic->electron_gamma;
-   double x, omega_i, gq, f_kn, num_photons, val;
+   double x, omega_i, gq, f_kn, num_photons, val, q;
 
    /* changed integration variable */
-   q = exp(q);
+   q = exp(lnq);
 
    x = omega/gamma;
    gq = x / (1.0 - x);
    omega_i = gq / (4 * gamma) / q;
+#if 0
    f_kn = 2 * q * log(q) + (1.0 - q) * (1.0 + 2*q + 0.5*gq*gq/(1.0 + gq));
+#else
+   f_kn = 2 * q * lnq - expm1(lnq) * (1.0 + 2*q + 0.5*gq*gq/(1.0 + gq));   
+#endif   
 
    (void) (*ic->incident_photons) (omega_i, &num_photons);
    if (num_photons == 0.0)
@@ -72,7 +185,7 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
    *val = 0.0;
 
    x = omega / gamma;
-   if (x > 1.0)
+   if (x >= 1.0)
      return 0;
 
    h = 0.25 * x / (1.0 - x) / gamma;
