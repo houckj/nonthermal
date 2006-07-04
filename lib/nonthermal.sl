@@ -19,9 +19,9 @@ private define push_array_values (a) %{{{
 public define invc_table_init_hook (file) %{{{
 {
    variable tf = fits_read_table (sprintf ("%s[TABLE]", file));
-   
+
    variable keys_hdu = sprintf ("%s[TABLE]", file);
-   variable key_names = ["gammin", "gammax", "efnmin", "efnmax", 
+   variable key_names = ["gammin", "gammax", "efnmin", "efnmax",
                          "sigma0", "omega0", "xepsilon"];
    variable s = fits_read_key_struct (keys_hdu, push_array_values(key_names));
    variable keys = Double_Type[length(key_names)];
@@ -30,7 +30,7 @@ public define invc_table_init_hook (file) %{{{
         variable k = ();
         keys[k] = get_struct_field (s, key_names[k]);
      }
-   
+
    variable tx = fits_read_table (sprintf ("%s[XGRID]", file));
    variable ty = fits_read_table (sprintf ("%s[YGRID]", file));
    variable t = struct {xgrid,ygrid,f};
@@ -46,7 +46,7 @@ public define invc_table_init_hook (file) %{{{
    b.y = t.ygrid;
    b.f = t.f;
    variable p = bspline_open_intrin (NULL, b, 6, 6);
-   
+
    return (p, keys);
 }
 
@@ -161,6 +161,70 @@ define _ntbrem_table_file () %{{{
 
 %}}}
 
+private define pdf_default (l,h,p) {return ("default", p);}
+private define pdf_default_contin (x,p) {return ("default", p);}
+
+private define pdf_etot (l,h,p) {return ("etot", p);}
+private define pdf_etot_contin (x,p) {return ("etot", p);}
+
+private define pdf_mori (l,h,p) {return ("mori", p);}
+private define pdf_mori_contin (x,p) {return ("mori", p);}
+
+private define pdf_dermer (l,h,p) {return ("dermer", p);}
+private define pdf_dermer_contin (x,p) {return ("dermer", p);}
+
+private define pdf_ke_cutoff (l,h,p) {return ("ke_cutoff", p);}
+private define pdf_ke_cutoff_contin (x,p) {return ("ke_cutoff", p);}
+
+private define pdf_cbreak (l,h,p) {return ("cbreak", p);}
+private define pdf_cbreak_contin (x,p) {return ("cbreak", p);}
+
+private define pdf_param_defaults (i, val, freeze, min, max) %{{{
+{
+   return (val[i], freeze[i], min[i], max[i]);
+}
+
+%}}}
+
+private define init_pdf_options () %{{{
+{
+   add_slang_function ("pdf_default", [&pdf_default, &pdf_default_contin],
+                       ["index", "curvature", "cutoff [TeV]"]);
+   set_param_default_hook ("pdf_default", &pdf_param_defaults,
+                           [2.0, 0.0, 10.0], [0, 1, 0],
+                           [1.0, -1.0, 1.0],
+                           [3.0, 1.0, 1.e2]);
+
+   add_slang_function ("pdf_etot", [&pdf_etot, &pdf_etot_contin], ["index"]);
+   set_param_default_hook ("pdf_etot", &pdf_param_defaults,
+                           [2.0], [0], [1.0], [3.0]);
+
+   add_slang_function ("pdf_mori", [&pdf_mori, &pdf_mori_contin]);
+
+   add_slang_function ("pdf_dermer", [&pdf_dermer, &pdf_dermer_contin],
+                       ["index", "curvature"]);
+   set_param_default_hook ("pdf_dermer", &pdf_param_defaults,
+                           [2.0, 0.0], [0, 1],
+                           [1.0, -1.0],
+                           [3.0, 1.0]);
+
+   add_slang_function ("pdf_ke_cutoff", [&pdf_ke_cutoff, &pdf_ke_cutoff_contin],
+                       ["index", "curvature", "cutoff [TeV]"]);
+   set_param_default_hook ("pdf_ke_cutoff", &pdf_param_defaults,
+                           [2.0, 0.0, 10.0], [0, 1, 0],
+                           [1.0, -1.0, 1.0],
+                           [3.0, 1.0, 1.e2]);
+
+   add_slang_function ("pdf_cbreak", [&pdf_cbreak, &pdf_cbreak_contin],
+                       ["index", "curvature", "cutoff [TeV]", "break [TeV]"]);
+   set_param_default_hook ("pdf_cbreak", &pdf_param_defaults,
+                           [2.0, 0.0, 10.0, 1.0], [0, 1, 0, 1],
+                           [1.0, -1.0, 1.0, 0.0],
+                           [3.0, 1.0, 1.e2, 1.e2]);
+}
+
+%}}}
+
 private define add_function () %{{{
 {
    variable lib_file = "libnonthermal.so";
@@ -194,6 +258,8 @@ private define nonthermal_init () %{{{
    add_function ("invc", _invc_table_file());
    add_function ("ntbrem", _ntbrem_table_file());
    add_function ("pizero");
+
+   init_pdf_options();
 }
 
 %}}}
@@ -313,9 +379,7 @@ define particle_info_struct () %{{{
    % the order used in nonthermal-module.c:pop_density_info()
    variable s = struct
      {
-	particle_type,
-	  index, curvature, cutoff, n_GeV,
-	  kT, n_th
+        pdf_name, params, particle_type, n_GeV, kT, n_th
      };
 
    s.particle_type = "electron";
@@ -414,24 +478,6 @@ define force_charge_conservation () %{{{
 define invc_set_dilution_factors (f) %{{{
 {
    _invc_set_dilution_factors (f);
-}
-
-%}}}
-
-define nontherm_pdf () %{{{
-{
-   if (_NARGS != 1)
-     {
-        message ("Usage:  nontherm_pdf (name);\n");
-        message ("    NULL | default | etot | mori | ke_cutoff | dermer ");
-        return;
-     }
-   
-   variable name = ();
-   if (name == NULL)
-     name = "";
-
-   nontherm_pdf_intrin (name);
 }
 
 %}}}

@@ -32,35 +32,71 @@ typedef struct
    double n_GeV;           /* non-thermal e- density @ 1 GeV */
 }
 Density_Info;
+#define NULL_DENSITY_INFO {NULL_PARTICLE_TYPE,0.0,0,0}
 /* Note that fitted norm = n_GeV * V / (4*pi*D^2) */
+
+static int pop_pdf_info (char **name, SLang_Array_Type **pars) /*{{{*/
+{
+   *pars = NULL;
+   *name = NULL;
+
+   if ((-1 == SLang_pop_array_of_type (pars, SLANG_DOUBLE_TYPE))
+       || (*pars == NULL))
+     return -1;
+
+   if (-1 == SLpop_string (name))
+     {
+        SLang_free_array (*pars);
+        *pars = NULL;
+        return -1;
+     }
+
+   return 0;
+}
+
+/*}}}*/
+
+int init_pdf (Particle_Type *p, unsigned int type) /*{{{*/
+{
+   static char msg[] = "*** nonthermal: init_pdf: failed initializing particle distribution function\n";
+   SLang_Array_Type *sl_pars;
+   char *pdf_name;
+   int status;
+
+   if (-1 == pop_pdf_info (&pdf_name, &sl_pars))
+     {
+        fprintf (stderr, msg);
+        return -1;
+     }
+
+   status = init_particle_spectrum (p, type, pdf_name, sl_pars);
+   if (status) fprintf (stderr, msg);
+
+   SLang_free_array (sl_pars);
+   SLfree(pdf_name);
+
+   return status;
+}
+
+/*}}}*/
 
 static int pop_density_info (Density_Info *di) /*{{{*/
 {
    Particle_Type *p = &di->particle;
    int particle_type;
 
-   (void) init_particle_spectrum (p, Particle_Distribution);
-
-   if (-1 == POP_DOUBLE (&di->n_th)
-       || -1 == POP_DOUBLE (&di->kT)
-       || -1 == POP_DOUBLE (&di->n_GeV)
-       || -1 == POP_DOUBLE (&p->cutoff_energy)
-       || -1 == POP_DOUBLE (&p->curvature)
-       || -1 == POP_DOUBLE (&p->index)
+   if (-1 == SLang_pop_double (&di->n_th)
+       || -1 == SLang_pop_double (&di->kT)
+       || -1 == SLang_pop_double (&di->n_GeV)
        || -1 == SLang_pop_integer (&particle_type))
      {
         return -1;
      }
 
-   switch (particle_type)
+   if (-1 == init_pdf (p, particle_type))
      {
-      case PROTON:
-        p->mass = GSL_CONST_CGSM_MASS_PROTON;
-        break;
-
-      default:
-        p->mass = GSL_CONST_CGSM_MASS_ELECTRON;
-        break;
+        free_particle_spectrum (p);
+        return -1;
      }
 
    return 0;
@@ -92,22 +128,22 @@ static double thermal_distrib (double *mv, double *pkT_keV, double *pmass) /*{{{
 
 /*}}}*/
 
-static double particle_distrib (double *pc, double *index, /*{{{*/
-                                double *curvature, double *cutoff_energy,
-                                double *mass)
+static double particle_distrib (double *pc, unsigned int *type) /*{{{*/
 {
    Particle_Type pt;
    double f;
 
-   (void) init_particle_spectrum (&pt, Particle_Distribution);
-
-   pt.index = *index;
-   pt.curvature = *curvature;
-   pt.cutoff_energy = *cutoff_energy;
-   pt.mass = *mass;
+   if (-1 == init_pdf (&pt, *type))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        free_particle_spectrum (&pt);
+        return -1.0;
+     }
 
    /* dn/d(Pc) */
    (void) (*pt.spectrum)(&pt, *pc, &f);
+
+   free_particle_spectrum (&pt);
 
    return f;
 }
@@ -200,7 +236,7 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 
 static double _find_momentum_min (void) /*{{{*/
 {
-   Density_Info di;
+   Density_Info di = NULL_DENSITY_INFO;
    double p;
 
    if (-1 == pop_density_info (&di))
@@ -213,6 +249,8 @@ static double _find_momentum_min (void) /*{{{*/
      {
         fprintf (stderr, "find_momentum_min: no solution -- using thermal peak momentum\n");
      }
+
+   free_particle_spectrum (&di.particle);
 
    return p;
 }
@@ -305,7 +343,7 @@ static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
    Particle_Type *pt = &di->particle;
    double mc2 = pt->mass * C_SQUARED;
    double ne, x, gamma, e_kinetic;
-   
+
    /* changed integration variable */
    pc = exp(pc);
 
@@ -316,7 +354,7 @@ static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
    x = pc / mc2;
    gamma = sqrt (1.0 + x * x);
    e_kinetic = (gamma - 1.0) * mc2;
-   
+
    /* changed integration variable */
    ne *= pc;
 
@@ -330,7 +368,7 @@ static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
    Density_Info *di = (Density_Info *)cd;
    Particle_Type *pt = &di->particle;
    double ne;
-   
+
    /* changed integration variable */
    pc = exp(pc);
 
@@ -338,8 +376,8 @@ static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
 
    /* dn/d(Pc) */
    (void) (*pt->spectrum)(pt, pc, &ne);
-   
-   /* changed integration variable */   
+
+   /* changed integration variable */
    ne *= pc;
 
    return ne;
@@ -349,7 +387,7 @@ static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
 
 static double nontherm_energy_density (void) /*{{{*/
 {
-   Density_Info di;
+   Density_Info di = NULL_DENSITY_INFO;
    double ne;
 
    if (-1 == pop_density_info (&di))
@@ -361,13 +399,15 @@ static double nontherm_energy_density (void) /*{{{*/
    if (-1 == nontherm_integral (&di, &nontherm_energy_density_integrand, &ne))
      ne = 0.0;
 
+   free_particle_spectrum (&di.particle);
+
    return ne;
 }
 /*}}}*/
 
 static double nontherm_density (void) /*{{{*/
 {
-   Density_Info di;
+   Density_Info di = NULL_DENSITY_INFO;
    double n;
 
    if (-1 == pop_density_info (&di))
@@ -378,6 +418,8 @@ static double nontherm_density (void) /*{{{*/
 
    if (-1 == nontherm_integral (&di, &nontherm_density_integrand, &n))
      n = 0.0;
+
+   free_particle_spectrum (&di.particle);
 
    return n;
 }
@@ -447,7 +489,7 @@ static double equal_integrated_nonthermal_densities (Density_Info *de, Density_I
         /* SLang_set_error (SL_INTRINSIC_ERROR); */
         return -1.0;
      }
-   
+
    return p_norm;
 }
 
@@ -484,7 +526,7 @@ static double equal_injection_densities (Density_Info *de, Density_Info *dp) /*{
 
 static double conserve_charge (int *method) /*{{{*/
 {
-   Density_Info de, dp;
+   Density_Info de=NULL_DENSITY_INFO, dp=NULL_DENSITY_INFO;
    double p_norm;
 
    if (-1 == pop_density_info (&dp)
@@ -501,93 +543,19 @@ static double conserve_charge (int *method) /*{{{*/
       default:
         p_norm = equal_injection_densities (&de, &dp);
         break;
-        
+
       case 1:
         p_norm = equal_integrated_nonthermal_densities (&de, &dp);
-        break;        
+        break;
      }
+
+   free_particle_spectrum (&dp.particle);
+   free_particle_spectrum (&de.particle);
 
    return p_norm;
 }
 
 /*}}}*/
-
-static void synchrotron1 (void) /*{{{*/
-{
-   SLang_Array_Type *sl_x = NULL;
-   SLang_Array_Type *sl_f = NULL;
-   double *x, *y;
-   int i, n;
-
-   if ((-1 == SLang_pop_array_of_type (&sl_x, SLANG_DOUBLE_TYPE))
-       || (sl_x == NULL))
-     {
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return;
-     }
-
-   x = (double *)sl_x->data;
-   n = sl_x->num_elements;
-
-   if (NULL == (sl_f = SLang_create_array (SLANG_DOUBLE_TYPE, 0, NULL, &n, 1)))
-     {
-        SLang_free_array (sl_x);
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return;
-     }
-
-   y = (double *)sl_f->data;
-
-   for (i = 0; i < n; i++)
-     {
-        gsl_sf_result f;
-        (void) gsl_sf_synchrotron_1_e (x[i], &f);
-        y[i] = f.val;
-     }
-
-   SLang_free_array (sl_x);
-
-   if (n == 1)
-     {
-        SLang_push_double (y[0]);
-        SLang_free_array (sl_f);
-     }
-   else SLang_push_array (sl_f, 1);
-}
-
-/*}}}*/
-
-static double gamma_function (double *x) /*{{{*/
-{
-   gsl_sf_result y;
-   gsl_error_handler_t *gsl_error_handler;
-
-   gsl_error_handler = gsl_set_error_handler_off ();
-   if (-1 == gsl_sf_gamma_e (*x, &y))
-     SLang_set_error (SL_INTRINSIC_ERROR);
-   gsl_set_error_handler (gsl_error_handler);
-
-   return y.val;
-}
-
-/*}}}*/
-
-char *Particle_Distribution = NULL;
-static void set_pdf_method_intrin (char *name)
-{
-   char *s = NULL;
-   if ((name != NULL) && (*name != 0))
-     {
-        if (NULL == (s = malloc(1 + strlen(name))))
-          {
-             fprintf (stderr, "malloc failed -- PDF not changed\n");
-             return;
-          }
-        strcpy (s, name);
-     }
-   free(Particle_Distribution);
-   Particle_Distribution = s;
-}
 
 /* DUMMY_CLASS_TYPE is a temporary hack that will be modified to the true
   * id once the interpreter provides it when the class is registered.  See below
@@ -598,16 +566,14 @@ static void set_pdf_method_intrin (char *name)
 #define MT DUMMY_CLASS_TYPE
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
+#define UI SLANG_UINT_TYPE
 #define V SLANG_VOID_TYPE
 #define S SLANG_STRING_TYPE
 
 static SLang_Intrin_Fun_Type Intrinsics [] =
 {
-   MAKE_INTRINSIC_1("nontherm_pdf_intrin", set_pdf_method_intrin, V, S),
-   MAKE_INTRINSIC_1("_gamma", gamma_function, D, D),
-   MAKE_INTRINSIC("sync_F", synchrotron1, V, 0),
    MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
-   MAKE_INTRINSIC_5("particle_distrib", particle_distrib, D, D, D, D, D, D),
+   MAKE_INTRINSIC_2("particle_distrib", particle_distrib, D, D, UI),
    MAKE_INTRINSIC_1("conserve_charge", conserve_charge, D, I),
    MAKE_INTRINSIC("_find_momentum_min", _find_momentum_min, D, 0),
    MAKE_INTRINSIC("_nontherm_density", nontherm_density, D, 0),
@@ -620,6 +586,7 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
 
 #undef D
 #undef I
+#undef UI
 #undef V
 #undef S
 

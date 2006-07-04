@@ -2,16 +2,13 @@ require ("nonthermal");
 require ("gsl");
 
 Syn_Interpolate = 1;
-nontherm_pdf ("etot");
 
 define sync_numeric (nu, s, B)
 {
-   fit_fun ("sync");
+   fit_fun ("sync(1,pdf_etot(1))");
    set_par ("sync(1).norm", 1);
    set_par ("sync(1).B_tot", B, 0, 0, 0);
-   set_par ("sync(1).index", s, 0, 0, 0);
-   set_par ("sync(1).curvature", 0);
-   set_par ("sync(1).cutoff", 1.e10, 0, 0, 0);
+   set_par ("pdf_etot(1).index", s, 0, 0, 0);
 
    variable energy_erg = CONST_CGSM_PLANCKS_CONSTANT_H * nu;
 

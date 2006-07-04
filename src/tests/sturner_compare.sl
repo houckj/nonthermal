@@ -3,8 +3,6 @@
 %prepend_to_isis_module_path ("/tmp/i686/lib/isis/modules");
 require ("nonthermal");
 
-nontherm_pdf ("ke_cutoff");
-
 define fixup_units (e_MeV, index)
 {
    %  Sturner's spectra have a residual dependence on e- power-law index
@@ -55,34 +53,34 @@ define plot_comparison (index)
    xrange (min([e_s, e_ic]), max([e_s, e_ic]));
    yrange (1.e-30, 1.e-10);
 
-   fit_fun ("sync(1)");
-   set_par ("sync(1).index",index);
-   set_par ("sync(1).curvature", 0);
-   set_par ("sync(1).cutoff", 10.0);
+   fit_fun ("sync(1, pdf_ke_cutoff(1))");
    set_par ("sync(1).B_tot", 1.0);
+   set_par ("pdf_ke_cutoff(1).index",index);
+   set_par ("pdf_ke_cutoff(1).curvature", 0);
+   set_par ("pdf_ke_cutoff(1).cutoff", 10.0);
    plot (fixup_units (e_s, index), 1);
    oplot(e_s, abs(s_t), red);
 
-   fit_fun ("invc(1)");
-   set_par ("invc(1).index",index);
-   set_par ("invc(1).curvature", 0);
-   set_par ("invc(1).cutoff", 10.0);
+   fit_fun ("invc(1, pdf_ke_cutoff(1))");
    set_par ("invc(1).T_photon[K]", 2.725);
+   set_par ("pdf_ke_cutoff(1).index",index);
+   set_par ("pdf_ke_cutoff(1).curvature", 0);
+   set_par ("pdf_ke_cutoff(1).cutoff", 10.0);
    oplot (fixup_units (e_ic, index), 1);
    oplot(e_ic, abs(ic_t), red);
    
    %Pizero_Interpolate = 0;
-   fit_fun ("pizero(1)");
-   set_par ("pizero(1).index",index);
-   set_par ("pizero(1).curvature", 0);
-   set_par ("pizero(1).cutoff", 10.0);
+   fit_fun ("pizero(1, pdf_ke_cutoff(1))");
+   set_par ("pdf_ke_cutoff(1).index",index);
+   set_par ("pdf_ke_cutoff(1).curvature", 0);
+   set_par ("pdf_ke_cutoff(1).cutoff", 10.0);
    oplot (fixup_units (e_ic, index), 1);
 
-   fit_fun ("ntbrem(1)");
+   fit_fun ("ntbrem(1, pdf_ke_cutoff(1))");
    set_par ("ntbrem(1).norm", 0.11);
-   set_par ("ntbrem(1).index",index);
-   set_par ("ntbrem(1).curvature", 0);
-   set_par ("ntbrem(1).cutoff", 10.0);
+   set_par ("pdf_ke_cutoff(1).index",index);
+   set_par ("pdf_ke_cutoff(1).curvature", 0);
+   set_par ("pdf_ke_cutoff(1).cutoff", 10.0);
    % Sturner used target proton density = 0.1 cm^-3, 
    % He density = 0.11 cm^-3
    % process weight is Z^2 * number_density_fraction

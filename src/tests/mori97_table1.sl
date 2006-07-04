@@ -5,12 +5,8 @@ require ("nonthermal");
 prepend_to_isis_load_path ("/vex/d0/i686/share/slsh/local-packages");
 require ("xfig");
 
-nontherm_pdf ("mori");
-
-fit_fun("pizero(1)");
+fit_fun("pizero(1,pdf_mori(1))");
 set_par ("pizero(1).norm", 1.0);
-set_par ("pizero(1).index", 2.75);  % ignored
-set_par ("pizero(1).cutoff", 1.e10, 0, 0, 0);
 
 %Pizero_Interpolate=1;
 
@@ -57,7 +53,7 @@ variable Ysize = 4*2.54;
 variable xmin, xmax, ymin, ymax;
 xmin = -2.5 + 9;
 xmax =  5.5 + 9;
-ymin = 0.8;
+ymin = 0.5; %0.8;
 ymax = 2.0;
 
 variable w = xfig_plot_new (Xsize, Ysize);

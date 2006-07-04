@@ -19,7 +19,7 @@ define recurrence (gam, alpha, eps)
 {
 #iftrue
    % FIXME - short-circuit
-   if (Model_Name != "invc")
+   if (Model_Name != "pizero")
      return Energies * 0.0;
 #endif
 
@@ -328,8 +328,8 @@ require ("maplib");
 
 define map_main()
 {
-   variable map_file = "recur_map_3e_1000_frac_invc.dat";
-   variable hist_file = "recur_map_hist_3e_1000_frac_invc.dat";
+   variable map_file = "recur_map_3e_1000_frac_pizero.dat";
+   variable hist_file = "recur_map_hist_3e_1000_frac_pizero.dat";
 
    variable fp = fopen (map_file, "w");
 

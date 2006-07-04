@@ -35,13 +35,11 @@ static void *sync_client_data = NULL;
 static void *ntb_client_data = NULL;
 
 static int Syn_Interpolate;
-
 static int IC_Interpolate;
-static int IC_Complain_On_Extrapolation;
-
 static int Ntb_Interpolate = 1;
-
 static int Pizero_Interpolate = 0;
+
+static int IC_Complain_On_Extrapolation;
 
 #define X_HE (0.1/1.1)
 #define X_H  (1.0/1.1)
@@ -173,19 +171,22 @@ static double _sync_angular_integral (double *x, int *interpolate) /*{{{*/
 
 /*}}}*/
 
-static void init_sync (double *par, Synchrotron_Type *s, Particle_Type *elec) /*{{{*/
+static int init_sync (double *par, unsigned int npar, Synchrotron_Type *s, Particle_Type *elec) /*{{{*/
 {
-   (void) init_particle_spectrum (elec, Particle_Distribution);
+   (void) npar;
 
-   elec->index = par[2];
-   elec->curvature = par[3];
-   elec->cutoff_energy = par[4];
-   elec->mass = GSL_CONST_CGSM_MASS_ELECTRON;
+   if (-1 == init_pdf (elec, ELECTRON))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return -1;
+     }
 
    s->B_tot = par[1] * 1.e-6;  /* Gauss */
    s->electrons = elec;
    s->client_data = sync_client_data;
    s->interpolate = Syn_Interpolate;
+
+   return 0;
 }
 
 /*}}}*/
@@ -194,11 +195,16 @@ static int binned_sync (double *val, Isis_Hist_t *g, double *par, unsigned int n
 {
    Synchrotron_Type s = NULL_SYNCHROTRON_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
+   int status;
 
-   init_sync (par, &s, &elec);
+   if (-1 == init_sync (par, npar, &s, &elec))
+     return -1;
 
-   return _nt_binned_contin ((void *)&s, &syn_calc_synchrotron,
-                              val, g, par, npar);
+   status = _nt_binned_contin ((void *)&s, &syn_calc_synchrotron,
+                               val, g, par, npar);
+   free_particle_spectrum (&elec);
+
+   return status;
 }
 
 /*}}}*/
@@ -207,11 +213,16 @@ static int unbinned_sync (double *val, Isis_User_Grid_t *g, double *par, unsigne
 {
    Synchrotron_Type s = NULL_SYNCHROTRON_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
+   int status;
 
-   init_sync (par, &s, &elec);
+   if (-1 == init_sync (par, npar, &s, &elec))
+     return -1;
 
-   return _nt_contin ((void *)&s, &syn_calc_synchrotron,
-                       val, g, par, npar);
+   status = _nt_contin ((void *)&s, &syn_calc_synchrotron,
+                        val, g, par, npar);
+   free_particle_spectrum (&elec);
+
+   return status;
 }
 
 /*}}}*/
@@ -243,16 +254,17 @@ static double _invc_photon_integral (double *gamma, double *energy_final_photon,
 
 /*}}}*/
 
-static void init_invc (double *par, Inverse_Compton_Type *ic, Particle_Type *elec) /*{{{*/
+static int init_invc (double *par, unsigned int npar, Inverse_Compton_Type *ic, Particle_Type *elec) /*{{{*/
 {
-   (void) init_particle_spectrum (elec, Particle_Distribution);
+   (void) npar;
 
-   elec->index = par[1];
-   elec->curvature = par[2];
-   elec->cutoff_energy = par[3];
-   elec->mass = GSL_CONST_CGSM_MASS_ELECTRON;
+   if (-1 == init_pdf (elec, ELECTRON))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return -1;
+     }
 
-   set_incident_photon_kelvin_temperature (par[4]);
+   set_incident_photon_kelvin_temperature (par[1]);
 
    ic->electrons = elec;
    ic->incident_photons = &incident_photon_spectrum;
@@ -260,6 +272,8 @@ static void init_invc (double *par, Inverse_Compton_Type *ic, Particle_Type *ele
    ic->client_data = ic_client_data;
    ic->interpolate = IC_Interpolate;
    ic->complain_on_extrapolate = IC_Complain_On_Extrapolation;
+
+   return 0;
 }
 
 /*}}}*/
@@ -268,11 +282,16 @@ static int binned_invc (double *val, Isis_Hist_t *g, double *par, unsigned int n
 {
    Inverse_Compton_Type ic = NULL_INVERSE_COMPTON_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
+   int status;
 
-   init_invc (par, &ic, &elec);
+   if (-1 == init_invc (par, npar, &ic, &elec))
+     return -1;
 
-   return _nt_binned_contin ((void *)&ic, &ic_calc_inverse_compton,
-                              val, g, par, npar);
+   status = _nt_binned_contin ((void *)&ic, &ic_calc_inverse_compton,
+                               val, g, par, npar);
+   free_particle_spectrum (&elec);
+
+   return status;
 }
 
 /*}}}*/
@@ -281,11 +300,16 @@ static int unbinned_invc (double *val, Isis_User_Grid_t *g, double *par, unsigne
 {
    Inverse_Compton_Type ic = NULL_INVERSE_COMPTON_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
+   int status;
 
-   init_invc (par, &ic, &elec);
+   if (-1 == init_invc (par, npar, &ic, &elec))
+     return -1;
 
-   return _nt_contin ((void *)&ic, &ic_calc_inverse_compton,
-                       val, g, par, npar);
+   status = _nt_contin ((void *)&ic, &ic_calc_inverse_compton,
+                        val, g, par, npar);
+   free_particle_spectrum (&elec);
+
+   return status;
 }
 
 /*}}}*/
@@ -347,12 +371,12 @@ static int sync_init_client_data (char *file) /*{{{*/
 
 ISIS_USER_SOURCE_MODULE(sync,p,options) /*{{{*/
 {
-   static const char *parameter_names[] = {"norm", "B_tot", "index", "curvature", "cutoff", NULL};
-   static const char *parameter_units[] = {"cm^-2 GeV^-1", "microgauss", "",          "",    "TeV", NULL};
-   static double default_max[]   = {1.0e10, 1.0e3, 3.0,  1.0, 1.0e2};
-   static double default_value[] = { 1.0,  1.0, 2.0,  0.0, 10.0};
-   static double default_min[]   = { 0.0,  0.0, 1.0, -1.0,  1.0};
-   static unsigned int default_freeze[] = {0, 0, 0, 1, 0};
+   static const char *parameter_names[] = {"norm", "B_tot", NULL};
+   static const char *parameter_units[] = {"cm^-2 GeV^-1", "microgauss", NULL};
+   static double default_max[]   = {1.0e10, 1.0e3};
+   static double default_value[] = { 1.0,  1.0};
+   static double default_min[]   = { 0.0,  0.0};
+   static unsigned int default_freeze[] = {0, 0};
    static unsigned int norm_indexes[] = {0};
 
    /*           V
@@ -404,6 +428,11 @@ static void _invc_set_dilution_factors (void) /*{{{*/
 
 /*}}}*/
 
+static double invc_knlimit_constant_intrin (double *p)
+{
+   return ic_knlimit_constant (*p);
+}
+
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
 #define S SLANG_STRING_TYPE
@@ -420,6 +449,7 @@ static SLang_Intrin_Fun_Type Invc_Intrinsics [] =
 {
    MAKE_INTRINSIC("_invc_set_dilution_factors", _invc_set_dilution_factors, V, 0),
    MAKE_INTRINSIC_4("_invc_photon_integral", _invc_photon_integral, D, D,D,D,I),
+   MAKE_INTRINSIC_1("_invc_knlimit_constant_intrin", invc_knlimit_constant_intrin, D, D),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -459,12 +489,12 @@ static int invc_init_client_data (char *file) /*{{{*/
 
 ISIS_USER_SOURCE_MODULE(invc,p,options) /*{{{*/
 {
-   static const char *parameter_names[] = {"norm", "index", "curvature", "cutoff", "T_photon[K]", NULL};
-   static const char *parameter_units[] = {"cm^-2 GeV^-1", "",      "",    "TeV",        "K", NULL};
-   static double default_max[]   = {1.0e10, 3.0,  1.0, 1.0e2, 1.e10};
-   static double default_value[] = { 1.0, 2.0,  0.0, 10.0,  CBR_TEMPERATURE};
-   static double default_min[]   = { 0.0, 1.0, -1.0,  1.0,   0.0};
-   static unsigned int default_freeze[] = {0, 0, 1, 0, 1};
+   static const char *parameter_names[] = {"norm", "T_photon[K]", NULL};
+   static const char *parameter_units[] = {"cm^-2 GeV^-1", "K", NULL};
+   static double default_max[]   = {1.0e10, 1.e10};
+   static double default_value[] = { 1.0, CBR_TEMPERATURE};
+   static double default_min[]   = { 0.0, 0.0};
+   static unsigned int default_freeze[] = {0, 1};
    static unsigned int norm_indexes[] = {0};
 
    p->function_exit = invc_free_client_data;
@@ -494,20 +524,23 @@ static void _ntb_free_client_data (void) /*{{{*/
 
 /*}}}*/
 
-static void init_brem (double *par, Brems_Type *b, Particle_Type *elec) /*{{{*/
+static int init_brem (double *par, unsigned int npar, Brems_Type *b, Particle_Type *elec) /*{{{*/
 {
-   (void) init_particle_spectrum (elec, Particle_Distribution);
+   (void) par; (void) npar;
 
-   elec->index = par[1];
-   elec->curvature = par[2];
-   elec->cutoff_energy = par[3];
-   elec->mass = GSL_CONST_CGSM_MASS_ELECTRON;
+   if (-1 == init_pdf (elec, ELECTRON))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return -1;
+     }
 
    b->electrons = elec;
    b->ee_weight = Ntb_ee_weight;
    b->ep_weight = Ntb_ep_weight;
    b->client_data = ntb_client_data;
    b->interpolate = Ntb_Interpolate;
+
+   return 0;
 }
 
 /*}}}*/
@@ -516,11 +549,15 @@ static int binned_brem (double *val, Isis_Hist_t *g, double *par, unsigned int n
 {
    Brems_Type b = NULL_BREMS_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
+   int status;
 
-   init_brem (par, &b, &elec);
+   if (-1 == init_brem (par, npar, &b, &elec))
+     return -1;
 
-   return _nt_binned_contin ((void *)&b, &ntb_brems,
-                             val, g, par, npar);
+   status = _nt_binned_contin ((void *)&b, &ntb_brems, val, g, par, npar);
+   free_particle_spectrum (&elec);
+
+   return status;
 }
 
 /*}}}*/
@@ -529,11 +566,15 @@ static int unbinned_brem (double *val, Isis_User_Grid_t *g, double *par, unsigne
 {
    Brems_Type b = NULL_BREMS_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
+   int status;
 
-   init_brem (par, &b, &elec);
+   if (-1 == init_brem (par, npar, &b, &elec))
+     return -1;
 
-   return _nt_contin ((void *)&b, &ntb_brems,
-                      val, g, par, npar);
+   status = _nt_contin ((void *)&b, &ntb_brems, val, g, par, npar);
+   free_particle_spectrum (&elec);
+
+   return status;
 }
 
 /*}}}*/
@@ -741,12 +782,12 @@ static int _ntb_init_client_data (char *options) /*{{{*/
 
 ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 {
-   static const char *parameter_names[] = {"norm", "index", "curvature", "cutoff", NULL};
-   static const char *parameter_units[] = {"cm^-2 GeV^-1", "",       "",    "TeV", NULL};
-   static double default_max[]   = {1.e10, 3.0,  1.0, 1.0e2};
-   static double default_value[] = { 1.0, 2.0,  0.0, 10.0};
-   static double default_min[]   = { 0.0, 1.0, -1.0,  1.0};
-   static unsigned int default_freeze[] = {0, 0, 1, 0};
+   static const char *parameter_names[] = {"norm", NULL};
+   static const char *parameter_units[] = {"cm^-2 GeV^-1", NULL};
+   static double default_max[]   = {1.e10};
+   static double default_value[] = { 1.0};
+   static double default_min[]   = { 0.0};
+   static unsigned int default_freeze[] = {0};
    static unsigned int norm_indexes[] = {0};
 
    p->function_exit = NULL;
@@ -768,9 +809,16 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 /*}}}*/
 
+#define USE_KAMAE
+#ifdef USE_KAMAE
+#include "pizero_kamae.c"
+#else
+
+#if 0
 static void pizero_diff_xsec_intrin (void);
 static void pizero_distribution_intrin (void);
 static double pizero_lidcs_intrin (double *T_p, double *T_pi, double *mu);
+#endif
 
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
@@ -783,6 +831,7 @@ static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
    SLANG_END_INTRIN_VAR_TABLE
 };
 
+#if 0
 static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
 {
    MAKE_INTRINSIC("pizero_distribution", pizero_distribution_intrin, V, 0),
@@ -790,6 +839,7 @@ static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
    MAKE_INTRINSIC_3("pizero_lidcs", pizero_lidcs_intrin, D, D, D, D),
    SLANG_END_INTRIN_FUN_TABLE
 };
+#endif
 
 #undef D
 #undef I
@@ -798,29 +848,36 @@ static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
 static int pizero_init_client_data (void) /*{{{*/
 {
    if ((-1 == SLns_add_intrin_var_table (NULL, Pizero_Intrin_Vars, NULL))
-       || (-1 == SLns_add_intrin_fun_table (NULL, Pizero_Intrinsics, NULL)))
+#if 0
+       || (-1 == SLns_add_intrin_fun_table (NULL, Pizero_Intrinsics, NULL))
+#endif
+       )
      return -1;
 
    return 0;
 }
 /*}}}*/
 
-static void init_pizero (double *par, Pizero_Type *p, Particle_Type *proton) /*{{{*/
+static int init_pizero (double *par, unsigned int npar, Pizero_Type *p, Particle_Type *proton) /*{{{*/
 {
-   (void) init_particle_spectrum (proton, Particle_Distribution);
+   (void) par; (void) npar;
 
-   proton->index = par[1];
-   proton->curvature = par[2];
-   proton->cutoff_energy = par[3];
-   proton->mass = GSL_CONST_CGSM_MASS_PROTON;
+   if (-1 == init_pdf (proton, PROTON))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return -1;
+     }
 
    p->protons = proton;
    p->interpolate = Pizero_Method ? Pizero_Interpolate : 0;
    p->client_data = pizero_alloc_table (PIZERO_TABLE_SIZE);
+
+   return 0;
 }
 
 /*}}}*/
 
+#if 0
 static void pizero_distribution_intrin (void) /*{{{*/
 {
    Pizero_Type p = NULL_PIZERO_TYPE;
@@ -829,6 +886,7 @@ static void pizero_distribution_intrin (void) /*{{{*/
    SLang_Array_Type *sl_energies = NULL;
    SLang_Array_Type *sl_qpi = NULL;
    double *par, *energies, *qpi;
+   unsigned int npar;
    int i, n;
 
    if ((-1 == SLang_pop_array_of_type (&sl_par, SLANG_DOUBLE_TYPE))
@@ -838,6 +896,8 @@ static void pizero_distribution_intrin (void) /*{{{*/
         SLang_set_error (SL_INTRINSIC_ERROR);
         return;
      }
+
+   npar = sl_par->num_elements;
 
    if ((-1 == SLang_pop_array_of_type (&sl_energies, SLANG_DOUBLE_TYPE))
        || (sl_energies == NULL))
@@ -858,7 +918,13 @@ static void pizero_distribution_intrin (void) /*{{{*/
      }
 
    par = (double *)sl_par->data;
-   init_pizero (par, &p, &proton);
+   if (-1 == init_pizero (par, npar, &p, &proton))
+     {
+        SLang_free_array (sl_energies);
+        SLang_free_array (sl_par);
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return;
+     }
 
    energies = (double *)sl_energies->data;
    qpi = (double *)sl_qpi->data;
@@ -871,6 +937,7 @@ static void pizero_distribution_intrin (void) /*{{{*/
      }
 
    pizero_free_table (p.client_data);
+   free_particle_spectrum (&proton);
 
    SLang_push_array (sl_qpi, 1);
    SLang_free_array (sl_par);
@@ -922,17 +989,20 @@ static void pizero_diff_xsec_intrin (void) /*{{{*/
 
 /*}}}*/
 
+#endif
+
 static int binned_pizero (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
 {
    Pizero_Type p = NULL_PIZERO_TYPE;
    Particle_Type proton = NULL_PARTICLE_TYPE;
    int status;
 
-   init_pizero (par, &p, &proton);
+   if (-1 == init_pizero (par, npar, &p, &proton))
+     return -1;
 
-   status = _nt_binned_contin ((void *)&p, &pizero_decay,
-                               val, g, par, npar);
+   status = _nt_binned_contin ((void *)&p, &pizero_decay, val, g, par, npar);
    pizero_free_table (p.client_data);
+   free_particle_spectrum (&proton);
 
    return status;
 }
@@ -945,25 +1015,28 @@ static int unbinned_pizero (double *val, Isis_User_Grid_t *g, double *par, unsig
    Particle_Type proton = NULL_PARTICLE_TYPE;
    int status;
 
-   init_pizero (par, &p, &proton);
+   if (-1 == init_pizero (par, npar, &p, &proton))
+     return -1;
 
-   status = _nt_contin ((void *)&p, &pizero_decay,
-                        val, g, par, npar);
+   status = _nt_contin ((void *)&p, &pizero_decay, val, g, par, npar);
    pizero_free_table (p.client_data);
+   free_particle_spectrum (&proton);
 
    return status;
 }
 
 /*}}}*/
 
+#endif
+
 ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
 {
-   static const char *parameter_names[] = {"norm", "index", "curvature", "cutoff", NULL};
-   static const char *parameter_units[] = {"cm^-2 GeV^-1", "",       "",    "TeV", NULL};
-   static double default_max[]   = {1.e10, 3.0,  1.0, 1.0e3};
-   static double default_value[] = { 1.0, 2.0,  0.0, 10.0};
-   static double default_min[]   = { 0.0, 1.0, -1.0,  1.0};
-   static unsigned int default_freeze[] = {0, 0, 1, 0};
+   static const char *parameter_names[] = {"norm", NULL};
+   static const char *parameter_units[] = {"cm^-2 GeV^-1", NULL};
+   static double default_max[]   = {1.e10};
+   static double default_value[] = { 1.0};
+   static double default_min[]   = { 0.0};
+   static unsigned int default_freeze[] = {0};
    static unsigned int norm_indexes[] = {0};
 
    (void) options;

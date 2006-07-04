@@ -7,6 +7,8 @@
 
 #include <math.h>
 
+#include "slang.h"
+
 #ifndef isnan
 #define isnan(a)  ((a)!=(a))
 #endif
@@ -63,17 +65,17 @@ struct Particle_Type
    int (*spectrum)(Particle_Type *, double, double *);
    double (*momentum_min)(Particle_Type *);
    double (*momentum_max)(Particle_Type *);
-   double index;
-   double curvature;
-   double cutoff_energy;
+   double *params;
+   unsigned int num_params;
    double mass;
 };
 
-#define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,0.0,0.0,0.0,0.0}
-#define PARTICLE_METHODS(n,m,mn,mx) {(n),m,mn,mx,0.0,0.0,0.0,0.0}
-extern char *Particle_Distribution;
+#define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,NULL,0,0.0}
+#define PARTICLE_METHODS(n,m,mn,mx) {(n),m,mn,mx,NULL,0,0.0}
 
-extern int init_particle_spectrum (Particle_Type *p, char *method);
+extern int init_pdf (Particle_Type *p, unsigned int type);
+extern void free_particle_spectrum (Particle_Type *p);
+extern int init_particle_spectrum (Particle_Type *p, unsigned int type, char *method, SLang_Array_Type *sl_pars);
 extern int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp);
 
 /* S-Lang-2 compatibility */
@@ -84,9 +86,7 @@ extern void SLang_set_error (int);
 #endif
 
 #if (SLANG_VERSION<20000)
-# define POP_DOUBLE(a)  SLang_pop_double ((a),NULL,NULL)
-#else
-# define POP_DOUBLE(a)  SLang_pop_double ((a))
+# define SLang_pop_double(a)  SLang_pop_double ((a),NULL,NULL)
 #endif
 
 #endif
