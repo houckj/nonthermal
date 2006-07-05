@@ -161,24 +161,6 @@ define _ntbrem_table_file () %{{{
 
 %}}}
 
-private define pdf_default (l,h,p) {return ("default", p);}
-private define pdf_default_contin (x,p) {return ("default", p);}
-
-private define pdf_etot (l,h,p) {return ("etot", p);}
-private define pdf_etot_contin (x,p) {return ("etot", p);}
-
-private define pdf_mori (l,h,p) {return ("mori", p);}
-private define pdf_mori_contin (x,p) {return ("mori", p);}
-
-private define pdf_dermer (l,h,p) {return ("dermer", p);}
-private define pdf_dermer_contin (x,p) {return ("dermer", p);}
-
-private define pdf_ke_cutoff (l,h,p) {return ("ke_cutoff", p);}
-private define pdf_ke_cutoff_contin (x,p) {return ("ke_cutoff", p);}
-
-private define pdf_cbreak (l,h,p) {return ("cbreak", p);}
-private define pdf_cbreak_contin (x,p) {return ("cbreak", p);}
-
 private define pdf_param_defaults (i, val, freeze, min, max) %{{{
 {
    return (val[i], freeze[i], min[i], max[i]);
@@ -186,41 +168,79 @@ private define pdf_param_defaults (i, val, freeze, min, max) %{{{
 
 %}}}
 
+private define add_pdf_fitfun () %{{{
+{
+   variable name, param_names=NULL, value, freeze, min, max;
+
+   switch (_NARGS)
+     {
+      case 1:
+        name = ();
+     }
+     {
+      case 6:
+        (name, param_names, value, freeze, min, max) = ();
+     }
+     {
+        %default:
+        _pop_n (_NARGS);
+        usage ("add_pdf_fitfun (name [, param_names, value, freeze, min, max])");
+        return;
+     }
+
+   variable t
+     = ["private define pdf_$name (l,h,p) {return (\"$name\", p);}"$,
+        "private define pdf_${name}_contin (x,p) {return (\"$name\", p);}"$,
+        "add_slang_function (\"pdf_$name\", [&pdf_$name, &pdf_${name}_contin] %s);"$
+        ];
+
+   t = strjoin (t, " ");
+
+   if (param_names != NULL)
+     {
+        param_names = array_map (String_Type, &make_printable_string, param_names);
+        param_names = strjoin (param_names, ",");
+        t = sprintf (t, ", [$param_names]"$);
+     }
+   else t = sprintf (t, "");
+
+   eval(t, "Global");
+
+   if (param_names != NULL)
+     {
+        set_param_default_hook ("pdf_$name"$, &pdf_param_defaults,
+                                value, freeze, min, max);
+     }
+}
+
+%}}}
+
 private define init_pdf_options () %{{{
 {
-   add_slang_function ("pdf_default", [&pdf_default, &pdf_default_contin],
-                       ["index", "curvature", "cutoff [TeV]"]);
-   set_param_default_hook ("pdf_default", &pdf_param_defaults,
-                           [2.0, 0.0, 10.0], [0, 1, 0],
-                           [1.0, -1.0, 1.0],
-                           [3.0, 1.0, 1.e2]);
+   add_pdf_fitfun ("default", ["index", "curvature", "cutoff [TeV]"],
+                   [2.0, 0.0, 10.0], [0, 1, 0],
+                   [1.0, -1.0, 1.0],
+                   [3.0, 1.0, 1.e2]);
 
-   add_slang_function ("pdf_etot", [&pdf_etot, &pdf_etot_contin], ["index"]);
-   set_param_default_hook ("pdf_etot", &pdf_param_defaults,
-                           [2.0], [0], [1.0], [3.0]);
+   add_pdf_fitfun ("etot", ["index"],
+                   [2.0], [0], [1.0], [3.0]);
 
-   add_slang_function ("pdf_mori", [&pdf_mori, &pdf_mori_contin]);
+   add_pdf_fitfun ("mori");
 
-   add_slang_function ("pdf_dermer", [&pdf_dermer, &pdf_dermer_contin],
-                       ["index", "curvature"]);
-   set_param_default_hook ("pdf_dermer", &pdf_param_defaults,
-                           [2.0, 0.0], [0, 1],
-                           [1.0, -1.0],
-                           [3.0, 1.0]);
+   add_pdf_fitfun ("dermer", ["index", "curvature"],
+                   [2.0, 0.0], [0, 1],
+                   [1.0, -1.0],
+                   [3.0, 1.0]);
 
-   add_slang_function ("pdf_ke_cutoff", [&pdf_ke_cutoff, &pdf_ke_cutoff_contin],
-                       ["index", "curvature", "cutoff [TeV]"]);
-   set_param_default_hook ("pdf_ke_cutoff", &pdf_param_defaults,
-                           [2.0, 0.0, 10.0], [0, 1, 0],
-                           [1.0, -1.0, 1.0],
-                           [3.0, 1.0, 1.e2]);
+   add_pdf_fitfun ("ke_cutoff", ["index", "curvature", "cutoff [TeV]"],
+                   [2.0, 0.0, 10.0], [0, 1, 0],
+                   [1.0, -1.0, 1.0],
+                   [3.0, 1.0, 1.e2]);
 
-   add_slang_function ("pdf_cbreak", [&pdf_cbreak, &pdf_cbreak_contin],
-                       ["index", "curvature", "cutoff [TeV]", "break [TeV]"]);
-   set_param_default_hook ("pdf_cbreak", &pdf_param_defaults,
-                           [2.0, 0.0, 10.0, 1.0], [0, 1, 0, 1],
-                           [1.0, -1.0, 1.0, 0.0],
-                           [3.0, 1.0, 1.e2, 1.e2]);
+   add_pdf_fitfun ("cbreak", ["index", "curvature", "cutoff [TeV]", "break [TeV]"],
+                   [2.0, 0.0, 10.0, 1.0], [0, 1, 0, 1],
+                   [1.0, -1.0, 1.0, 0.0],
+                   [3.0, 1.0, 1.e2, 1.e2]);
 }
 
 %}}}
@@ -229,7 +249,7 @@ define add_pdf () %{{{
 {
    variable msg = "add_pdf (file, name, param_names, value, freeze, min, max)";
    variable file, name, param_names, value, freeze, min, max;
-   
+
    if (_NARGS != 7)
      {
         _pop_n (_NARGS);
@@ -240,21 +260,7 @@ define add_pdf () %{{{
    (file, name, param_names, value, freeze, min, max) = ();
 
    add_user_pdf_intrin (file, "$name"$, "");
-
-   variable t
-     = [
-        "private define pdf_$name (l,h,p) {return (\"$name\", p);}"$,
-        "private define pdf_${name}_contin (x,p) {return (\"$name\", p);}"$,
-        "add_slang_function (\"pdf_$name\", [&pdf_$name, &pdf_${name}_contin], [%s]);"$
-        ];
-
-   t = strjoin (t, " ");
-   param_names = array_map (String_Type, &make_printable_string, param_names);
-   t = sprintf (t, strjoin (param_names, ","));
-   eval(t, "Global");
-
-   set_param_default_hook ("pdf_$name"$, &pdf_param_defaults,
-                           value, freeze, min, max);
+   add_pdf_fitfun (name, param_names, value, freeze, min, max);
 }
 
 %}}}
