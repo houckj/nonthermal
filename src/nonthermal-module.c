@@ -557,7 +557,7 @@ static double conserve_charge (int *method) /*{{{*/
 
 /*}}}*/
 
-static void add_user_pdf_intrin (char *path, char *name, char *options)
+static void add_user_pdf_intrin (char *path, char *name, char *options) /*{{{*/
 {
    Particle_Type *pt;
    
@@ -573,6 +573,8 @@ static void add_user_pdf_intrin (char *path, char *name, char *options)
         return;
      }        
 }
+
+/*}}}*/
 
 /* DUMMY_CLASS_TYPE is a temporary hack that will be modified to the true
   * id once the interpreter provides it when the class is registered.  See below

@@ -225,7 +225,7 @@ private define init_pdf_options () %{{{
 
 %}}}
 
-define add_pdf ()
+define add_pdf () %{{{
 {
    variable msg = "add_pdf (file, name, param_names, value, freeze, min, max)";
    variable file, name, param_names, value, freeze, min, max;
@@ -256,6 +256,8 @@ define add_pdf ()
    set_param_default_hook ("pdf_$name"$, &pdf_param_defaults,
                            value, freeze, min, max);
 }
+
+%}}}
 
 private define add_function () %{{{
 {

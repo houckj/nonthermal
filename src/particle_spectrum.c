@@ -496,7 +496,7 @@ Particle_Type *load_pdf (char *path, char *name, char *options) /*{{{*/
 
 /*}}}*/
 
-int append_pdf (Particle_Type *pt)
+int append_pdf (Particle_Type *pt) /*{{{*/
 {
    Particle_Type *p, *x;
 
@@ -531,7 +531,9 @@ int append_pdf (Particle_Type *pt)
    return 0;
 }
 
-void free_user_pdf_methods (void)
+/*}}}*/
+
+void free_user_pdf_methods (void) /*{{{*/
 {
    Particle_Type *q = User_Pdf_Methods;
    while (q)
@@ -541,5 +543,7 @@ void free_user_pdf_methods (void)
         q = n;
      }
 }
+
+/*}}}*/
 
 
