@@ -2,15 +2,15 @@ require ("nonthermal");
 require ("histogram");
 require ("xfig");
 
-variable Energies, Model_Name;
+variable Energies, Model_Name, PDF_Name = "pdf_default";
 
 define fcn (gamma, alpha)
 {
-   fit_fun (Model_Name);
+   fit_fun (sprintf ("%s(1, %s(1))", Model_Name, PDF_Name));
 
    variable cutoff_tev = 1.0 / alpha;
-   set_par (Model_Name + "(1).index", gamma, 0, 0, 0);
-   set_par (Model_Name + "(1).cutoff", cutoff_tev, 0, 0, 0);
+   set_par (PDF + "(1).index", gamma, 0, 0, 0);
+   set_par (PDF + "(1).cutoff", cutoff_tev, 0, 0, 0);
 
    return get_cfun (Energies);
 }
