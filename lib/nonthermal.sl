@@ -225,6 +225,38 @@ private define init_pdf_options () %{{{
 
 %}}}
 
+define add_pdf ()
+{
+   variable msg = "add_pdf (file, name, param_names, value, freeze, min, max)";
+   variable file, name, param_names, value, freeze, min, max;
+   
+   if (_NARGS != 7)
+     {
+        _pop_n (_NARGS);
+        usage(msg);
+        return;
+     }
+
+   (file, name, param_names, value, freeze, min, max) = ();
+
+   add_user_pdf_intrin (file, "$name"$, "");
+
+   variable t
+     = [
+        "private define pdf_$name (l,h,p) {return (\"$name\", p);}"$,
+        "private define pdf_${name}_contin (x,p) {return (\"$name\", p);}"$,
+        "add_slang_function (\"pdf_$name\", [&pdf_$name, &pdf_${name}_contin], [%s]);"$
+        ];
+
+   t = strjoin (t, " ");
+   param_names = array_map (String_Type, &make_printable_string, param_names);
+   t = sprintf (t, strjoin (param_names, ","));
+   eval(t, "Global");
+
+   set_param_default_hook ("pdf_$name"$, &pdf_param_defaults,
+                           value, freeze, min, max);
+}
+
 private define add_function () %{{{
 {
    variable lib_file = "libnonthermal.so";
