@@ -397,7 +397,7 @@ int init_pdf_params (Particle_Type *pt, unsigned int type, /*{{{*/
              return init_pdf_params1 (pt, type, params, num_pars);
           }
      }
-   
+
    if (User_Pdf_Methods)
      {
         for (q = User_Pdf_Methods; q != NULL; q = q->next)
@@ -461,12 +461,12 @@ Particle_Type *load_pdf (char *path, char *name, char *options) /*{{{*/
         handle_link_error (path, NULL);
         return NULL;
      }
-   
+
    if (NULL == (s = isis_mkstrcat ("Pdf_", name, "_init", NULL)))
      {
         dlclose (handle);
         return NULL;
-     }   
+     }
 
    if (NULL == (init = (Pdf_Init_Type *) dlsym (handle, s)))
      {
@@ -475,7 +475,9 @@ Particle_Type *load_pdf (char *path, char *name, char *options) /*{{{*/
         free(s);
         return NULL;
      }
+
    free(s);
+   s = NULL;
 
    if (NULL == (p = malloc (sizeof *p)))
      {
@@ -499,35 +501,31 @@ Particle_Type *load_pdf (char *path, char *name, char *options) /*{{{*/
 
 int append_pdf (Particle_Type *pt) /*{{{*/
 {
-   Particle_Type *p, *x;
+   Particle_Type *p = User_Pdf_Methods;
+   Particle_Type *x;
 
-   if (User_Pdf_Methods == NULL)
-     {
-        pt->next = User_Pdf_Methods;
-        User_Pdf_Methods = pt;
-        return 0;
-     }
+   pt->next = NULL;
 
-   p = NULL;
-   x = User_Pdf_Methods;
-
-   while (x)
+   for (x = p; x != NULL; x = x->next)
      {
         /* replace method if name already exists */
         if (0 == strcmp (x->method, pt->method))
           {
              Particle_Type *n = x->next;
-             free_pdf (x);
-             pt->next = n;
-             if (p) p->next = pt;
+             free (x->params);
+             /* struct copy */
+             *x = *pt;  
+             x->next = n;
+             free_pdf (pt);
+             free (pt);
              return 0;
           }
         p = x;
-        x = x->next;
      }
 
-   pt->next = NULL;
-   p->next = pt;
+   if (p == NULL)
+     User_Pdf_Methods = pt;
+   else p->next = pt;
 
    return 0;
 }
@@ -541,10 +539,10 @@ void free_user_pdf_methods (void) /*{{{*/
      {
         Particle_Type *n = q->next;
         free_pdf (q);
+        free(q);
         q = n;
      }
 }
 
 /*}}}*/
-
 

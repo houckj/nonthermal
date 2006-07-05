@@ -570,6 +570,7 @@ static void add_user_pdf_intrin (char *path, char *name, char *options) /*{{{*/
    if (-1 == append_pdf (pt))
      {
         SLang_set_error (SL_INTRINSIC_ERROR);
+        free_pdf(pt);
         return;
      }        
 }
