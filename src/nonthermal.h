@@ -14,7 +14,7 @@ struct Particle_Type
    double mass;
 };
 #define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,NULL,NULL,0,0.0}
-#define PARTICLE_METHODS(n,num,m,mn,mx) {NULL,(n),m,mn,mx,NULL,num,0.0}
+#define PARTICLE_METHOD(n,num,m,mn,mx) {NULL,(n),m,mn,mx,NULL,num,0.0}
 
 #define NONTHERMAL_PDF_MODULE(name,p,o) \
    extern int Pdf_##name##_init(Particle_Type *p, char *o); \
