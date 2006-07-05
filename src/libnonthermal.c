@@ -37,7 +37,6 @@ static void *ntb_client_data = NULL;
 static int Syn_Interpolate;
 static int IC_Interpolate;
 static int Ntb_Interpolate = 1;
-static int Pizero_Interpolate = 0;
 
 static int IC_Complain_On_Extrapolation;
 
@@ -814,70 +813,8 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 #include "pizero_kamae.c"
 #else
 
-#if 0
-static void pizero_diff_xsec_intrin (void);
-static void pizero_distribution_intrin (void);
-static double pizero_lidcs_intrin (double *T_p, double *T_pi, double *mu);
-#endif
+static int init_pizero (double *par, unsigned int npar, Pizero_Type *p, Particle_Type *proton);
 
-#define D SLANG_DOUBLE_TYPE
-#define I SLANG_INT_TYPE
-#define V SLANG_VOID_TYPE
-
-static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
-{
-   MAKE_VARIABLE("Pizero_Method", &Pizero_Method, I, 0),
-   MAKE_VARIABLE("Pizero_Interpolate", &Pizero_Interpolate, I, 0),
-   SLANG_END_INTRIN_VAR_TABLE
-};
-
-#if 0
-static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
-{
-   MAKE_INTRINSIC("pizero_distribution", pizero_distribution_intrin, V, 0),
-   MAKE_INTRINSIC("pizero_diff_xsec", pizero_diff_xsec_intrin, V, 0),
-   MAKE_INTRINSIC_3("pizero_lidcs", pizero_lidcs_intrin, D, D, D, D),
-   SLANG_END_INTRIN_FUN_TABLE
-};
-#endif
-
-#undef D
-#undef I
-#undef V
-
-static int pizero_init_client_data (void) /*{{{*/
-{
-   if ((-1 == SLns_add_intrin_var_table (NULL, Pizero_Intrin_Vars, NULL))
-#if 0
-       || (-1 == SLns_add_intrin_fun_table (NULL, Pizero_Intrinsics, NULL))
-#endif
-       )
-     return -1;
-
-   return 0;
-}
-/*}}}*/
-
-static int init_pizero (double *par, unsigned int npar, Pizero_Type *p, Particle_Type *proton) /*{{{*/
-{
-   (void) par; (void) npar;
-
-   if (-1 == init_pdf (proton, PROTON))
-     {
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return -1;
-     }
-
-   p->protons = proton;
-   p->interpolate = Pizero_Method ? Pizero_Interpolate : 0;
-   p->client_data = pizero_alloc_table (PIZERO_TABLE_SIZE);
-
-   return 0;
-}
-
-/*}}}*/
-
-#if 0
 static void pizero_distribution_intrin (void) /*{{{*/
 {
    Pizero_Type p = NULL_PIZERO_TYPE;
@@ -989,7 +926,60 @@ static void pizero_diff_xsec_intrin (void) /*{{{*/
 
 /*}}}*/
 
-#endif
+static int Pizero_Interpolate = 0;
+
+#define D SLANG_DOUBLE_TYPE
+#define I SLANG_INT_TYPE
+#define V SLANG_VOID_TYPE
+
+static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
+{
+   MAKE_VARIABLE("Pizero_Method", &Pizero_Method, I, 0),
+   MAKE_VARIABLE("Pizero_Interpolate", &Pizero_Interpolate, I, 0),
+   SLANG_END_INTRIN_VAR_TABLE
+};
+
+static SLang_Intrin_Fun_Type Pizero_Intrinsics [] =
+{
+   MAKE_INTRINSIC("pizero_distribution", pizero_distribution_intrin, V, 0),
+   MAKE_INTRINSIC("pizero_diff_xsec", pizero_diff_xsec_intrin, V, 0),
+   MAKE_INTRINSIC_3("pizero_lidcs", pizero_lidcs_intrin, D, D, D, D),
+   SLANG_END_INTRIN_FUN_TABLE
+};
+
+#undef D
+#undef I
+#undef V
+
+static int pizero_init_client_data (void) /*{{{*/
+{
+   if ((-1 == SLns_add_intrin_var_table (NULL, Pizero_Intrin_Vars, NULL))
+       || (-1 == SLns_add_intrin_fun_table (NULL, Pizero_Intrinsics, NULL))
+       )
+     return -1;
+
+   return 0;
+}
+/*}}}*/
+
+static int init_pizero (double *par, unsigned int npar, Pizero_Type *p, Particle_Type *proton) /*{{{*/
+{
+   (void) par; (void) npar;
+
+   if (-1 == init_pdf (proton, PROTON))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return -1;
+     }
+
+   p->protons = proton;
+   p->interpolate = Pizero_Method ? Pizero_Interpolate : 0;
+   p->client_data = pizero_alloc_table (PIZERO_TABLE_SIZE);
+
+   return 0;
+}
+
+/*}}}*/
 
 static int binned_pizero (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
 {

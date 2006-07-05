@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "_nonthermal.h"
+#include "isis.h"
 
 extern double Min_Curvature_Pc;
 double Min_Curvature_Pc = 1.0;  /* GeV */
