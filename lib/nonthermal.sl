@@ -247,20 +247,31 @@ private define init_pdf_options () %{{{
 
 define add_pdf () %{{{
 {
-   variable msg = "add_pdf (file, name, param_names, value, freeze, min, max)";
-   variable file, name, param_names, value, freeze, min, max;
+   variable msg = "add_pdf (file, name [, param_names, value, freeze, min, max])";
+   variable file, name, param_names=NULL, value, freeze, min, max;
 
-   if (_NARGS != 7)
+   switch (_NARGS)
      {
+      case 2:
+        (file, name) = ();
+     }
+     {
+      case 7:
+        (file, name, param_names, value, freeze, min, max) = ();
+     }
+     {
+        % default:
         _pop_n (_NARGS);
         usage(msg);
         return;
      }
 
-   (file, name, param_names, value, freeze, min, max) = ();
-
    add_user_pdf_intrin (file, "$name"$, "");
-   add_pdf_fitfun (name, param_names, value, freeze, min, max);
+
+   if (param_names != NULL)
+     add_pdf_fitfun (name, param_names, value, freeze, min, max);
+   else
+     add_pdf_fitfun (name);
 }
 
 %}}}
