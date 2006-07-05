@@ -202,7 +202,7 @@ static int binned_sync (double *val, Isis_Hist_t *g, double *par, unsigned int n
 
    status = _nt_binned_contin ((void *)&s, &syn_calc_synchrotron,
                                val, g, par, npar);
-   free_particle_spectrum (&elec);
+   free_pdf (&elec);
 
    return status;
 }
@@ -220,7 +220,7 @@ static int unbinned_sync (double *val, Isis_User_Grid_t *g, double *par, unsigne
 
    status = _nt_contin ((void *)&s, &syn_calc_synchrotron,
                         val, g, par, npar);
-   free_particle_spectrum (&elec);
+   free_pdf (&elec);
 
    return status;
 }
@@ -289,7 +289,7 @@ static int binned_invc (double *val, Isis_Hist_t *g, double *par, unsigned int n
 
    status = _nt_binned_contin ((void *)&ic, &ic_calc_inverse_compton,
                                val, g, par, npar);
-   free_particle_spectrum (&elec);
+   free_pdf (&elec);
 
    return status;
 }
@@ -307,7 +307,7 @@ static int unbinned_invc (double *val, Isis_User_Grid_t *g, double *par, unsigne
 
    status = _nt_contin ((void *)&ic, &ic_calc_inverse_compton,
                         val, g, par, npar);
-   free_particle_spectrum (&elec);
+   free_pdf (&elec);
 
    return status;
 }
@@ -555,7 +555,7 @@ static int binned_brem (double *val, Isis_Hist_t *g, double *par, unsigned int n
      return -1;
 
    status = _nt_binned_contin ((void *)&b, &ntb_brems, val, g, par, npar);
-   free_particle_spectrum (&elec);
+   free_pdf (&elec);
 
    return status;
 }
@@ -572,7 +572,7 @@ static int unbinned_brem (double *val, Isis_User_Grid_t *g, double *par, unsigne
      return -1;
 
    status = _nt_contin ((void *)&b, &ntb_brems, val, g, par, npar);
-   free_particle_spectrum (&elec);
+   free_pdf (&elec);
 
    return status;
 }
@@ -937,7 +937,7 @@ static void pizero_distribution_intrin (void) /*{{{*/
      }
 
    pizero_free_table (p.client_data);
-   free_particle_spectrum (&proton);
+   free_pdf (&proton);
 
    SLang_push_array (sl_qpi, 1);
    SLang_free_array (sl_par);
@@ -1002,7 +1002,7 @@ static int binned_pizero (double *val, Isis_Hist_t *g, double *par, unsigned int
 
    status = _nt_binned_contin ((void *)&p, &pizero_decay, val, g, par, npar);
    pizero_free_table (p.client_data);
-   free_particle_spectrum (&proton);
+   free_pdf (&proton);
 
    return status;
 }
@@ -1020,7 +1020,7 @@ static int unbinned_pizero (double *val, Isis_User_Grid_t *g, double *par, unsig
 
    status = _nt_contin ((void *)&p, &pizero_decay, val, g, par, npar);
    pizero_free_table (p.client_data);
-   free_particle_spectrum (&proton);
+   free_pdf (&proton);
 
    return status;
 }

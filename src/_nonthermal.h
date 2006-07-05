@@ -58,24 +58,16 @@ enum
    PROTON
 };
 
-typedef struct Particle_Type Particle_Type;
-struct Particle_Type
-{
-   char *method;
-   int (*spectrum)(Particle_Type *, double, double *);
-   double (*momentum_min)(Particle_Type *);
-   double (*momentum_max)(Particle_Type *);
-   double *params;
-   unsigned int num_params;
-   double mass;
-};
+#include "nonthermal.h"
 
-#define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,NULL,0,0.0}
-#define PARTICLE_METHODS(n,m,mn,mx) {(n),m,mn,mx,NULL,0,0.0}
+extern Particle_Type *load_pdf (char *path, char *name, char *options);
+extern int append_pdf (Particle_Type *pt);
+extern void free_user_pdf_methods (void);
 
+extern void free_pdf (Particle_Type *p);
 extern int init_pdf (Particle_Type *p, unsigned int type);
-extern void free_particle_spectrum (Particle_Type *p);
-extern int init_particle_spectrum (Particle_Type *p, unsigned int type, char *method, SLang_Array_Type *sl_pars);
+extern int init_pdf_params (Particle_Type *p, unsigned int type, char *method, SLang_Array_Type *sl_pars);
+
 extern int bisection (double (*func)(double, void *), double a, double b, void *cd, double *xp);
 
 /* S-Lang-2 compatibility */

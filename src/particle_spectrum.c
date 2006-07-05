@@ -5,6 +5,7 @@
  */
 
 #include "config.h"
+#include <dlfcn.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,21 +23,21 @@ static double momentum (double gamma, double mass) /*{{{*/
 
 /*}}}*/
 
-static double particle_momentum_min (Particle_Type *pt) /*{{{*/
+static double min_momentum (Particle_Type *pt) /*{{{*/
 {
    return momentum (GAMMA_MIN_DEFAULT, pt->mass);
 }
 
 /*}}}*/
 
-static double fixed_particle_momentum_max (Particle_Type *pt) /*{{{*/
+static double fixed_max_momentum (Particle_Type *pt) /*{{{*/
 {
    return momentum (GAMMA_MAX_DEFAULT, pt->mass);
 }
 
 /*}}}*/
 
-static double particle_momentum_max (Particle_Type *pt) /*{{{*/
+static double max_momentum (Particle_Type *pt) /*{{{*/
 {
    double e_cutoff, mc2, r, p_max, f=1.e-8;
    double cutoff_energy;
@@ -44,7 +45,7 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
    cutoff_energy = pt->params[2];
 
    if (cutoff_energy == 0)
-     return fixed_particle_momentum_max (pt);
+     return fixed_max_momentum (pt);
 
    /* Choose max momentum high enough so that the exponential cutoff
     * represents a factor of 'f' decline in particle density
@@ -60,7 +61,7 @@ static double particle_momentum_max (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int pc_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
+static int pdf_pc_cutoff (Particle_Type *pt, double pc, double *ne) /*{{{*/
 {
    double x, g, e0, f;
 
@@ -94,7 +95,7 @@ static int pc_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
 
 /*}}}*/
 
-static int cbreak_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/
+static int pdf_cbreak (Particle_Type *pt, double pc, double *ne) /*{{{*/
 {
    double x, g, e0, f;
 
@@ -135,7 +136,7 @@ static int cbreak_particle_spectrum (Particle_Type *pt, double pc, double *ne) /
 
 /*}}}*/
 
-static int ke_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+static int pdf_ke_cutoff (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double x, g, f;
    double mc2, e0, r, sq, T;
@@ -176,15 +177,15 @@ static int ke_cutoff_particle_spectrum (Particle_Type *pt, double pc, double *ne
 
 /*}}}*/
 
-static double etot_particle_momentum_max (Particle_Type *pt) /*{{{*/
+static double etot_max_momentum (Particle_Type *pt) /*{{{*/
 {
    return momentum (1.e25, pt->mass);
 }
 
 /*}}}*/
 
-/* use etot_particle_spectrum for testing sync analytic solution */
-static int etot_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+/* use pdf_etot for testing sync analytic solution */
+static int pdf_etot (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double mc2, r, e, x, g, f;
 
@@ -215,7 +216,7 @@ static int etot_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
 
 /*}}}*/
 
-static int dermer_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+static int pdf_dermer (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double x, g, f;
    double mc2, r, E;
@@ -255,14 +256,14 @@ static int dermer_particle_spectrum (Particle_Type *pt, double pc, double *ne) /
 
 /*}}}*/
 
-static double mori_particle_momentum_max (Particle_Type *pt) /*{{{*/
+static double mori_max_momentum (Particle_Type *pt) /*{{{*/
 {
    return momentum (0.25e-3*GAMMA_MAX_DEFAULT, pt->mass);
 }
 
 /*}}}*/
 
-static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+static int pdf_mori (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 {
    double f0 = 4*M_PI/GSL_CONST_CGSM_SPEED_OF_LIGHT;
    double mc2, r, E, f, beta;
@@ -305,43 +306,19 @@ static int mori_particle_spectrum (Particle_Type *pt, double pc, double *ne) /*{
 
 /*}}}*/
 
-static struct Particle_Type Particle_Methods[] =
+static int init_pdf_params1 (Particle_Type *pt, unsigned int type, /*{{{*/
+                            double *pars, unsigned int num_pars)
 {
-   PARTICLE_METHODS("default",
-                    pc_cutoff_particle_spectrum,
-                    particle_momentum_min,
-                    particle_momentum_max),
-   PARTICLE_METHODS("etot",
-                    etot_particle_spectrum,
-                    particle_momentum_min,
-                    etot_particle_momentum_max),
-   PARTICLE_METHODS("ke_cutoff",
-                    ke_cutoff_particle_spectrum,
-                    particle_momentum_min,
-                    particle_momentum_max),
-   PARTICLE_METHODS("mori",
-                    mori_particle_spectrum,
-                    particle_momentum_min,
-                    mori_particle_momentum_max),
-   PARTICLE_METHODS("dermer",
-                    dermer_particle_spectrum,
-                    particle_momentum_min,
-                    fixed_particle_momentum_max),
-   PARTICLE_METHODS("cbreak",
-                    cbreak_particle_spectrum,
-                    particle_momentum_min,
-                    particle_momentum_max),
-   NULL_PARTICLE_TYPE
-};
-
-static int init_particle_params (Particle_Type *pt, unsigned int type, /*{{{*/
-                                 double *pars, unsigned int num_pars)
-{
-   pt->num_params = num_pars;
-   pt->params = NULL;
-   if (num_pars > 0)
+   if (num_pars != pt->num_params)
      {
-        unsigned int size = num_pars * sizeof(double);
+        fprintf (stderr, "*** Error:  expecting %d parameters, got %d\n",
+                 pt->num_params, num_pars);
+        return -1;
+     }
+   pt->params = NULL;
+   if (pt->num_params > 0)
+     {
+        unsigned int size = pt->num_params * sizeof(double);
         if (NULL == (pt->params = malloc (size)))
           return -1;
         memcpy ((char *)pt->params, pars, size);
@@ -363,7 +340,7 @@ static int init_particle_params (Particle_Type *pt, unsigned int type, /*{{{*/
 
 /*}}}*/
 
-void free_particle_spectrum (Particle_Type *pt) /*{{{*/
+void free_pdf (Particle_Type *pt) /*{{{*/
 {
    if (pt == NULL)
      return;
@@ -373,28 +350,41 @@ void free_particle_spectrum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-int init_particle_spectrum (Particle_Type *pt, unsigned int type, /*{{{*/
-                            char *method, SLang_Array_Type *sl_pars)
+static struct Particle_Type Particle_Methods[] =
+{
+   PARTICLE_METHODS("default", 3, pdf_pc_cutoff, min_momentum, max_momentum),
+   PARTICLE_METHODS("etot", 1, pdf_etot, min_momentum, etot_max_momentum),
+   PARTICLE_METHODS("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum),
+   PARTICLE_METHODS("mori", 0, pdf_mori, min_momentum, mori_max_momentum),
+   PARTICLE_METHODS("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum),
+   PARTICLE_METHODS("cbreak", 4, pdf_cbreak, min_momentum, max_momentum),
+   NULL_PARTICLE_TYPE
+};
+
+static Particle_Type *User_Pdf_Methods = NULL;
+
+int init_pdf_params (Particle_Type *pt, unsigned int type, /*{{{*/
+                     char *method, SLang_Array_Type *sl_pars)
 {
    Particle_Type *t = Particle_Methods;
    Particle_Type *q;
    double *params = NULL;
    unsigned int num_pars = 0;
-   
+
    if (pt == NULL)
      return -1;
-   
+
    if ((sl_pars != NULL) && (sl_pars->num_elements > 0))
      {
         params = (double *)sl_pars->data;
         num_pars = sl_pars->num_elements;
-     }   
+     }
 
    if (method == NULL)
      {
         /* struct copy */
         *pt = t[0];
-        return init_particle_params (pt, type, params, num_pars);
+        return init_pdf_params1 (pt, type, params, num_pars);
      }
 
    for (q = t; q->method != NULL; q++)
@@ -403,7 +393,20 @@ int init_particle_spectrum (Particle_Type *pt, unsigned int type, /*{{{*/
           {
              /* struct copy */
              *pt = *q;
-             return init_particle_params (pt, type, params, num_pars);
+             return init_pdf_params1 (pt, type, params, num_pars);
+          }
+     }
+   
+   if (User_Pdf_Methods)
+     {
+        for (q = User_Pdf_Methods; q != NULL; q = q->next)
+          {
+             if (strcmp(q->method,method) == 0)
+               {
+                  /* struct copy */
+                  *pt = *q;
+                  return init_pdf_params1 (pt, type, params, num_pars);
+               }
           }
      }
 
@@ -411,4 +414,132 @@ int init_particle_spectrum (Particle_Type *pt, unsigned int type, /*{{{*/
 }
 
 /*}}}*/
+
+static void handle_link_error (char *path, char *name) /*{{{*/
+{
+   const char * error = dlerror ();
+   if (error == NULL)
+     error = "(unknown)";
+
+   fprintf (stderr, "Link error:  %s\n", error);
+
+   if (name == NULL)
+     name = "(null)";
+   if (path == NULL)
+     path  = "(null)";
+
+   fprintf (stderr, "Link error:  failed loading %s from %s\n",
+            name, path);
+}
+
+/*}}}*/
+
+typedef int Pdf_Init_Type (Particle_Type *, char *);
+
+Particle_Type *load_pdf (char *path, char *name, char *options) /*{{{*/
+{
+   Particle_Type *p;
+   Pdf_Init_Type *init = NULL;
+   void *handle = NULL;
+   char *s;
+
+   if (path == NULL || name == NULL)
+     return NULL;
+
+#ifndef RTLD_GLOBAL
+# define RTLD_GLOBAL 0
+#endif
+#ifdef RTLD_NOW
+# define DLOPEN_FLAG  (RTLD_NOW | RTLD_GLOBAL)
+#else
+# define DLOPEN_FLAG  (RTLD_LAZY | RTLD_GLOBAL)
+#endif
+
+   if (NULL == (handle = dlopen (path, DLOPEN_FLAG)))
+     {
+        handle_link_error (path, NULL);
+        return NULL;
+     }
+   
+   if (NULL == (s = isis_mkstrcat ("Pdf_", name, "_init", NULL)))
+     {
+        dlclose (handle);
+        return NULL;
+     }   
+
+   if (NULL == (init = (Pdf_Init_Type *) dlsym (handle, s)))
+     {
+        handle_link_error (path, s);
+        dlclose (handle);
+        free(s);
+        return NULL;
+     }
+   free(s);
+
+   if (NULL == (p = malloc (sizeof *p)))
+     {
+        fprintf (stderr, "*** Error: load_pdf: malloc failed\n");
+        dlclose (handle);
+        return NULL;
+     }
+   memset ((char *)p, 0, sizeof *p);
+
+   if (-1 == (*init)(p, options))
+     {
+        free(p);
+        dlclose (handle);
+        return NULL;
+     }
+
+   return p;
+}
+
+/*}}}*/
+
+int append_pdf (Particle_Type *pt)
+{
+   Particle_Type *p, *x;
+
+   if (User_Pdf_Methods == NULL)
+     {
+        pt->next = User_Pdf_Methods;
+        User_Pdf_Methods = pt;
+        return 0;
+     }
+
+   p = NULL;
+   x = User_Pdf_Methods;
+
+   while (x)
+     {
+        /* replace method if name already exists */
+        if (0 == strcmp (x->method, pt->method))
+          {
+             Particle_Type *n = x->next;
+             free_pdf (x);
+             pt->next = n;
+             if (p) p->next = pt;
+             return 0;
+          }
+        p = x;
+        x = x->next;
+     }
+
+   pt->next = NULL;
+   p->next = pt;
+
+   return 0;
+}
+
+void free_user_pdf_methods (void)
+{
+   Particle_Type *q = User_Pdf_Methods;
+   while (q)
+     {
+        Particle_Type *n = q->next;
+        free_pdf (q);
+        q = n;
+     }
+}
+
 

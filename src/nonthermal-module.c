@@ -69,7 +69,7 @@ int init_pdf (Particle_Type *p, unsigned int type) /*{{{*/
         return -1;
      }
 
-   status = init_particle_spectrum (p, type, pdf_name, sl_pars);
+   status = init_pdf_params (p, type, pdf_name, sl_pars);
    if (status) fprintf (stderr, msg);
 
    SLang_free_array (sl_pars);
@@ -95,7 +95,7 @@ static int pop_density_info (Density_Info *di) /*{{{*/
 
    if (-1 == init_pdf (p, particle_type))
      {
-        free_particle_spectrum (p);
+        free_pdf (p);
         return -1;
      }
 
@@ -136,14 +136,14 @@ static double particle_distrib (double *pc, unsigned int *type) /*{{{*/
    if (-1 == init_pdf (&pt, *type))
      {
         SLang_set_error (SL_INTRINSIC_ERROR);
-        free_particle_spectrum (&pt);
+        free_pdf (&pt);
         return -1.0;
      }
 
    /* dn/d(Pc) */
    (void) (*pt.spectrum)(&pt, *pc, &f);
 
-   free_particle_spectrum (&pt);
+   free_pdf (&pt);
 
    return f;
 }
@@ -250,7 +250,7 @@ static double _find_momentum_min (void) /*{{{*/
         fprintf (stderr, "find_momentum_min: no solution -- using thermal peak momentum\n");
      }
 
-   free_particle_spectrum (&di.particle);
+   free_pdf (&di.particle);
 
    return p;
 }
@@ -399,7 +399,7 @@ static double nontherm_energy_density (void) /*{{{*/
    if (-1 == nontherm_integral (&di, &nontherm_energy_density_integrand, &ne))
      ne = 0.0;
 
-   free_particle_spectrum (&di.particle);
+   free_pdf (&di.particle);
 
    return ne;
 }
@@ -419,7 +419,7 @@ static double nontherm_density (void) /*{{{*/
    if (-1 == nontherm_integral (&di, &nontherm_density_integrand, &n))
      n = 0.0;
 
-   free_particle_spectrum (&di.particle);
+   free_pdf (&di.particle);
 
    return n;
 }
@@ -549,13 +549,30 @@ static double conserve_charge (int *method) /*{{{*/
         break;
      }
 
-   free_particle_spectrum (&dp.particle);
-   free_particle_spectrum (&de.particle);
+   free_pdf (&dp.particle);
+   free_pdf (&de.particle);
 
    return p_norm;
 }
 
 /*}}}*/
+
+static void add_user_pdf_intrin (char *path, char *name, char *options)
+{
+   Particle_Type *pt;
+   
+   if (NULL == (pt = load_pdf (path, name, options)))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return;
+     }
+
+   if (-1 == append_pdf (pt))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return;
+     }        
+}
 
 /* DUMMY_CLASS_TYPE is a temporary hack that will be modified to the true
   * id once the interpreter provides it when the class is registered.  See below
@@ -581,6 +598,7 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
    MAKE_INTRINSIC_2("bspline_open_intrin", bspline_open_intrin, V, I, I),
    MAKE_INTRINSIC_3("bspline_eval_intrin", bspline_eval_intrin, D, MT, D, D),
    MAKE_INTRINSIC_1("bspline_init_info_intrin", bspline_init_info_intrin, V, MT),
+   MAKE_INTRINSIC_3("add_user_pdf_intrin", add_user_pdf_intrin, V, S, S, S),
    SLANG_END_INTRIN_FUN_TABLE
 };
 
@@ -637,6 +655,12 @@ static void patchup_intrinsic_table (unsigned int valid_id) /*{{{*/
 }
 
 /*}}}*/
+
+void deinit_nonthermal_module (void);
+void deinit_nonthermal_module (void)
+{
+   free_user_pdf_methods();
+}
 
 SLANG_MODULE(nonthermal);
 int init_nonthermal_module_ns (char *ns_name)
