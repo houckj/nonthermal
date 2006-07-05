@@ -5,10 +5,11 @@
 
 #include "nonthermal.h"
 
-#define SPEED_OF_LIGHT 3.e10
-#define GEV (1.e9 * 1.602e-12)
+#define SPEED_OF_LIGHT 2.99792458e10
+#define ERG_PER_EV     1.602176462e-12
+#define GEV (1.e9 * ERG_PER_EV)
 
-#define GAMMA_MIN 10
+#define GAMMA_MIN 10.0
 #define GAMMA_MAX 2.e9
 
 static double min_momentum (Particle_Type *pt)
