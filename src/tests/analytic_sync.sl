@@ -5,10 +5,10 @@ Syn_Interpolate = 1;
 
 define sync_numeric (nu, s, B)
 {
-   fit_fun ("sync(1,pdf_etot(1))");
+   fit_fun ("sync(1,etot(1))");
    set_par ("sync(1).norm", 1);
    set_par ("sync(1).B_tot", B, 0, 0, 0);
-   set_par ("pdf_etot(1).index", s, 0, 0, 0);
+   set_par ("etot(1).index", s, 0, 0, 0);
 
    variable energy_erg = CONST_CGSM_PLANCKS_CONSTANT_H * nu;
 

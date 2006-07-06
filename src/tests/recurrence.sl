@@ -2,7 +2,7 @@ require ("nonthermal");
 require ("histogram");
 require ("xfig");
 
-variable Energies, Model_Name, PDF_Name = "pdf_default";
+variable Energies, Model_Name, PDF_Name = "default";
 
 define fcn (gamma, alpha)
 {

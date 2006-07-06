@@ -45,11 +45,11 @@ define sync_comparison (w, index)
    (e_s,s_t) = readcol (radsor_file, 1,2);
 
    vmessage ("sync");
-   fit_fun ("sync(1,pdf_ke_cutoff(1))");
+   fit_fun ("sync(1,ke_cutoff(1))");
    set_par ("sync(1).B_tot", 1.0);
-   set_par ("pdf_ke_cutoff(1).index",index);
-   set_par ("pdf_ke_cutoff(1).curvature", 0);
-   set_par ("pdf_ke_cutoff(1).cutoff", 10.0);
+   set_par ("ke_cutoff(1).index",index);
+   set_par ("ke_cutoff(1).curvature", 0);
+   set_par ("ke_cutoff(1).cutoff", 10.0);
 
    variable i;
    variable s_h;
@@ -78,11 +78,11 @@ define gamma_comparison (w, index)
    variable i;
 
    vmessage ("invc");
-   fit_fun ("invc(1,pdf_ke_cutoff(1))");
+   fit_fun ("invc(1,ke_cutoff(1))");
    set_par ("invc(1).T_photon[K]", 2.725);   % Sturner used 2.7 not 2.725
-   set_par ("pdf_ke_cutoff(1).index",index);
-   set_par ("pdf_ke_cutoff(1).curvature", 0);
-   set_par ("pdf_ke_cutoff(1).cutoff", 10.0);
+   set_par ("ke_cutoff(1).index",index);
+   set_par ("ke_cutoff(1).curvature", 0);
+   set_par ("ke_cutoff(1).cutoff", 10.0);
 
    variable ic_h;
    ( ,ic_h) = fixup_units (e_ic, index);
@@ -93,11 +93,11 @@ define gamma_comparison (w, index)
                     ic_h[i]/ic_t[i]);
 
    vmessage ("ntbrem");
-   fit_fun ("ntbrem(1,pdf_ke_cutoff(1))");
+   fit_fun ("ntbrem(1,ke_cutoff(1))");
    set_par ("ntbrem(1).norm", 0.11);
-   set_par ("pdf_ke_cutoff(1).index",index);
-   set_par ("pdf_ke_cutoff(1).curvature", 0);
-   set_par ("pdf_ke_cutoff(1).cutoff", 10.0);
+   set_par ("ke_cutoff(1).index",index);
+   set_par ("ke_cutoff(1).curvature", 0);
+   set_par ("ke_cutoff(1).cutoff", 10.0);
 
    variable ntb_h;
    %ntb_set_process_weights (1.2, 1.4);

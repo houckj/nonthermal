@@ -189,9 +189,9 @@ private define add_pdf_fitfun () %{{{
      }
 
    variable t
-     = ["private define pdf_$name (l,h,p) {return (\"$name\", p);}"$,
-        "private define pdf_${name}_contin (x,p) {return (\"$name\", p);}"$,
-        "add_slang_function (\"pdf_$name\", [&pdf_$name, &pdf_${name}_contin] %s);"$
+     = ["private define $name (l,h,p) {return (\"$name\", p);}"$,
+        "private define ${name}_contin (x,p) {return (\"$name\", p);}"$,
+        "add_slang_function (\"$name\", [&$name, &${name}_contin] %s);"$
         ];
 
    t = strjoin (t, " ");
@@ -208,7 +208,7 @@ private define add_pdf_fitfun () %{{{
 
    if (param_names != NULL)
      {
-        set_param_default_hook ("pdf_$name"$, &pdf_param_defaults,
+        set_param_default_hook ("$name"$, &pdf_param_defaults,
                                 value, freeze, min, max);
      }
 }

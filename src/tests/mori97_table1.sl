@@ -5,7 +5,7 @@ require ("nonthermal");
 prepend_to_isis_load_path ("/vex/d0/i686/share/slsh/local-packages");
 require ("xfig");
 
-fit_fun("pizero(1,pdf_mori(1))");
+fit_fun("pizero(1,mori(1))");
 set_par ("pizero(1).norm", 1.0);
 
 %Pizero_Interpolate=1;
