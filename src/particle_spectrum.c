@@ -355,8 +355,8 @@ static struct Particle_Type Particle_Methods[] =
 {
    PARTICLE_METHOD("default", 3, pdf_pc_cutoff, min_momentum, max_momentum),
    PARTICLE_METHOD("etot", 1, pdf_etot, min_momentum, etot_max_momentum),
-   PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum),
    PARTICLE_METHOD("mori", 0, pdf_mori, min_momentum, mori_max_momentum),
+   PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum),
    PARTICLE_METHOD("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum),
    PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum),
    NULL_PARTICLE_TYPE
