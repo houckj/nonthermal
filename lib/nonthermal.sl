@@ -215,7 +215,7 @@ private define add_pdf_fitfun () %{{{
 
 %}}}
 
-private define init_pdf_options () %{{{
+private define init_pdfs () %{{{
 {
    add_pdf_fitfun ("default", ["index", "curvature", "cutoff [TeV]"],
                    [2.0, 0.0, 10.0], [0, 1, 0],
@@ -310,7 +310,7 @@ private define nonthermal_init () %{{{
    add_function ("ntbrem", _ntbrem_table_file());
    add_function ("pizero");
 
-   init_pdf_options();
+   init_pdfs();
 }
 
 %}}}
