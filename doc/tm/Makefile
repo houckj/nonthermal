@@ -10,7 +10,7 @@ MACRODIR = $(TMDIST)/share/tmexpand
 
 MODULE = nonthermal
 AUTOGEN_TM = nonthermalfuns.tm
-MODULE_DEPS = $(AUTOGEN_TM)
+MODULE_DEPS = rtl/models.tm rtl/tables.tm $(AUTOGEN_TM)
 
 TXT_FILES = $(MODULE).txt
 SGML_FILES = $(MODULE).sgml

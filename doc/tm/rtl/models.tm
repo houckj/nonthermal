@@ -82,7 +82,7 @@ where
   parameter is not used. To compute this integral via direct
   integration, set the intrinsic variable \var{IC_Interpolate}
   to a non-zero value.
-\seealso{_invc_photon_integral,_invc_set_dilution_factors}
+\seealso{_invc_photon_integral}
 \done
 
 \function{ntbrem}

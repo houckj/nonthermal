@@ -68,7 +68,11 @@
 
 \chapter{Introduction to the \var{nonthermal} Module}
 
-\chapter{\var{nonthermal} Module Function Reference}
+\chapter{Spectral Models Reference}
+#i rtl/models.tm
+
+\chapter{Function Reference}
 #i nonthermalfuns.tm
+#i rtl/tables.tm
 
 \end{\documentstyle}
