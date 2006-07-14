@@ -74,3 +74,19 @@
 \seealso{}
 \done
 
+\function{_ee_heitler1}
+\synopsis{Bethe-Heitler cross-section}
+\usage{sigma = _ee_heitler1 (T, omega)}
+\description
+  The \ifun{_ee_heitler1} function computes the Bethe-Heitler
+  cross-section for electron-ion bremsstrahlung.  The
+  parameters are  
+#v+
+       T = incident electron kinetic energy in units of the
+           electron rest energy.
+   omega = scattered photon energy in units of the electron
+           rest energy
+#v-
+\seealso{}
+\done
+
