@@ -676,7 +676,7 @@ define nontherm_energy_density (s) %{{{
 %!%+
 %\function{force_charge_conservation}
 %\synopsis{Enforce charge conservation by adjusting the proton norm}
-%\usage{force_charge_conservation (Struct_Type electron, Struct_Type proton [, method])}
+%\usage{force_charge_conservation (electrons, protons [, method])}
 %\description
 %  The \var{force_charge_conservation} function take structures
 %  defining the electron and proton particle distribution
@@ -690,7 +690,7 @@ define nontherm_energy_density (s) %{{{
 %#v-
 %  The default is \var{method=0}.
 %
-%\seealso{}
+%\seealso{particle_info_struct}
 %!%-
 define force_charge_conservation () %{{{
 {

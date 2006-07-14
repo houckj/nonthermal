@@ -808,7 +808,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 /*}}}*/
 
-#define USE_KAMAE
+/* #define USE_KAMAE */
 #ifdef USE_KAMAE
 #include "pizero_kamae.c"
 #else

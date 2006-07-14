@@ -50,6 +50,9 @@
 #d NULL <tt>NULL</tt>
 #d documentstyle book
 
+#d iflatex#2 <#if output=latex2e>$1</#if><#unless output=latex2e>$2</#unless>
+#d ifhtml#2 <#if output=html>$1</#if><#unless output=html>$2</#unless>
+
 #%}}}
 
 #d module#1 \tt{$1}
@@ -57,16 +60,23 @@
 #d slang-documentation \
  \url{http://www.s-lang.org/doc/html/slang.html}{S-Lang documentation}
 
+#d models_paper_url ms.pdf
+#d models_paper \ifhtml{\url{\models_paper_url}{Houck & Allen (2006)}}{Houck & Allen (2006)}
+
 \linuxdoc
 \begin{\documentstyle}
 
-\title S-Lang \var{nonthermal} Module Reference
-\author <full name>, \tt{<email-address>}
+\title \var{nonthermal} Module Reference
+\author John C. Houck, \tt{houck@space.mit.edu}
 \date \__today__
 
 \toc
 
 \chapter{Introduction to the \var{nonthermal} Module}
+
+This manual describes the user interface of the module. Physical
+assumptions and computational details are discussed in
+\models_paper.
 
 \chapter{Spectral Models Reference}
 #i rtl/models.tm
