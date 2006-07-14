@@ -3,10 +3,14 @@
 # To create the SGML files, you will need to install the tm-utils
 # package.  See http://www.jedsoft.org/ for more information.
 #
-TM2SGML = /aluche/d1/web/tm-dist/bin/tmexpand
-MACRODIR = /aluche/d1/web/tm-dist/macros
+TMDIST = $(HOME)/sys# src/web/tm-dist
+TM2SGML = $(TMDIST)/bin/tmexpand
+SL2TM = sl2tm 
+MACRODIR = $(TMDIST)/share/tmexpand
 
-MODULE = maplib
+MODULE = nonthermal
+AUTOGEN_TM = nonthermalfuns.tm
+MODULE_DEPS = $(AUTOGEN_TM)
 
 TXT_FILES = $(MODULE).txt
 SGML_FILES = $(MODULE).sgml
@@ -31,9 +35,11 @@ SUBDIRS = $(TEXTDIR) $(HTMLDIR) $(PSDIR) $(SGMLDIR) $(PDFDIR)
 SRCDIR = `pwd`
 
 all: $(SGML_FILES) $(HTML_FILES) $(TEX_FILES) $(TXT_FILES)
+nonthermalfuns.tm:	../../lib/nonthermal.sl
+	$(SL2TM) ../../lib/nonthermal.sl > nonthermalfuns.tm
 text-files: $(TXT_FILES)
 #----- SGML Files -----------------------------------------------------------
-$(MODULE).sgml : $(MODULE).tm
+$(MODULE).sgml : $(MODULE).tm $(MODULE_DEPS)
 	$(TM2SGML) -I$(MACRODIR) $(MODULE).tm $(MODULE).sgml
 #----- HTML Files -----------------------------------------------------------
 $(MODULE).html : $(MODULE).sgml
@@ -63,7 +69,7 @@ texclean:
 clean: texclean
 	-rm -f *~ rtl/*.BAK rtl/*~ *.tmp
 distclean: clean
-	-rm -f *.html *.ps $(TXT_FILES) $(TEX_FILES) $(SGML_FILES) $(PDF_FILES)
+	-rm -f *.html *.ps $(TXT_FILES) $(TEX_FILES) $(SGML_FILES) $(PDF_FILES) $(AUTOGEN_TM)
 install-txt-files: $(TXT_FILES)
 	-mv $(TXT_FILES) ../text
 

@@ -60,15 +60,15 @@
 \linuxdoc
 \begin{\documentstyle}
 
-\title S-Lang <template> Module Reference
+\title S-Lang \var{nonthermal} Module Reference
 \author <full name>, \tt{<email-address>}
 \date \__today__
 
 \toc
 
-\chapter{Introduction to the <template> Module}
+\chapter{Introduction to the \var{nonthermal} Module}
 
-\chapter{<template> Module Function Reference}
-#i <template>funs.tm
+\chapter{\var{nonthermal} Module Function Reference}
+#i nonthermalfuns.tm
 
 \end{\documentstyle}
