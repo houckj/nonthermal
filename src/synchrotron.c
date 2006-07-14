@@ -42,9 +42,8 @@
 
 /*}}}*/
 
-#define DO_ANGULAR_INTEGRAL 0
-
-#if DO_ANGULAR_INTEGRAL
+#undef DO_ANGULAR_INTEGRAL
+#ifdef DO_ANGULAR_INTEGRAL
 static double angular_integrand (double w, void *p) /*{{{*/
 {
    gsl_sf_result f;
@@ -140,29 +139,7 @@ static double R_factored (double x) /*{{{*/
 
 int syn_angular_integral (double x, double *y) /*{{{*/
 {
-#undef USE_ASYMPTOTIC
-#ifdef USE_ASYMPTOTIC
-   /* These asymptotic forms are from
-    * Crusius and Schlickeiser (1986) A&A, 164, L16
-    * They don't seem very accurate...
-    */
-   if (x < 1.e-21)
-     {
-        /* (2^(1/3)/5) * \Gamma^2(1/3) */
-        *y = 1.808418021102803e+00 * pow (x, 1.0/3);
-     }
-   else if (x < 30.0)
-     {
-#endif
-        *y = R_factored (x);
-#ifdef USE_ASYMPTOTIC
-     }
-   else
-     {
-        *y = 0.5*M_PI * exp(-x) * (1.0 - 99.0/162.0/x);
-     }
-#endif
-
+   *y = R_factored (x);
    return 0;
 }
 /*}}}*/
