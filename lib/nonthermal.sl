@@ -681,8 +681,8 @@ define nontherm_energy_density (s) %{{{
 %  The \var{force_charge_conservation} function take structures
 %  defining the electron and proton particle distribution
 %  functions and adjusts the normalization of the nonthermal
-%  proton distribution to enforce some definition of charge
-%  conservation.  The supported definitions are
+%  proton distribution (protons.n_GeV) to enforce some definition 
+%  of charge conservation.  The supported definitions are
 %#v+
 %   method=0 equal density of electrons and protons at some chosen 
 %            injection kinetic energy
