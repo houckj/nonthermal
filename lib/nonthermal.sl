@@ -524,7 +524,7 @@ private define ntb_parse_process_type (type) %{{{
 %     wt_ee = X_H + 2*X_HE = 1.09091
 %#v-
 %  and the total electron-proton bremsstrahlung contribution,
-%  proportional to \var{Z^2n}, has weight
+%  proportional to \var{n*Z^2}, has weight
 %#v+
 %     wt_ep = X_H + 4*X_HE = 1.27273
 %#v-
