@@ -79,7 +79,7 @@ define gamma_comparison (w, index)
 
    vmessage ("invc");
    fit_fun ("invc(1,ke_cutoff(1))");
-   set_par ("invc(1).T_photon[K]", 2.725);   % Sturner used 2.7 not 2.725
+   set_par ("invc(1).T_photon", 2.725);   % Sturner used 2.7 not 2.725
    set_par ("ke_cutoff(1).index",index);
    set_par ("ke_cutoff(1).curvature", 0);
    set_par ("ke_cutoff(1).cutoff", 10.0);
