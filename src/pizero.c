@@ -1,9 +1,25 @@
 /* -*- mode: C; mode: fold -*- */
+/*
+  Copyright (C) 2002, 2003, 2004, 2005, 2006 John C. Houck 
 
-/*  author:  John Houck <houck@space.mit.edu>
- * written:  Feb 2003
- *
- * Neutral pion production cross-sections from
+  This file is part of the nonthermal module
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/* Neutral pion production cross-sections from
  *   Dermer, C.D., 1986, A&A, 157, 223.
  *   Blattnig et al, NASA Technical Report, NASA/TP-2000-210640
  *   Aharonian and Atoyan, 2000, A&A, 362, 937
