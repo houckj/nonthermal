@@ -488,7 +488,7 @@ static int invc_init_client_data (char *file) /*{{{*/
 
 ISIS_USER_SOURCE_MODULE(invc,p,options) /*{{{*/
 {
-   static const char *parameter_names[] = {"norm", "T_photon[K]", NULL};
+   static const char *parameter_names[] = {"norm", "T_photon", NULL};
    static const char *parameter_units[] = {"cm^-2 GeV^-1", "K", NULL};
    static double default_max[]   = {1.0e10, 1.e10};
    static double default_value[] = { 1.0, CBR_TEMPERATURE};
