@@ -16,9 +16,9 @@ where
         V = emitting volume [cm^3]
         d = distance [cm]
 #v-
-  The next two arguments specify the particle distribution
+  The second and third arguments specify the particle distribution
   function (PDF) and its parameters.  Normally, these arguments
-  are provided as return values by a special fit-function which
+  are provided as return values by a special fit-function that
   acts as an interface to the desired PDF.  For example,
 #v+
       fit_fun ("sync(1, default(1))")
@@ -59,9 +59,9 @@ where
         V = emitting volume [cm^3]
         d = distance [cm]
 #v-
-  The next two arguments specify the particle distribution
+  The second and third arguments specify the particle distribution
   function (PDF) and its parameters.  Normally, these arguments
-  are provided as return values by a special fit-function which
+  are provided as return values by a special fit-function that
   acts as an interface to the desired PDF.  For example,
 #v+
       fit_fun ("invc(1, default(1))")
@@ -104,9 +104,9 @@ where
         V = emitting volume [cm^3]
         d = distance [cm]
 #v-
-  The next two arguments specify the particle distribution
+  The second and third arguments specify the particle distribution
   function (PDF) and its parameters.  Normally, these arguments
-  are provided as return values by a special fit-function which
+  are provided as return values by a special fit-function that
   acts as an interface to the desired PDF.  For example,
 #v+
       fit_fun ("ntbrem(1, default(1))")
@@ -153,9 +153,9 @@ where
         V = emitting volume [cm^3]
         d = distance [cm]
 #v-
-  The next two arguments specify the particle distribution
+  The second and third arguments specify the particle distribution
   function (PDF) and its parameters.  Normally, these arguments
-  are provided as return values by a special fit-function which
+  are provided as return values by a special fit-function that
   acts as an interface to the desired PDF.  For example,
 #v+
       fit_fun ("pizero(1, default(1))")

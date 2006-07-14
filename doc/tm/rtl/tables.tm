@@ -55,6 +55,7 @@
    omega = scattered photon energy in units of the electron
            rest energy
 #v-
+  The cross-section is in units cm^2/erg.
 \seealso{_ee_haug1_lab}
 \done
 
@@ -71,6 +72,7 @@
    omega = scattered photon energy in units of the electron
            rest energy
 #v-
+  The cross-section is in units cm^2/erg.
 \seealso{}
 \done
 
@@ -87,6 +89,7 @@
    omega = scattered photon energy in units of the electron
            rest energy
 #v-
+  The cross-section is in units cm^2/erg.
 \seealso{}
 \done
 

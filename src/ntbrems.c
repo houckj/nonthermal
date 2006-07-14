@@ -121,7 +121,7 @@ double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{
    xi0 = TWO_PI_ALPHA * Z / b0;
    sigma *= elwert (xi0, xi);
 
-   return sigma;
+   return sigma / ELECTRON_REST_ENERGY;
 }
 
 /*}}}*/
@@ -508,12 +508,18 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
          */
         double beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
         mu_min = ((1.0 + 1.0/gamma)*k - (1.0 - 1.0/gamma)) / (k * beta);
-        if (fabs(mu_min) > 1.0)
+        if (mu_min > 1.0)
           {
-             fprintf (stderr, "*** angular_integral:  mu_min = %19.15e ??\n",
-                      mu_min);
-             exit(1);
+             if (mu_min - 1.0 < 10*DBL_EPSILON)
+               mu_min = 1.0;
+             else
+               {
+                  fprintf (stderr, "*** angular_integral:  mu_min-1 = %19.15e??\n",
+                           mu_min-1.0);
+                  exit(1);
+               }
           }
+        
      }
 
    f.params = &s;
@@ -824,11 +830,16 @@ static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
         double rg2 = 1.0/gamma/gamma;
         double beta = sqrt ((1.0 + 1.0/gamma)*(1.0 - 1.0/gamma));
         mu_min = ((1.0 + 1.0/gamma)*k - (1.0 - 1.0/gamma)) / (k * beta);
-        if (fabs(mu_min) > 1.0)
+        if (mu_min > 1.0)
           {
-             fprintf (stderr, "*** lab_angular_integral:  mu_min = %19.15e ??\n",
-                      mu_min);
-             exit(1);
+             if (mu_min - 1.0 < 10*DBL_EPSILON)
+               mu_min = 1.0;
+             else
+               {
+                  fprintf (stderr, "*** lab_angular_integral:  mu_min = %19.15e ??\n",
+                           mu_min);
+                  exit(1);
+               }             
           }
         one_minus_mu_min = (1.0 - 1.0/gamma) / k / beta - 1.0 / gamma/ beta
           - 0.5 * rg2 * (1.0 + (3*rg2/4)
@@ -901,7 +912,7 @@ double _ntb_ee_sigma_haug (double gm1, double e_ph) /*{{{*/
         return -1.0;
      }
 
-   s *= BARN * ELECTRON_REST_ENERGY / KEV;
+   s *= BARN / KEV;
 
    return s;
 }
@@ -918,7 +929,7 @@ double _ntb_ee_sigma_haug_lab (double gm1, double e_ph) /*{{{*/
         return -1.0;
      }
 
-   s *= BARN * ELECTRON_REST_ENERGY / KEV;
+   s *= BARN / KEV;
 
    return s;
 }
@@ -1027,8 +1038,6 @@ int ntb_brems (void *vb, double photon_energy, double *emissivity)
 
    if (-1 == integral_over_electrons (b, emissivity))
      return -1;
-
-   *emissivity /= ELECTRON_REST_ENERGY;
 
    return 0;
 }
