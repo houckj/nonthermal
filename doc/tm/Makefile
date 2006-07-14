@@ -11,6 +11,7 @@ MACRODIR = $(TMDIST)/share/tmexpand
 MODULE = nonthermal
 AUTOGEN_TM = nonthermalfuns.tm
 MODULE_DEPS = rtl/models.tm rtl/tables.tm $(AUTOGEN_TM)
+HLPFUNS_TM = $(MODULE_DEPS)
 
 TXT_FILES = $(MODULE).txt
 SGML_FILES = $(MODULE).sgml
@@ -18,6 +19,9 @@ HTML_FILES = $(MODULE).html
 TEX_FILES = $(MODULE).tex
 PS_FILES = $(MODULE).ps 
 PDF_FILES = $(MODULE).pdf
+HLP_FILE = $(MODULE).hlp
+
+HLP_TM_FILE = helpfile.tm
 
 SGML2LATEX = sgml2latex -p letter -o tex
 SGML2HTML = sgml2html
@@ -30,8 +34,9 @@ PSDIR = ../ps
 HTMLDIR = ../html
 SGMLDIR = ../sgml
 PDFDIR = ../pdf
+HELPDIR = ../help
 
-SUBDIRS = $(TEXTDIR) $(HTMLDIR) $(PSDIR) $(SGMLDIR) $(PDFDIR)
+SUBDIRS = $(TEXTDIR) $(HTMLDIR) $(PSDIR) $(SGMLDIR) $(PDFDIR) $(HELPDIR)
 SRCDIR = `pwd`
 
 all: $(SGML_FILES) $(HTML_FILES) $(TEX_FILES) $(TXT_FILES)
@@ -64,19 +69,24 @@ $(MODULE).ps : $(MODULE).tex texclean
 $(MODULE).txt: $(MODULE).sgml
 	$(SGML2TXT) $(MODULE).sgml
 #----------------------------------------------------------------------------
+help-files:	$(HLP_FILE)
+$(HLP_FILE):	$(HLP_TM_FILE) $(HLPFUNS_TM)
+	$(TM2SGML) -I$(MACRODIR) $(HLP_TM_FILE) $(HLP_FILE)
 texclean:
 	-rm -f *.dvi *.log *.aux *.toc *.out
 clean: texclean
 	-rm -f *~ rtl/*.BAK rtl/*~ *.tmp
 distclean: clean
-	-rm -f *.html *.ps $(TXT_FILES) $(TEX_FILES) $(SGML_FILES) $(PDF_FILES) $(AUTOGEN_TM)
-install-txt-files: $(TXT_FILES)
-	-mv $(TXT_FILES) ../text
-
-install: all $(PS_FILES) $(PDF_FILES)
+	-rm -f *.html *.ps $(HLP_FILE) $(TXT_FILES) $(TEX_FILES) $(SGML_FILES) $(PDF_FILES) $(AUTOGEN_TM)
+install-txt: $(TXT_FILES)
+	-mkdir -p $(TEXTDIR)
+	-mv $(TXT_FILES) $(TEXTDIR)
+install-help:	$(HLP_FILE)
+	-mkdir -p $(HELPDIR)
+	-mv $(HLP_FILE) $(HELPDIR)
+install: all install-help install-txt $(PS_FILES) $(PDF_FILES)
 	-mkdir $(SUBDIRS)
-	-mv $(TXT_FILES) ../text
-	-mv *.html ../html
-	-mv $(PS_FILES) ../ps
-	-mv $(SGML_FILES) ../sgml
-	-mv $(PDF_FILES) ../pdf
+	-mv *.html $(HTMLDIR)
+	-mv $(PS_FILES) $(PSDIR)
+	-mv $(SGML_FILES) $(SGMLDIR)
+	-mv $(PDF_FILES) $(PDFDIR)
