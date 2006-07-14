@@ -112,6 +112,7 @@ test:
 install_directories:
 	$(MKINSDIR) $(DEST_MODULE_INSTALL_DIR)
 	$(MKINSDIR) $(DEST_SL_FILES_INSTALL_DIR)
+	$(MKINSDIR) $(DEST_SL_FILES_INSTALL_DIR)/help
 	$(MKINSDIR) $(DEST_DATA_FILES_INSTALL_DIR)
 
 install_modules:
@@ -134,7 +135,7 @@ install_slfiles:
 		  exit 1; \
 		fi; \
 	done
-	/bin/mv $(DEST_SL_FILES_INSTALL_DIR)/nonthermal/nonthermal.sl $(DEST_SL_FILES_INSTALL_DIR)         
+	/bin/mv $(DEST_SL_FILES_INSTALL_DIR)/nonthermal/nonthermal.sl $(DEST_SL_FILES_INSTALL_DIR)
 install_datafiles:
 	@cd $(config_dir)/data ;\
 	for X in $(DATA_FILES); \
@@ -145,8 +146,11 @@ install_datafiles:
 		  exit 1; \
 		fi; \
 	done
+install_helpfile:
+	$(INSTALL_DATA) $(config_dir)/doc/help/nonthermal.hlp $(DEST_SL_FILES_INSTALL_DIR)/help
 
-install: install_directories install_modules install_slfiles install_datafiles
+install: install_directories install_modules install_slfiles install_datafiles \
+         install_helpfile
 
 clean:
 	-/bin/rm -f $(OBJDIR)/*.o *~ \#*

@@ -732,3 +732,10 @@ define invc_set_dilution_factors (f) %{{{
 %}}}
 
 provide ("nonthermal");
+
+#ifexists add_doc_file
+$1 = path_concat (path_concat (path_dirname (__FILE__), "help"),
+                  "nonthermal.hlp");
+if (NULL != stat_file ($1))
+  add_doc_file ($1);
+#endif
