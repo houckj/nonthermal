@@ -1,6 +1,47 @@
 Basic Installation
 ==================
 
+To install this module, you must first have the following
+packages installed on your system:
+
+  o S-Lang 
+  o ISIS
+  o GNU Scientific Library (GSL)
+  o S-Lang GSL module
+
+These packages may be downloaded from links provided at
+  http://space.mit.edu/cxc/software/slang/modules/gsl
+  
+If all of the necessary packages have been installed in their
+default locations in /usr/local, this module can configured by
+typing:
+
+   ./configure
+
+To install the module somewhere else, e.g. in the directory
+tree $root, type:
+
+   ./configure --prefix=$root \
+      --with-isis=$root/isis --with-slang=$root --with-gsl=$root
+
+After configure has run successfully, compile and install the
+module by typing:
+
+  make
+  make install
+  
+If the module is installed in a non-standard location, it may
+be necessary to specify the directory search path so that isis
+can find it. For example:
+  
+  prepend_to_isis_load_path ("$root/share/isis"$);
+  prepend_to_isis_module_path ("$root/lib/isis/modules"$);
+  
+To load the module:
+
+   isis> require ("nonthermal");
+
+========================================================================
    These are generic installation instructions.
 
    The `configure' shell script attempts to guess correct values for
