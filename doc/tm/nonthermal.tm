@@ -66,13 +66,13 @@
 \linuxdoc
 \begin{\documentstyle}
 
-\title \var{nonthermal} Module Reference
+\title Nonthermal Module Reference
 \author John C. Houck, \tt{houck@space.mit.edu}
 \date \__today__
 
 \toc
 
-\chapter{Introduction to the \var{nonthermal} Module}
+\chapter{Introduction to the Nonthermal Module}
 
 This manual describes the user interface of the module. Physical
 assumptions and computational details are discussed in
