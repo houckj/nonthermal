@@ -60,8 +60,8 @@
 #d slang-documentation \
  \url{http://www.s-lang.org/doc/html/slang.html}{S-Lang documentation}
 
-#d models_paper_url ms.pdf
-#d models_paper \ifhtml{\url{\models_paper_url}{Houck & Allen (2006)}}{Houck & Allen (2006)}
+#d models_paper_url http://arxiv.org/abs/astro-ph/0607574
+#d models_paper \ifhtml{\url{\models_paper_url}{Houck & Allen (2006)}}{Houck & Allen (2006) [ApJS, in press, (astro-ph/0607574)]}
 
 \linuxdoc
 \begin{\documentstyle}
