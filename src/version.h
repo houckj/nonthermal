@@ -17,8 +17,8 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-#define MODULE_MAJOR_VERSION	0
-#define MODULE_MINOR_VERSION	1
+#define MODULE_MAJOR_VERSION	1
+#define MODULE_MINOR_VERSION	0
 #define MODULE_PATCH_LEVEL	0
 #define MKSTR1(x) #x
 #define MKSTR(x) MKSTR1(x)
