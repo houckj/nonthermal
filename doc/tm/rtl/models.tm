@@ -16,7 +16,7 @@ where
         d = distance [cm]
 #v-
   The first argument of the \ifun{sync} function is an integer
-  index, identifying a particular instance of this fit
+  index identifying a particular instance of this fit
   function.  The second and third arguments specify the
   particle distribution function (PDF) and its parameters.
 
@@ -62,7 +62,7 @@ where
 #v-
 
   The first argument of the \ifun{invc} function is an integer
-  index, identifying a particular instance of this fit
+  index identifying a particular instance of this fit
   function.  The second and third arguments specify the
   particle distribution function (PDF) and its parameters.
 
@@ -111,7 +111,7 @@ where
 #v-
 
   The first argument of the \ifun{ntbrem} function is an
-  integer index, identifying a particular instance of this fit
+  integer index identifying a particular instance of this fit
   function.  The second and third arguments specify the
   particle distribution function (PDF) and its parameters.
 
@@ -163,7 +163,7 @@ where
         d = distance [cm]
 #v-
   The first argument of the \ifun{pizero} function is an
-  integer index, identifying a particular instance of this fit
+  integer index identifying a particular instance of this fit
   function.   The second and third arguments specify the particle
   distribution function (PDF) and its parameters.
 
