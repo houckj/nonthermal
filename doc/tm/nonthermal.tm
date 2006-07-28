@@ -76,7 +76,7 @@
 
 \toc
 
-\chapter{Introduction}
+\chapter{Introduction} #%{{{
 
  As part of our work on cosmic-ray acceleration in supernova
  remnants, we wanted to search for evidence of curvature in
@@ -87,23 +87,25 @@
  Compton, nonthermal bremsstrahlung and neutral-pion decay
  processes) and also allowed one to easily investigate the
  effect of different particle distribution functions.
-            
+
  XSPEC includes the synchrotron models SRCUT and SRESC, but
  these models are based on a fixed particle distribution
  function parameterization.
- 
+
  By implementing the necessary spectral models in a form
  accessible to the ISIS spectral analysis system, we gain the
  ability to fit these models not just to X-ray data, but also
  to radio and gamma-ray observations as well. By simultaneously
  fitting observations from several wave-bands, one can try to
  better constrain the important fit parameters.
-           
+
  This manual describes each of the spectral models and particle
  distribution functions and also provides a few simple usage
  examples. The physical assumptions used to create the models
  and various computational details are discussed in
  \models_paper.
+
+#%}}}
 
 \chapter{Examples}
 
@@ -111,7 +113,7 @@
  module has been installed in the default location so that
  \isis will find it automatically.
 
-\sect{X-ray Synchrotron Emission}
+\sect{X-ray Synchrotron Emission} #%{{{
 
  In this section, we describe how to fit X-ray data using the
  synchrotron model.  For a more general discussion of how to use
@@ -160,7 +162,7 @@
  initial parameter values such that the starting model is
  reasonably close to the data.
 
- Once we're satisfied with the initial parameter values, 
+ Once we're satisfied with the initial parameter values,
  perform the fit and then overplot the model and data
  histograms:
 #v+
@@ -173,12 +175,14 @@
  use \ifun{conf} to compute single parameter confidence limits
  for fit-parameters of interest.
 
-\sect{Inverse-Compton Gamma-ray Emission}
+#%}}}
+
+\sect{Inverse-Compton Gamma-ray Emission} #%{{{
 
  The process of fitting gamma-ray data is essentially identical
  to that used to fit X-ray data in the previous example. The
  primary difference is that, before the data can be loaded into
- isis, TeV gamma-ray spectra must first be cast into a 
+ isis, TeV gamma-ray spectra must first be cast into a
  suitable form.
 
  One suitable form is an \tt{ASCII} file with spectral data in
@@ -192,7 +196,7 @@
 ; bintype  counts
 ; xunit    TeV
 ; exposure 1.0
-#  E_lo            E_hi            flux            error  
+#  E_lo            E_hi            flux            error
    4.997493e-01    7.913994e-01    2.839012e-12    1.783329e-12
    7.913994e-01    1.256344e+00    3.729176e-13    2.399393e-13
    1.256344e+00    1.992807e+00    1.503555e-13    7.308948e-14
@@ -210,12 +214,12 @@
  overlap.  The '\exmp{xunit}' keyword specifies the bin
  coordinate units; in this case, the bin coordinates give the
  photon energy in TeV.  The next two columns contain the flux
- in \exmp{photons/s/cm^2} and the associated uncertainty, 
+ in \exmp{photons/s/cm^2} and the associated uncertainty,
  assumed to be symmetric. Lines beginning with a semicolon (;)
  define various keywords recognized by \isis. The
  \exmp{exposure} keyword specifies a nominal exposure time of
- one second.  
- 
+ one second.
+
  Note that the '\exmp{bintype}' keyword labels the data as
  ``counts'' even though the spectral values are given in flux
  units.  This subterfuge allows us to simultaneously fit X-ray
@@ -224,12 +228,12 @@
  normal data-input validation tests. By default, when \isis
  reads counts spectra, it requires that the uncertainty in the
  number of counts be greater than or equal to one. If the input
- data do not satisfy this requirement, \isis replaces the 
+ data do not satisfy this requirement, \isis replaces the
  relevant input uncertainties with acceptable values.  To keep
  \isis from modifying our input uncertainties in this way, we
  set the intrinsic variable \ivar{Minimum_Stat_Err} to a small
  positive value (smaller than any of the input uncertainties).
- 
+
  Having converted the Cas A HEGRA spectrum into the above
  format, we can load the data into isis:
 #v+
@@ -250,22 +254,36 @@
  and the neutral-pion decay component uses \ifun{default(2)} to
  define the proton momentum distribution.
 
+#%}}}
+
 \chapter{Spectral Models}
+
+\it{Note on differential vs. histogram forms}
+
+Differential and histogram forms of each spectral model are
+provided.  The histogram form is the one used in fitting models
+to data.  For this reason, input data must be converted to
+histogram form.  The differential form is normally used for
+testing and for making plots. See the \isis-documentation for
+additional details.
+
 #i rtl/models.tm
 
 \chapter{Built-In Particle Distribution Functions}
 #i rtl/pdfs.tm
 
-\chapter{User-Defined Particle Distribution Functions}
+\chapter{User-Defined Particle Distribution Functions} #%{{{
 
 A user-defined particle distribution function may be
 implemented in a compiled language such as C or Fortran,
 compiled as a shared library, and then imported into \isis at
-run-time via dynamic linking. 
+run-time via dynamic linking.
 
-A detailed example of how to do this is provided 
+A detailed example of how to do this is provided
 in the '\exmp{examples}' subdirectory of the module source-code
 distribution.
+
+#%}}}
 
 \chapter{Utility Functions}
 #i nonthermalfuns.tm
