@@ -76,11 +76,11 @@
 \seealso{}
 \done
 
-\function{_ee_heitler1}
+\function{_ep_heitler1}
 \synopsis{Bethe-Heitler cross-section}
-\usage{sigma = _ee_heitler1 (T, omega)}
+\usage{sigma = _ep_heitler1 (T, omega)}
 \description
-  The \ifun{_ee_heitler1} function computes the Bethe-Heitler
+  The \ifun{_ep_heitler1} function computes the Bethe-Heitler
   cross-section for electron-ion bremsstrahlung.  The
   parameters are  
 #v+
