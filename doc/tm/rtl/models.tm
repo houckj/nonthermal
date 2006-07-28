@@ -6,8 +6,8 @@
   for a specified nonthermal particle distribution function.
   The synchrotron spectrum parameters are
 #v+
-     norm = normalization = A_e V / (4 \pi d^2)
     B_tot = total magnetic field strength [microgauss].
+     norm = normalization = A_e V / (4 \pi d^2)
 #v-
 where
 #v+
@@ -51,8 +51,8 @@ where
   spectrum for a specified nonthermal particle distribution
   function.  The inverse Compton spectrum parameters are
 #v+
-      norm = normalization = A_e V / (4 \pi d^2)
   T_photon = radiation field temperature [K]
+      norm = normalization = A_e V / (4 \pi d^2)
 #v-
 where
 #v+
@@ -73,7 +73,7 @@ where
       fit_fun ("invc(1, default(1))")
 #v-
   causes the inverse Compton function calculation to use the
-  default PDF, named \ifun{default}, which has parameters
+  PDF named \ifun{default}, which has parameters
 #v+
          index = momentum power-law index
      curvature = amount of curvature above 1 GeV
@@ -122,7 +122,7 @@ where
       fit_fun ("ntbrem(1, default(1))")
 #v-
   causes the nonthermal bremsstrahlung function calculation
-  to use the default PDF, named \ifun{default}, which has parameters
+  to use the PDF named \ifun{default}, which has parameters
 #v+
          index = momentum power-law index
      curvature = amount of curvature above 1 GeV
@@ -174,7 +174,7 @@ where
       fit_fun ("pizero(1, default(1))")
 #v-
   causes the neutral-pion decay function calculation
-  to use the default PDF, named \ifun{default}, which has parameters
+  to use the PDF named \ifun{default}, which has parameters
 #v+
          index = momentum power-law index
      curvature = amount of curvature above 1 GeV

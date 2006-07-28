@@ -1,3 +1,5 @@
+#i linuxdoc.tm
+
  \function{default}
  \synopsis{default PDF}
  \usage{default(id)}
