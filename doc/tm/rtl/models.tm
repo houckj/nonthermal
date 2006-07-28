@@ -2,13 +2,15 @@
 \synopsis{Synchrotron spectrum model}
 \usage{sync(Int_Type i, String_Type pdf_name, Double_Type pdf_params[])}
 \description
-  The \ifun{sync} function computes the synchrotron spectrum for
-  a specified nonthermal particle distribution function.
-  The first argument specifies which set of spectrum parameters
-  is to be used. The synchrotron spectrum parameters are
+  The \ifun{sync} function computes the synchrotron spectrum
+  for a specified nonthermal particle distribution function.
+  Both differential and histogram forms of the spectrum are
+  provided. The first argument is an integer index, identifying
+  a particular instance of this fit function. The synchrotron
+  spectrum parameters are
 #v+
-    B_tot = total magnetic field strength [microgauss].
      norm = normalization = A_e V / (4 \pi d^2)
+    B_tot = total magnetic field strength [microgauss].
 #v-
 where
 #v+
@@ -16,10 +18,11 @@ where
         V = emitting volume [cm^3]
         d = distance [cm]
 #v-
-  The second and third arguments specify the particle distribution
-  function (PDF) and its parameters.  Normally, these arguments
-  are provided as return values by a special fit-function that
-  acts as an interface to the desired PDF.  For example,
+  The second and third arguments specify the particle
+  distribution function (PDF) and its parameters.  Normally,
+  these arguments are provided as return values by a special
+  fit-function that acts as an interface to the desired PDF.
+  For example,
 #v+
       fit_fun ("sync(1, default(1))")
 #v-
@@ -33,11 +36,10 @@ where
   When this fit-function is evaluated, \var{default(1)} returns
   second and third parameters needed by \ifun{sync}.
 
-  Normally, the value of the angular integral is determined
-  via spline interpolation in a pre-computed table.
-  To compute the angular integral value via direct
-  integration, set the intrinsic variable \var{Syn_Interpolate}
-  to a non-zero value.
+  Normally, the value of the angular integral is determined via
+  spline interpolation in a pre-computed table. To compute the
+  angular integral value via direct integration, set the
+  intrinsic variable \var{Syn_Interpolate} to a non-zero value.
 \seealso{_sync_angular_integral}
 \done
 
@@ -45,10 +47,12 @@ where
 \synopsis{Inverse Compton spectrum model}
 \usage{invc(Int_Type i, String_Type pdf_name, Double_Type pdf_params[])}
 \description
-  The \ifun{invc} function computes the inverse Compton spectrum
-  for a specified nonthermal particle distribution function.
-  The first argument specifies which set of spectrum parameters
-  is to be used. The inverse Compton spectrum parameters are
+  The \ifun{invc} function computes the inverse Compton
+  spectrum for a specified nonthermal particle distribution
+  function. Both differential and histogram forms of the
+  spectrum are provided. The first argument is an integer
+  index, identifying a particular instance of this fit
+  function. The inverse Compton spectrum parameters are
 #v+
       norm = normalization = A_e V / (4 \pi d^2)
   T_photon = radiation field temperature [K]
@@ -59,10 +63,11 @@ where
         V = emitting volume [cm^3]
         d = distance [cm]
 #v-
-  The second and third arguments specify the particle distribution
-  function (PDF) and its parameters.  Normally, these arguments
-  are provided as return values by a special fit-function that
-  acts as an interface to the desired PDF.  For example,
+  The second and third arguments specify the particle
+  distribution function (PDF) and its parameters.  Normally,
+  these arguments are provided as return values by a special
+  fit-function that acts as an interface to the desired PDF.
+  For example,
 #v+
       fit_fun ("invc(1, default(1))")
 #v-
@@ -89,11 +94,13 @@ where
 \synopsis{Nonthermal bremsstrahlung spectrum model}
 \usage{ntbrem(Int_Type i, String_Type pdf_name, Double_Type pdf_params[])}
 \description
-  The \ifun{ntbrem} function computes the nonthermal bremsstrahlung
-  spectrum for a specified nonthermal particle distribution function.
-  The first argument specifies which set of spectrum parameters
-  is to be used. The primary nonthermal bremsstrahlung spectrum parameter
-  is the normalization,
+  The \ifun{ntbrem} function computes the nonthermal
+  bremsstrahlung spectrum for a specified nonthermal particle
+  distribution function. Both differential and histogram forms
+  of the spectrum are provided. The first argument is an
+  integer index, identifying a particular instance of this fit
+  function. The primary nonthermal bremsstrahlung spectrum
+  parameter is the normalization,
 #v+
       norm = n_t A_e V / (4 \pi d^2)
 #v-
@@ -122,7 +129,7 @@ where
   second and third parameters needed by \ifun{ntbrem}.
 
   Normally, the value of the electron-electron differential
-  cross-sections is determined via spline interpolation in a
+  cross-section is determined via spline interpolation in a
   pre-computed table. To compute these cross-sections without
   interpolation, set the intrinsic variable
   \var{Ntb_Interpolate} to a non-zero value.
@@ -139,10 +146,12 @@ where
 \usage{pizero(Int_Type i, String_Type pdf_name, Double_Type pdf_params[])}
 \description
   The \ifun{pizero} function computes the neutral-pion decay
-  gamma-ray spectrum for a specified nonthermal particle distribution function.
-  The first argument specifies which set of spectrum parameters
-  is to be used. The primary pion decay spectrum parameter
-  is the normalization,
+  gamma-ray spectrum for a specified nonthermal particle
+  distribution function. Both differential and histogram forms
+  of the spectrum are provided. The first argument is an
+  integer index, identifying a particular instance of this fit
+  function. The primary pion decay spectrum parameter is the
+  normalization,
 #v+
       norm = n_p A_p V / (4 \pi d^2)
 #v-
@@ -153,10 +162,11 @@ where
         V = emitting volume [cm^3]
         d = distance [cm]
 #v-
-  The second and third arguments specify the particle distribution
-  function (PDF) and its parameters.  Normally, these arguments
-  are provided as return values by a special fit-function that
-  acts as an interface to the desired PDF.  For example,
+  The second and third arguments specify the particle
+  distribution function (PDF) and its parameters.  Normally,
+  these arguments are provided as return values by a special
+  fit-function that acts as an interface to the desired PDF.
+  For example,
 #v+
       fit_fun ("pizero(1, default(1))")
 #v-

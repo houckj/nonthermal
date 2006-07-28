@@ -99,7 +99,7 @@
  synchrotron model.  For a more general discussion of how to use
  \isis in data analysis, see the \isis-documentation.
 
- First, it is necessary to import the nonthermal module:
+ First, import the nonthermal module using
 #v+
    require ("nonthermal");
 #v-
@@ -114,29 +114,37 @@
    assign_rmf (load_rmf ("rmf.fits"), pha);
    () = define_bgd (pha, "back.fits");
 #v-
- At this point, it may be desirable to ignore selected spectral
- intervals or to rebin the data to improve the count-statistics
- in certain regions.
+ At this point, it may be desirable to rebin the data to
+ improve the count-statistics in certain regions and to ignore
+ selected spectral intervals.  For example, to ensure that each
+ bin contains at least 25 counts, use
+#v+
+    rebin_data (pha, 25);
+#v-
+ and, to fit only data in the range 2-8 keV, use
+#v+
+    xnotice_en (pha, 2, 8);
+#v-
 
- Next, define the spectral model. For this example, we will
- assume that a simple model consisting of a single synchrotron
- emission component modified by line of sight absorption. To
- compute the synchrotron emission spectrum, it is also
- necessary to specify the underlying particle momentum
- distribution function.  For this example, we will use the
- \exmp{default} momentm distribution function described in
- \models_paper. To model the effects of line of sight
- absorption, we will use the \exmp{phabs} function from XSPEC.
- The spectral model is therefore:
+ Next, define the spectral model. For this example, we will use
+ a simple model consisting of a single synchrotron emission
+ component modified by line of sight absorption. To compute the
+ synchrotron emission spectrum, it is necessary to specify the
+ underlying particle momentum distribution function.  For this
+ example, we will use the \ifun{default} momentum distribution
+ function described in \models_paper. To model the effects of
+ line of sight absorption, we will use the \ifun{phabs}
+ function from XSPEC. The spectral model is then:
 #v+
    fit_fun ("phabs(1) * sync(1, default(1))");
 #v-
- Before fitting the data, is usually a good idea to adjust the
- parameter values so that the starting model is reasonably
- close to the data.
+ Before fitting the data, is usually a good idea to choose
+ initial parameter values such that the starting model is
+ reasonably close to the data.
 
- Once we're satisfied with the initial parameter values, we
- can perform a fit and then overplot the model and data:
+ Once we're satisfied with the initial parameter values, 
+ perform the fit and then overplot the model and data
+ histograms:
 #v+
    () = fit_counts;
    rplot_counts (pha);
@@ -144,17 +152,22 @@
  At this point, it is usually a good idea to investigate the
  neighborhood of the fitted parameters to make sure that the
  best possible fit has been achieved.  For example, we might
- use \exmp{conf} to compute single parameter confidence limits
+ use \ifun{conf} to compute single parameter confidence limits
  for fit-parameters of interest.
 
 \sect{Inverse-Compton Gamma-ray Emission}
 
  The process of fitting gamma-ray data is essentially identical
  to that used to fit X-ray data in the previous example. The
- primary difference is that TeV gamma-ray spectra must be
- converted into a form that \isis recognizes.
+ primary difference is that, before the data can be loaded into
+ isis, TeV gamma-ray spectra must first be cast into a 
+ suitable form.
 
- Putting HEGRA observations of Cas A into this format, we obtain
+ One suitable form is an \tt{ASCII} file with spectral data in
+ four columns and with a small number of scalar parameters
+ specified using header keywords. Using HEGRA observations of
+ Cas A as a concrete example, we might create a file that looks
+ like this:
 #v+
 # flux in photons/s/cm^2/bin
 ; object   Cas A
@@ -171,33 +184,33 @@
    7.913994e+00    1.258409e+01    1.821113e-14    1.224027e-14
    1.258409e+01    2.001003e+01    1.804125e-15    3.373713e-15
 #v-
- Details of this ASCII format are described in the
+ Details of this format are described in the
  \isis-documentation.  Lines beginning with a \exmp{#} symbol
  are ignored and may be used to insert comments.  The first two
  columns define the lower and upper edges of histogram bins.
  The bins must be in monotonic increasing order and may not
- overlap.  The next two columns contain the flux in
- \exmp{photons/s/cm^2} and the associated uncertainty, assumed
- to be symmetric. Lines beginning with a semicolon (;) define
- various keywords recognized by \isis. The \exmp{xunit} keyword
- indicates that the spectral bins are in TeV units.  The
+ overlap.  The \exmp{xunit} keyword specifies the bin
+ coordinate units; in this case, the bin coordinates give the
+ photon energy in TeV.  The next two columns contain the flux
+ in \exmp{photons/s/cm^2} and the associated uncertainty, 
+ assumed to be symmetric. Lines beginning with a semicolon (;)
+ define various keywords recognized by \isis. The
  \exmp{exposure} keyword specifies a nominal exposure time of
  one second.  
  
  Note that the \exmp{bintype} keyword labels the data as
- ``counts'' in spite of the fact that the spectral values are
- given in flux units.  This subterfuge allows us to
- simultaneously fit X-ray data (in counts) with gamma-ray data
- (in flux units). But to make it work, we have to explicitly
- turn off one of the normal data-input validation checks. By
- default, when \isis reads counts spectra, it requires that the
- uncertainty in the number of counts in each bin be larger than
- one. If the input data do not satisfy this criterion, \isis
- replaces the input uncertainties with acceptable values.  To
- keep \isis from modifying our input uncertainties in this way,
- we set the intrinsic variable \exmp{Minimum_Stat_Err} to a
- small positive value (smaller than any of the input
- uncertainties).
+ ``counts'' even though the spectral values are given in flux
+ units.  This subterfuge allows us to simultaneously fit X-ray
+ data (in counts) and gamma-ray data (in flux units). However,
+ to make this work, we must remember to turn off one of the
+ normal data-input validation tests. By default, when \isis
+ reads counts spectra, it requires that the uncertainty in the
+ number of counts be greater than or equal to one. If the input
+ data do not satisfy this requirement, \isis replaces the 
+ relevant input uncertainties with acceptable values.  To keep
+ \isis from modifying our input uncertainties in this way, we
+ set the intrinsic variable \ivar{Minimum_Stat_Err} to a small
+ positive value (smaller than any of the input uncertainties).
  
  Having converted the Cas A HEGRA spectrum into the above
  format, we can load the data into isis:
@@ -214,10 +227,10 @@
    fit_fun ("invc(1, default(1)) + pizero(1, default(2))");
 #v-
  Note that two particle distribution functions appear in this
- spectral model. One, \exmp{default(1)}, refers to the
- nonthermal electron momentum distribution and the other,
- \exmp{default(2)}, refers to the nonthermal proton
- distribution.
+ spectral model. The inverse Compton component uses
+ \ifun{default(1)} to define the electron momentum distribution
+ and the neutral-pion decay component uses \ifun{default(2)} to
+ define the proton momentum distribution.
 
 \chapter{Spectral Models Reference}
 #i rtl/models.tm
