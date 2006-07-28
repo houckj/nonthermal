@@ -232,7 +232,7 @@
  and the neutral-pion decay component uses \ifun{default(2)} to
  define the proton momentum distribution.
 
-\chapter{User-Defined Distribution Functions}
+\chapter{User-Defined Particle Distribution Functions}
 
 Although the module provides several different particle
 distribution function parameterizations (see the next section),
