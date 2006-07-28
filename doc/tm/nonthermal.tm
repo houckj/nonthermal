@@ -89,9 +89,8 @@
  effect of different particle distribution functions.
             
  XSPEC includes the synchrotron models SRCUT and SRESC, but
- these models are based on a specific particle distribution
- function, namely a power-law distribution of electrons with an
- exponential cut-off.
+ these models are based on a fixed particle distribution
+ function parameterization.
  
  By implementing the necessary spectral models in a form
  accessible to the ISIS spectral analysis system, we gain the
