@@ -185,20 +185,20 @@
    1.258409e+01    2.001003e+01    1.804125e-15    3.373713e-15
 #v-
  Details of this format are described in the
- \isis-documentation.  Lines beginning with a \exmp{#} symbol
+ \isis-documentation.  Lines beginning with a '\exmp{#}' symbol
  are ignored and may be used to insert comments.  The first two
  columns define the lower and upper edges of histogram bins.
  The bins must be in monotonic increasing order and may not
- overlap.  The \exmp{xunit} keyword specifies the bin
+ overlap.  The '\exmp{xunit}' keyword specifies the bin
  coordinate units; in this case, the bin coordinates give the
  photon energy in TeV.  The next two columns contain the flux
  in \exmp{photons/s/cm^2} and the associated uncertainty, 
  assumed to be symmetric. Lines beginning with a semicolon (;)
  define various keywords recognized by \isis. The
- \exmp{exposure} keyword specifies a nominal exposure time of
+ '\exmp{exposure}' keyword specifies a nominal exposure time of
  one second.  
  
- Note that the \exmp{bintype} keyword labels the data as
+ Note that the '\exmp{bintype}' keyword labels the data as
  ``counts'' even though the spectral values are given in flux
  units.  This subterfuge allows us to simultaneously fit X-ray
  data (in counts) and gamma-ray data (in flux units). However,
@@ -232,8 +232,23 @@
  and the neutral-pion decay component uses \ifun{default(2)} to
  define the proton momentum distribution.
 
+\chapter{User-Defined Distribution Functions}
+
+Although the module provides several different particle
+distribution function parameterizations (see the next section),
+it is possible to use a user-defined particle distribution
+function. Such a distribution function may be implemented in a
+compiled language such as C or Fortran, compiled as a shared
+library, and then imported into \isis at run-time via dynamic
+linking. An example of a user-defined particle distribution
+function is provided in the '\exmp{examples}' subdirectory of the
+module source-code distribution.
+
 \chapter{Spectral Models Reference}
 #i rtl/models.tm
+
+\chapter{Built-In Distribution Functions Reference}
+#i rtl/pdfs.tm
 
 \chapter{Function Reference}
 #i nonthermalfuns.tm

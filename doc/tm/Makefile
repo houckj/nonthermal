@@ -9,7 +9,7 @@ SL2TM = sl2tm
 MACRODIR = $(TMDIST)/share/tmexpand
 
 MODULE = nonthermal
-AUTOGEN_TM = nonthermalfuns.tm
+AUTOGEN_TM = nonthermalfuns.tm rtl/pdfs.tm
 MODULE_DEPS = rtl/models.tm rtl/tables.tm $(AUTOGEN_TM)
 HLPFUNS_TM = $(MODULE_DEPS)
 
@@ -42,6 +42,8 @@ SRCDIR = `pwd`
 all: $(SGML_FILES) $(HTML_FILES) $(TEX_FILES) $(TXT_FILES)
 nonthermalfuns.tm:	../../lib/nonthermal.sl
 	$(SL2TM) ../../lib/nonthermal.sl > nonthermalfuns.tm
+rtl/pdfs.tm:	../../src/particle_spectrum.c
+	$(SL2TM) ../../src/particle_spectrum.c > rtl/pdfs.tm
 text-files: $(TXT_FILES)
 #----- SGML Files -----------------------------------------------------------
 $(MODULE).sgml : $(MODULE).tm $(MODULE_DEPS)
