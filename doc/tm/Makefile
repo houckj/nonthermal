@@ -23,9 +23,9 @@ HLP_FILE = $(MODULE).hlp
 
 HLP_TM_FILE = helpfile.tm
 
-SGML2LATEX = sgml2latex -p letter -o tex
-SGML2HTML = sgml2html
-SGML2TXT = sgml2txt -f
+SGML2LATEX = linuxdoc -B latex -p letter #sgml2latex -p letter -o tex
+SGML2HTML = linuxdoc -B html #sgml2html
+SGML2TXT = linuxdoc -B txt #sgml2txt -f
 LATEX = latex
 PDFLATEX = pdflatex
 
