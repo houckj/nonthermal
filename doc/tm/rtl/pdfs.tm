@@ -14,9 +14,10 @@
 #v-
  where
 #v+
-   f(p,a) = -index + curvature * log10(p/p0)
+   f(p,a) = -index + curvature * log10(p/p0),  p>p0
+   f(p,a) = -index,                            p<=p0
 #v-
- and where the value of \tt{p0} is determined by the value
+ The value of \tt{p0} is determined by the value
  of \ivar{Min_Curvature_Pc}=1 GeV by default.
 
  The fit parameters are

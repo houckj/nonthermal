@@ -1,17 +1,14 @@
-%quit_jed;
-!if (is_defined ("__argv"))
+#!/usr/bin/env jed-script
+
+% Version 0.3.2-0
+
+if (__argc != 2)
 {
-   message ("You need a newer version of jed to run this script");
+   message ("Usage: ./fixtex.sl <filename>");
    quit_jed ();
 }
 
-if (__argc != 4)
-{
-   message ("Usage: jed -script fixtex.sl <filename>");
-   quit_jed ();
-}
-
-variable file = __argv[3];
+variable file = __argv[1];
 () = read_file (file);
 
 % Patch up the >,< signs
@@ -68,15 +65,66 @@ static define fixup_urldefs ()
 	() = ffind ("\\url");
 	go_left (1);
 	trim ();
-	insert("{");eol(); insert("}");
-	insert ("\n\\else\n");
+	insert("{");
+
+	% pdflatex cannot grok # in urls.  Nuke em.
+	if (ffind ("#"))
+	  {
+	     del_eol ();
+	     insert ("}");
+	  }
+	eol ();
+	insert ("}\n\\else\n");
 	insert (line); newline ();
-	%insert ("\\newcommand"); insert(macro); insert("}{}\n");
 	insert ("\\fi\n");
      }
 }
 
+static define remove_repeated_urls ()
+{
+   variable name, url;
+   variable names = Assoc_Type[Int_Type, 0];
+   while (bol_fsearch ("{\\em "))
+     {
+	go_right (4);
+	skip_white ();
+	push_mark ();
+	() = ffind ("}");
+	!if (looking_at ("} {\\tt "))
+	  {
+	     pop_mark(0); 
+	     continue;
+	  }
+	name = bufsubstr ();
+	if (names[name])
+	  {
+	     go_right(1);
+	     push_mark ();
+	     () = ffind ("}");
+	     go_right(1);
+	     del_region ();
+	  }
+	else
+	  {
+	     names[name] = 1;
+	     go_right(1);
+	     () = ffind ("}");
+	     go_right (1);
+	  }
+
+	% Now remove empty lines inserted by the broken sgml2latex program.
+	skip_white ();
+	!if (eolp ())
+	  continue;
+	go_right(1);
+	skip_white ();
+	if (eolp ())
+	  del ();
+     }
+}
+
 fixup_urldefs ();
+remove_repeated_urls ();
 save_buffer ();
 quit_jed ();
 
