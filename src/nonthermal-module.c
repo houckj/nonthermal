@@ -148,6 +148,8 @@ static double particle_distrib (double *pc, unsigned int *type) /*{{{*/
    Particle_Type pt;
    double f;
 
+   memset ((char *)&pt, 0, sizeof(pt));
+
    if (-1 == init_pdf (&pt, *type))
      {
         SLang_set_error (SL_INTRINSIC_ERROR);
