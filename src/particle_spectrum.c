@@ -322,6 +322,55 @@ static int pdf_mori (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 
 /*}}}*/
 
+static double min_boltz_momentum (Particle_Type *pt) /*{{{*/
+{
+   (void) pt;
+   return 0.0;
+}
+
+/*}}}*/
+
+static double max_boltz_momentum (Particle_Type *pt) /*{{{*/
+{
+   double kT, a;
+   kT = pt->params[0] * KEV;
+   a = 2 * pt->mass * kT;
+   return 20 * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+}
+
+/*}}}*/
+
+static int pdf_boltz (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
+{
+   double a, x, p, kT;
+
+   if (pt == NULL || ne == NULL)
+     return -1;
+   
+   /* params:  [kT_kev] */
+   if (pt->num_params != 1)
+     return -1;
+
+   kT = pt->params[0] * KEV;
+   if (kT <= 0.0)
+     return 0.0;
+
+   *ne = 0.0;
+
+   p = pc / GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   a = 2 * pt->mass * kT;
+   x = (p*p) / a;
+
+   if (x < 0.0 || 500.0 < x)
+     return 0.0;
+
+   *ne = 2 * M_2_SQRTPI * x * exp (-x) / sqrt (a) / GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   return 0;
+}
+
+/*}}}*/
+
 static int init_pdf_params1 (Particle_Type *pt, unsigned int type, /*{{{*/
                             double *pars, unsigned int num_pars)
 {
@@ -374,6 +423,7 @@ static struct Particle_Type Particle_Methods[] =
    PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum),
    PARTICLE_METHOD("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum),
    PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum),
+   PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum),
    NULL_PARTICLE_TYPE
 };
 

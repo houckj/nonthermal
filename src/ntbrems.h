@@ -20,18 +20,21 @@
 #ifndef NTBREMS_H
 #define NTBREMS_H
 
-typedef struct
+typedef struct Brems_Type Brems_Type;
+struct Brems_Type
 {
-   Particle_Type *electrons;
+   Particle_Type *electrons;  /* relativistic electrons */
+   Particle_Type *e_target;   /* non-relativistic */
+   Particle_Type *i_target;   /* non-relativistic */
    double photon_energy;
    double ee_weight;
    double ep_weight;
-   void *client_data;
+   double pc_t, pc_r;         /* momenta */
    int interpolate;
-}
-Brems_Type;
+   void *client_data;
+};
 
-#define NULL_BREMS_TYPE  {NULL,0.0,0.0,0.0,NULL,0}
+#define NULL_BREMS_TYPE  {NULL,NULL,NULL,0.0,0.0,0.0,0.0,0.0,0,NULL}
 
 enum
 {
@@ -65,7 +68,7 @@ extern double _ntb_ee_sigma_haug_lab (double electron_kinetic_energy, double pho
 
 
 extern double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy);
-
-extern int ntb_brems (void *vs, double photon_energy, double *emissivity);
+extern int ntb_brems_stationary (void *vs, double photon_energy, double *emissivity);
+extern int ntb_brems_non_stationary (void *vs, double photon_energy, double *emissivity);
 
 #endif

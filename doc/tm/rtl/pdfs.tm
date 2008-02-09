@@ -122,3 +122,14 @@
 #% \notes
  \seealso{add_pdf}
 \done
+
+ \function{boltz}
+ \synopsis{Non-relativistic Maxwell-Boltzman Distribution}
+ \usage{boltz(id)}
+ \description
+ The only fit parameter is the temperature, \ivar{kT},
+ in keV.
+#% \example
+#% \notes
+ \seealso{add_pdf}
+\done

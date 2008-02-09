@@ -259,6 +259,11 @@ private define init_pdfs () %{{{
                    [2.0, 0.0, 10.0, 1.0], [0, 1, 0, 1],
                    [1.0, -1.0, 1.0, 0.0],
                    [3.0, 1.0, 1.e2, 1.e2]);
+
+   add_pdf_fitfun ("boltz", ["kT [keV]"],
+                   [1.0], [0],
+                   [0.0],
+                   [10.0]);
 }
 
 %}}}
@@ -344,6 +349,7 @@ private define nonthermal_init () %{{{
    add_function ("sync", _sync_table_file());
    add_function ("invc", _invc_table_file());
    add_function ("ntbrem", _ntbrem_table_file());
+   add_function ("ntbrem2", _ntbrem_table_file());
    add_function ("pizero");
 
    init_pdfs();

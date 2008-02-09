@@ -98,7 +98,7 @@ int init_pdf (Particle_Type *p, unsigned int type) /*{{{*/
 static int pop_density_info (Density_Info *di) /*{{{*/
 {
    Particle_Type *p = &di->particle;
-   int particle_type;
+   SLtype particle_type;
 
    if (-1 == SLang_pop_double (&di->n_th)
        || -1 == SLang_pop_double (&di->kT)
@@ -643,7 +643,7 @@ static SLang_Intrin_Var_Type Intrin_Variables [] =
 {
    MAKE_VARIABLE("_nonthermal_module_version_string", &Module_Version_String, SLANG_STRING_TYPE, 1),
    MAKE_VARIABLE("_nonthermal_install_prefix", &Module_Install_Prefix, SLANG_STRING_TYPE, 1),
-   MAKE_VARIABLE("_nonthermal_curvature_momentum_gev", &Min_Curvature_Pc, SLANG_DOUBLE_TYPE, 0),
+   MAKE_VARIABLE("_nonthermal_curvature_momentum_gev", &Min_Curvature_Pc, SLANG_DOUBLE_TYPE, 0),   
    SLANG_END_INTRIN_VAR_TABLE
 };
 
