@@ -1,6 +1,6 @@
 /* -*- mode: C; mode: fold -*- */
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006 John C. Houck
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
