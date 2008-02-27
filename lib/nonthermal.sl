@@ -264,6 +264,11 @@ private define init_pdfs () %{{{
                    [1.0], [0],
                    [0.0],
                    [10.0]);
+
+   add_pdf_fitfun ("rboltz", ["kT [keV]"],
+                   [1.0e3], [0],
+                   [0.0],
+                   [1.0e9]);
 }
 
 %}}}
