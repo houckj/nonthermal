@@ -540,42 +540,6 @@ static void _ntb_free_client_data (void) /*{{{*/
 
 /*}}}*/
 
-static int init_brem_non_stationary (double *par, unsigned int npar, Brems_Type *b, Particle_Type *elec, /*{{{*/
-                                     Particle_Type *etarg, Particle_Type *itarg) 
-{
-   (void) par; (void) npar;
-
-   if (-1 == init_pdf (elec, ELECTRON))
-     {
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return -1;
-     }
-
-   if (-1 == init_pdf (etarg, ELECTRON))
-     {
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return -1;
-     }
-
-   if (-1 == init_pdf (itarg, PROTON))
-     {
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return -1;
-     }
-
-   b->electrons = elec;
-   b->e_target = etarg;
-   b->i_target = itarg;
-   b->ee_weight = Ntb_ee_weight;
-   b->ep_weight = Ntb_ep_weight;
-   b->client_data = ntb_client_data;
-   b->interpolate = Ntb_Interpolate;
-
-   return 0;
-}
-
-/*}}}*/
-
 static int init_brem_stationary (double *par, unsigned int npar, Brems_Type *b, Particle_Type *elec) /*{{{*/
 {
    (void) par; (void) npar;
@@ -599,27 +563,6 @@ static int init_brem_stationary (double *par, unsigned int npar, Brems_Type *b, 
 
 /*}}}*/
 
-static int binned_brem_non_stationary (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
-{
-   Brems_Type b = NULL_BREMS_TYPE;
-   Particle_Type elec = NULL_PARTICLE_TYPE;
-   Particle_Type etarg = NULL_PARTICLE_TYPE;
-   Particle_Type itarg = NULL_PARTICLE_TYPE;
-   int status;
-
-   if (-1 == init_brem_non_stationary (par, npar, &b, &elec, &etarg, &itarg))
-     return -1;
-
-   status = _nt_binned_contin ((void *)&b, &ntb_brems_non_stationary, val, g, par, npar);
-   free_pdf (&elec);
-   free_pdf (&etarg);
-   free_pdf (&itarg);
-
-   return status;
-}
-
-/*}}}*/
-
 static int binned_brem_stationary (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
 {
    Brems_Type b = NULL_BREMS_TYPE;
@@ -631,27 +574,6 @@ static int binned_brem_stationary (double *val, Isis_Hist_t *g, double *par, uns
 
    status = _nt_binned_contin ((void *)&b, &ntb_brems_stationary, val, g, par, npar);
    free_pdf (&elec);
-
-   return status;
-}
-
-/*}}}*/
-
-static int unbinned_brem_non_stationary (double *val, Isis_User_Grid_t *g, double *par, unsigned int npar) /*{{{*/
-{
-   Brems_Type b = NULL_BREMS_TYPE;
-   Particle_Type elec = NULL_PARTICLE_TYPE;
-   Particle_Type etarg = NULL_PARTICLE_TYPE;
-   Particle_Type itarg = NULL_PARTICLE_TYPE;
-   int status;
-
-   if (-1 == init_brem_non_stationary (par, npar, &b, &elec, &etarg, &itarg))
-     return -1;
-
-   status = _nt_contin ((void *)&b, &ntb_brems_non_stationary, val, g, par, npar);
-   free_pdf (&elec);
-   free_pdf (&etarg);
-   free_pdf (&itarg);
 
    return status;
 }
@@ -894,35 +816,6 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
    p->function_exit = NULL;
    p->binned = binned_brem_stationary;
    p->unbinned = unbinned_brem_stationary;
-   p->parameter_names = (char **)parameter_names;
-   p->parameter_units = (char **) parameter_units;
-   p->default_max = default_max;
-   p->default_value = default_value;
-   p->default_min = default_min;
-   p->default_freeze = default_freeze;
-   p->norm_indexes = norm_indexes;
-   p->num_norms = 1;
-
-   _ntb_init_client_data (options);
-
-   return 0;
-}
-
-/*}}}*/
-
-ISIS_USER_SOURCE_MODULE(ntbrem2,p,options) /*{{{*/
-{
-   static const char *parameter_names[] = {"norm", NULL};
-   static const char *parameter_units[] = {"cm^-2 GeV^-1", NULL};
-   static double default_max[]   = {1.e10};
-   static double default_value[] = { 1.0};
-   static double default_min[]   = { 0.0};
-   static unsigned int default_freeze[] = {0};
-   static unsigned int norm_indexes[] = {0};
-
-   p->function_exit = NULL;
-   p->binned = binned_brem_non_stationary;
-   p->unbinned = unbinned_brem_non_stationary;
    p->parameter_names = (char **)parameter_names;
    p->parameter_units = (char **) parameter_units;
    p->default_max = default_max;

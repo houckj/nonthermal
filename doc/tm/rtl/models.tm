@@ -142,36 +142,8 @@ where
   electron-proton bremsstrahlung are controlled by the
   \ifun{ntb_set_process_weights} function.
 
-\seealso{ntb_set_process_weights,_ee_haug1,_ee_haug1_lab,ntbrem2}
+\seealso{ntb_set_process_weights,_ee_haug1,_ee_haug1_lab}
 \done
-
-\function{ntbrem2}
-\synopsis{Nonthermal bremsstrahlung spectrum model}
-\usage{ntbrem2(Int_Type i, String_Type p_pdf_name, Double_Type
-pdf_params[], String_Type e_pdf_name, Double_Type pdf_params[],
-String_Type pdf_name, Double_Type pdf_params[])}
-\description
-  The \ifun{ntbrem2} function computes the nonthermal
-  bremsstrahlung spectrum for a specified nonthermal particle
-  distribution function and specified distribution functions
-  for the target electrons and protons.  As long as the
-  target speeds are small compared to the incident nonthermal
-  particle speed, the target motion matters only for photon
-  energies less than the target kinetic energy.
-  
-  To use this function, provide the distribution functions
-  for the target particles as additional arguments.  For 
-  example:
-#v+
-    ntbrem2 (1, boltz(2), boltz(1), default(1))
-#v-
-  where the target proton distribution is \ifun{boltz(2)},
-  the target electron distribution is \ifun{boltz(1)},
-  and the incident nonthermal particle distribution function
-  is \ifun{default(1)}.
-\seealso{ntbrem}
-\done
-
 
 \function{pizero}
 \synopsis{Neutral-pion decay spectrum model}

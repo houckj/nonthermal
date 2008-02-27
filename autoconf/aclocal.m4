@@ -7,7 +7,7 @@ AC_DEFUN(JD_INIT,     dnl#{{{
 CONFIG_DIR=`pwd`
 cd $srcdir
 if test "`pwd`" != "$CONFIG_DIR"
-then 
+then
   AC_MSG_ERROR("This software does not support configuring from another directory.   See the INSTALL file")
 fi
 dnl# if test "X$PWD" != "X"
@@ -27,7 +27,7 @@ JD_Above_Dir2=`cd ..;pwd`
 dnl#}}}
 
 dnl# This function expand the "prefix variables.  For example, it will expand
-dnl# values such as ${exec_prefix}/foo when ${exec_prefix} itself has a 
+dnl# values such as ${exec_prefix}/foo when ${exec_prefix} itself has a
 dnl# of ${prefix}.  This function produces the shell variables:
 dnl# jd_prefix_libdir, jd_prefix_incdir
 AC_DEFUN(JD_EXPAND_PREFIX, dnl#{{{
@@ -44,7 +44,7 @@ AC_DEFUN(JD_EXPAND_PREFIX, dnl#{{{
     then
       jd_exec_prefix="$exec_prefix"
     fi
-  
+
     dnl#Unfortunately, exec_prefix may have a value like ${prefix}, etc.
     dnl#Let the shell expand those.  Yuk.
     eval `sh <<EOF
@@ -126,7 +126,7 @@ AC_DEFUN(JD_SET_RPATH, dnl#{{{
 if test "X$1" != "X"
 then
   if test "X$RPATH" = "X"
-  then 
+  then
     JD_INIT_RPATH
     if test "X$RPATH" != "X"
     then
@@ -173,7 +173,6 @@ AC_SUBST(JD_UP_NAME[]_INCLUDE)dnl
 undefine([JD_UP_NAME])dnl
 ])
 
-
 dnl#}}}
 
 AC_DEFUN(JD_FIND_GENERIC, dnl#{{{
@@ -203,7 +202,7 @@ then
  JD_Search_Dirs="$JD_Search_Dirs $HOME/include,$HOME/sys/$ARCH/lib"
 fi
 
-# Now add the standard system includes.  The reason for doing this is that 
+# Now add the standard system includes.  The reason for doing this is that
 # the other directories may have a better chance of containing a more recent
 # version.
 
@@ -243,7 +242,7 @@ if test -n "[$]JD_UP_NAME[]_LIB_DIR"
 then
     jd_have_$1="yes"
 else
-    echo Unable to find the $JD_UP_NAME library.  
+    echo Unable to find the $JD_UP_NAME library.
     echo You may have to edit $CONFIG_DIR/src/Makefile.
     JD_UP_NAME[]_INCLUDE=$JD_Above_Dir/$1/src
     JD_UP_NAME[]_LIB_DIR=$JD_Above_Dir/$1/src/"$ARCH"objs
@@ -281,7 +280,6 @@ dnl AC_SUBST(RPATH_[]JD_UP_NAME)dnl
 undefine([JD_UP_NAME])dnl
 ])
 
-
 dnl#}}}
 
 AC_DEFUN(JD_FIND_SLANG, dnl#{{{
@@ -309,7 +307,6 @@ then
 fi
 ])
 
-
 dnl#}}}
 
 IEEE_CFLAGS=""
@@ -328,7 +325,6 @@ case "$host_cpu" in
     IEEE_CFLAGS=""
 esac
 ])
-
 
 dnl#}}}
 
@@ -350,11 +346,10 @@ PROGRAM_ELF_ORULES="$PROGRAM_ELF_ORULES
 "
 ])
 
-
 dnl#}}}
 
 AC_DEFUN(JD_CREATE_EXEC_RULE, dnl#{{{
-[  
+[
 PROGRAM_OBJECT_RULES="$PROGRAM_OBJECT_RULES
 $1 : \$(OBJDIR)/$1
 	@echo $1 created in \$(OBJDIR)
@@ -364,7 +359,6 @@ $1 : \$(OBJDIR)/$1
 	cd \$(OBJDIR); \$(COMPILE_CMD) \$("$1"_INC) \$(EXECINC) \$(SRCDIR)/$1.c
 "
 ])
-
 
 dnl#}}}
 
@@ -413,19 +407,17 @@ AC_SUBST(PROGRAM_OBJECTS)dnl
 AC_SUBST(PROGRAM_ELFOBJECTS)dnl
 ])
 
-
 dnl#}}}
 
 AC_DEFUN(JD_APPEND_RULES, dnl#{{{
-[ 
+[
  echo "$PROGRAM_OBJECT_RULES" >> $1
 ])
-
 
 dnl#}}}
 
 AC_DEFUN(JD_APPEND_ELFRULES, dnl#{{{
-[ 
+[
  echo "$PROGRAM_ELF_ORULES" >> $1
 ])
 
@@ -459,7 +451,7 @@ TERMCAP=-ltermcap
 
 for terminfo_dir in $JD_Terminfo_Dirs
 do
-   if test -d $terminfo_dir 
+   if test -d $terminfo_dir
    then
       AC_MSG_RESULT(yes)
       TERMCAP=""
@@ -473,7 +465,6 @@ fi
 AC_SUBST(TERMCAP)dnl
 AC_SUBST(MISC_TERMINFO_DIRS)dnl
 ])
-
 
 dnl#}}}
 
@@ -552,6 +543,7 @@ case "$host_os" in
     ELF_LINK_CMD="\$(ELF_LINK),\$(ELFLIB_MAJOR)"
     ELF_DEP_LIBS="\$(DL_LIB) -lm -lc"
     CC_SHARED="\$(CC) \$(CFLAGS) -shared -fPIC"
+    ELF_FC_FCFLAGS="-fPIC"
     ;;
   *solaris* )
     if test "$GCC" = yes
@@ -563,6 +555,7 @@ case "$host_os" in
       ELF_LINK_CMD="\$(ELF_LINK),\$(ELFLIB_MAJOR)"
       ELF_DEP_LIBS="\$(DL_LIB) -lm -lc"
       CC_SHARED="\$(CC) \$(CFLAGS) -G -fPIC"
+      ELF_FC_FCFLAGS="-fPIC"
     else
       DYNAMIC_LINK_FLAGS=""
       ELF_CC="\$(CC)"
@@ -570,7 +563,8 @@ case "$host_os" in
       ELF_LINK="\$(CC) \$(LDFLAGS) -G -h#"
       ELF_LINK_CMD="\$(ELF_LINK)\$(ELFLIB_MAJOR)"
       ELF_DEP_LIBS="\$(DL_LIB) -lm -lc"
-      CC_SHARED="\$(CC) \$(CFLAGS) -G -K PIC"
+      CC_SHARED="\$(CC) \$(CFLAGS) -G -KPIC"
+      ELF_FC_FCFLAGS="-KPIC"
     fi
     ;;
    # osr5 or unixware7 with current or late autoconf
@@ -584,6 +578,7 @@ case "$host_os" in
        ELF_LINK_CMD="\$(ELF_LINK),\$(ELFLIB_MAJOR)"
        ELF_DEP_LIBS=
        CC_SHARED="\$(CC) \$(CFLAGS) -G -fPIC"
+       ELF_FC_FCFLAGS="-fPIC"
      else
        DYNAMIC_LINK_FLAGS=""
        ELF_CC="\$(CC)"
@@ -592,7 +587,8 @@ case "$host_os" in
        ELF_LINK="\$(CC) \$(LDFLAGS) -G -z text -h#"
        ELF_LINK_CMD="\$(ELF_LINK)\$(ELFLIB_MAJOR)"
        ELF_DEP_LIBS=
-       CC_SHARED="\$(CC) \$(CFLAGS) -G -K pic"
+       CC_SHARED="\$(CC) \$(CFLAGS) -G -Kpic"
+       ELF_FC_FCFLAGS="-Kpic"
      fi
      ;;
   *irix6.5* )
@@ -608,6 +604,7 @@ case "$host_os" in
        ELF_LINK_CMD="\$(ELF_LINK),\$(ELFLIB_MAJOR)"
        ELF_DEP_LIBS=
        CC_SHARED="\$(CC) \$(CFLAGS) -shared -fPIC"
+       ELF_FC_FCFLAGS="-fPIC"
      else
        DYNAMIC_LINK_FLAGS=""
        ELF_CC="\$(CC)"
@@ -615,7 +612,8 @@ case "$host_os" in
        ELF_LINK="\$(CC) \$(LDFLAGS) -shared -o #"
        ELF_LINK_CMD="\$(ELF_LINK)\$(ELFLIB_MAJOR)"
        ELF_DEP_LIBS=
-       CC_SHARED="\$(CC) \$(CFLAGS) -shared -K pic"
+       CC_SHARED="\$(CC) \$(CFLAGS) -shared -Kpic"
+       ELF_FC_FCFLAGS="-Kpic"
      fi
      ;;
   *darwin* )
@@ -629,6 +627,7 @@ case "$host_os" in
      ELFLIB="lib\$(THIS_LIB).dylib"
      ELFLIB_MAJOR="lib\$(THIS_LIB).\$(ELF_MAJOR_VERSION).dylib"
      ELFLIB_MAJOR_MINOR="lib\$(THIS_LIB).\$(ELF_MAJOR_VERSION).\$(ELF_MINOR_VERSION).dylib"
+     ELF_FC_FCFLAGS=""     
      ;;
   *freebsd* )
     ELFLIB_MAJOR_MINOR="\$(ELFLIB).\$(ELF_MAJOR_VERSION)"
@@ -642,6 +641,7 @@ case "$host_os" in
     ELF_LINK_CMD="\$(ELF_LINK)"
     ELF_DEP_LIBS="\$(DL_LIB) -lm"
     CC_SHARED="\$(CC) \$(CFLAGS) -shared -fPIC"
+    ELF_FC_FCFLAGS="-fPIC"
     ;;
   * )
     echo "Note: ELF compiler for host_os=$host_os may be wrong"
@@ -651,6 +651,7 @@ case "$host_os" in
     ELF_LINK_CMD="\$(ELF_LINK)"
     ELF_DEP_LIBS="\$(DL_LIB) -lm -lc"
     CC_SHARED="\$(CC) \$(CFLAGS) -shared -fPIC"
+    ELF_FC_FCFLAGS="-fPIC"
 esac
 
 AC_SUBST(ELF_CC)
@@ -658,6 +659,7 @@ AC_SUBST(ELF_CFLAGS)
 AC_SUBST(ELF_LINK)
 AC_SUBST(ELF_LINK_CMD)
 AC_SUBST(ELF_DEP_LIBS)
+AC_SUBST(ELF_FC_FCFLAGS)
 AC_SUBST(DYNAMIC_LINK_FLAGS)
 AC_SUBST(CC_SHARED)
 AC_SUBST(ELFLIB)
@@ -665,33 +667,30 @@ AC_SUBST(ELFLIB_MAJOR)
 AC_SUBST(ELFLIB_MAJOR_MINOR)
 ])
 
-
 dnl#}}}
 
-AC_DEFUN(JD_F77_COMPILER, dnl#{{{
+AC_DEFUN(JD_FC_COMPILER, dnl#{{{
 [
 case "$host_os" in
  *linux* )
-   F77="g77"
-   F77_LIBS="-lg2c"
+   FC="g77"
+   FC_LIBS="-lg2c"
  ;;
  *solaris*)
-   F77=f77
-   #F77_LIBS="-lF77 -lM77 -L/opt/SUNWspro/SC4.0/lib -lsunmath"
-   F77_LIBS="-lF77 -lM77 -lsunmath"
+   FC=f77
+   #FC_LIBS="-lFC -lM77 -L/opt/SUNWspro/SC4.0/lib -lsunmath"
+   FC_LIBS="-lFC -lM77 -lsunmath"
    ;;
  *)
    echo ""
    echo "WARNING: Assuming f77 as your FORTRAN compiler"
    echo ""
-   F77=f77
-   F77_LIBS=""
+   FC=f77
+   FC_LIBS=""
 esac
-AC_SUBST(F77)
-AC_SUBST(F77_LIBS)
+AC_SUBST(FC)
+AC_SUBST(FC_LIBS)
 ])
-
-
 
 dnl#}}}
 
@@ -709,7 +708,7 @@ AC_DEFUN(JD_WITH_LIBRARY_PATHS, dnl#{{{
  AC_ARG_WITH($1,
   [  --with-$1=DIR      Use DIR/lib and DIR/include for $1],
   [jd_with_$1_arg=$withval], [jd_with_$1_arg=unspecified])
-  
+
  case "x$jd_with_$1_arg" in
    xno)
      jd_with_$1_library="no"
@@ -743,7 +742,7 @@ AC_DEFUN(JD_WITH_LIBRARY_PATHS, dnl#{{{
     ;;
  esac
 
- AC_ARG_WITH($1inc, 
+ AC_ARG_WITH($1inc,
   [  --with-$1inc=DIR   $1 include files in DIR],
   [jd_with_$1inc_arg=$withval], [jd_with_$1inc_arg=unspecified])
  case "x$jd_with_$1inc_arg" in
@@ -763,8 +762,8 @@ dnl#}}}
 
 dnl# This function checks for the existence of the specified library $1 with
 dnl# header file $2.  If the library exists, then the shell variables will
-dnl# be created: 
-dnl#  jd_with_$1_library=yes/no, 
+dnl# be created:
+dnl#  jd_with_$1_library=yes/no,
 dnl#  jd_$1_inc_file
 dnl#  jd_$1_include_dir
 dnl#  jd_$1_library_dir
@@ -796,7 +795,7 @@ AC_DEFUN(JD_CHECK_FOR_LIBRARY, dnl#{{{
   	  /opt/include/$1 \
   	  /opt/$1/include \
   	  /opt/include"
-  
+
        for X in $lib_include_dirs
        do
           if test -r "$X/$jd_$1_inc_file"
@@ -810,7 +809,7 @@ AC_DEFUN(JD_CHECK_FOR_LIBRARY, dnl#{{{
          jd_with_$1_library="no"
        fi
     fi
-   
+
     if test X"$jd_$1_library_dir" = X
     then
        lib_library_dirs="\
@@ -824,7 +823,7 @@ AC_DEFUN(JD_CHECK_FOR_LIBRARY, dnl#{{{
   	  /opt/lib \
   	  /opt/lib/$1 \
   	  /opt/$1/lib"
-  
+
        for X in $lib_library_dirs
        do
         if test -r "$X/lib$1.so" -o -r "$X/lib$1.a"
@@ -964,88 +963,88 @@ AC_DEFUN(JD_HAVE_ISINF, dnl#{{{
 ])
 #}}}
 
-AC_DEFUN(JH_APPEND_F77_RULES, dnl#{{{
+AC_DEFUN(JH_APPEND_FC_RULES, dnl#{{{
 [
- echo "$PROGRAM_F77_OBJECT_RULES" >> $1
- PROGRAM_F77_OBJECT_RULES=""
+ echo "$PROGRAM_FC_OBJECT_RULES" >> $1
+ PROGRAM_FC_OBJECT_RULES=""
 ])
 dnl#}}}
 
-AC_DEFUN(JH_APPEND_F77_ELFRULES, dnl#{{{
+AC_DEFUN(JH_APPEND_FC_ELFRULES, dnl#{{{
 [
- echo "$PROGRAM_F77_ELF_ORULES" >> $1
- PROGRAM_F77_ELF_ORULES=""
+ echo "$PROGRAM_FC_ELF_ORULES" >> $1
+ PROGRAM_FC_ELF_ORULES=""
 ])
 
 dnl#}}}
 
-AC_DEFUN(JH_CREATE_F77_ORULE, dnl#{{{
+AC_DEFUN(JH_CREATE_FC_ORULE, dnl#{{{
 [
-PROGRAM_F77_OBJECT_RULES="$PROGRAM_F77_OBJECT_RULES
+PROGRAM_FC_OBJECT_RULES="$PROGRAM_FC_OBJECT_RULES
 \$(OBJDIR)/$1.o : \$(SRCDIR)/$1.f \$(DOT_O_DEPS) \$("$1"_O_DEP)
-	cd \$(OBJDIR); \$(F77_COMPILE_CMD) \$("$1"_F77_FLAGS) \$(SRCDIR)/$1.f
+	cd \$(OBJDIR); \$(FC_COMPILE_CMD) \$("$1"_FC_FLAGS) \$(SRCDIR)/$1.f
 "
 ])
 
 dnl#}}}
 
-AC_DEFUN(JH_CREATE_F77_ELFORULE, dnl#{{{
+AC_DEFUN(JH_CREATE_FC_ELFORULE, dnl#{{{
 [
-PROGRAM_F77_ELF_ORULES="$PROGRAM_F77_ELF_ORULES
+PROGRAM_FC_ELF_ORULES="$PROGRAM_FC_ELF_ORULES
 \$(ELFDIR)/$1.o : \$(SRCDIR)/$1.f \$(DOT_O_DEPS) \$("$1"_O_DEP)
-	cd \$(ELFDIR); \$(F77_ELFCOMPILE_CMD) \$("$1"_F77_FLAGS) \$("$1"_ELF_F77_FLAGS) \$(SRCDIR)/$1.f
+	cd \$(ELFDIR); \$(FC_ELFCOMPILE_CMD) \$("$1"_FC_FLAGS) \$("$1"_ELF_FC_FLAGS) \$(SRCDIR)/$1.f
 "
 ])
 
 dnl#}}}
 
-AC_DEFUN(JH_CREATE_F77_MODULE_ORULES, dnl#{{{
+AC_DEFUN(JH_CREATE_FC_MODULE_ORULES, dnl#{{{
 [
- for program_module in $Program_F77_Modules; do
-   JH_CREATE_F77_ORULE($program_module)
-   JH_CREATE_F77_ELFORULE($program_module)
+ for program_module in $Program_FC_Modules; do
+   JH_CREATE_FC_ORULE($program_module)
+   JH_CREATE_FC_ELFORULE($program_module)
  done
 ])
 
 dnl#}}}
 
-AC_DEFUN(JH_GET_F77_MODULES, dnl#{{{
+AC_DEFUN(JH_GET_FC_MODULES, dnl#{{{
 [
  if test -z "$1"
  then
-   Program_F77_Modules=""
+   Program_FC_Modules=""
  else
-   Program_F77_Modules=`cat $1`
+   Program_FC_Modules=`cat $1`
  fi
- PROGRAM_F77_OFILES=""
- PROGRAM_F77_OBJECTS=""
- PROGRAM_F77_ELFOBJECTS=""
- for program_module in $Program_F77_Modules; do
-   PROGRAM_F77_OFILES="$PROGRAM_F77_OFILES $program_module.o"
-   PROGRAM_F77_OBJECTS="$PROGRAM_F77_OBJECTS \$(OBJDIR)/$program_module.o"
-   PROGRAM_F77_ELFOBJECTS="$PROGRAM_F77_ELFOBJECTS \$(ELFDIR)/$program_module.o"
+ PROGRAM_FC_OFILES=""
+ PROGRAM_FC_OBJECTS=""
+ PROGRAM_FC_ELFOBJECTS=""
+ for program_module in $Program_FC_Modules; do
+   PROGRAM_FC_OFILES="$PROGRAM_FC_OFILES $program_module.o"
+   PROGRAM_FC_OBJECTS="$PROGRAM_FC_OBJECTS \$(OBJDIR)/$program_module.o"
+   PROGRAM_FC_ELFOBJECTS="$PROGRAM_FC_ELFOBJECTS \$(ELFDIR)/$program_module.o"
  done
-AC_SUBST(PROGRAM_F77_OFILES)dnl
-AC_SUBST(PROGRAM_F77_OBJECTS)dnl
-AC_SUBST(PROGRAM_F77_ELFOBJECTS)dnl
+AC_SUBST(PROGRAM_FC_OFILES)dnl
+AC_SUBST(PROGRAM_FC_OBJECTS)dnl
+AC_SUBST(PROGRAM_FC_ELFOBJECTS)dnl
 ])
 
 dnl#}}}
 
-AC_DEFUN(JH_F77_DEFS, dnl#{{{
+AC_DEFUN(JH_FC_DEFS, dnl#{{{
 [
 case "$host_os" in
  *linux* )
-   F77_DEFS="-Dg77Fortran"
+   FC_DEFS="-Dg77Fortran"
  ;;
  *darwin*)
-   F77_DEFS="-Dg77Fortran"
+   FC_DEFS="-Dg77Fortran"
    ;;
  *)
-   F77_DEFS=""
+   FC_DEFS=""
    ;;
 esac
-AC_SUBST(F77_DEFS)
+AC_SUBST(FC_DEFS)
 ])
 
 dnl#}}}

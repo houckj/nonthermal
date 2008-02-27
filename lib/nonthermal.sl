@@ -354,7 +354,6 @@ private define nonthermal_init () %{{{
    add_function ("sync", _sync_table_file());
    add_function ("invc", _invc_table_file());
    add_function ("ntbrem", _ntbrem_table_file());
-   add_function ("ntbrem2", _ntbrem_table_file());
    add_function ("pizero");
 
    init_pdfs();
