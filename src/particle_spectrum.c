@@ -1,6 +1,6 @@
 /* -*- mode: C; mode: fold -*- */
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck 
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <gsl/gsl_sf_bessel.h>
 
 #include "_nonthermal.h"
 #include "isis.h"
@@ -324,8 +326,10 @@ static int pdf_mori (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 
 static double min_boltz_momentum (Particle_Type *pt) /*{{{*/
 {
-   (void) pt;
-   return 0.0;
+   double kT, a;
+   kT = pt->params[0] * KEV;
+   a = 2 * pt->mass * kT;
+   return 1.e-3 * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 }
 
 /*}}}*/
@@ -346,7 +350,7 @@ static int pdf_boltz (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 
    if (pt == NULL || ne == NULL)
      return -1;
-   
+
    /* params:  [kT_kev] */
    if (pt->num_params != 1)
      return -1;
@@ -365,6 +369,76 @@ static int pdf_boltz (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
      return 0.0;
 
    *ne = 2 * M_2_SQRTPI * x * exp (-x) / sqrt (a) / GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   return 0;
+}
+
+/*}}}*/
+
+static double min_rboltz_momentum (Particle_Type *pt) /*{{{*/
+{
+   double kT;
+   kT = pt->params[0] * KEV;
+   return 1.e-6 * kT;
+}
+
+/*}}}*/
+
+static double max_rboltz_momentum (Particle_Type *pt) /*{{{*/
+{
+   double kT;
+   kT = pt->params[0] * KEV;
+   return 500.0 * kT;
+}
+
+/*}}}*/
+
+/* FIXME -- should merge boltz and rboltz so that one 
+ * function spans the full range from non-relativistic to relativistic */ 
+static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
+{
+   double E, kT, mc2, x, mu, K2_scaled, f, f2, z;
+
+   if (pt == NULL || n == NULL)
+     return -1;
+
+   /* params:  [kT_kev] */
+   if (pt->num_params != 1)
+     return -1;
+
+   *n = 0.0;
+
+   kT = pt->params[0] * KEV;
+   if (kT <= 0.0)
+     return 0;
+
+   mc2 = pt->mass * C_SQUARED;
+   f = pc / mc2;
+   f2 = f*f;
+   E = mc2 * sqrt (1.0 + f2);
+
+   mu = mc2 / kT;
+   K2_scaled = gsl_sf_bessel_Kn_scaled (2, mu);
+   if (K2_scaled <= 0.0)
+     return 0;
+
+   x = E / kT;
+   if (f > 1.e-3)
+     {
+        z = mu * (x/mu - 1.0);
+     }
+   else
+     {
+        z = mu * (f2/2)*(1.0 + f2/4
+                         *(-1.0 + (3*f2/6)
+                           *(1.0 + (5*f2/8)
+                             *(-1.0 + (7*f2/10.0)))));
+     }
+
+   if (z < 0.0 || 500.0 < z)
+     return 0;
+
+   *n = (mu * f * f / mc2 / K2_scaled) * exp(-z);
 
    return 0;
 }
@@ -424,6 +498,7 @@ static struct Particle_Type Particle_Methods[] =
    PARTICLE_METHOD("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum),
    PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum),
    PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum),
+   PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum),
    NULL_PARTICLE_TYPE
 };
 
@@ -579,7 +654,7 @@ int append_pdf (Particle_Type *pt) /*{{{*/
              Particle_Type *n = x->next;
              free (x->params);
              /* struct copy */
-             *x = *pt;  
+             *x = *pt;
              x->next = n;
              free_pdf (pt);
              free (pt);
