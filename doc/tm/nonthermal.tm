@@ -66,7 +66,7 @@
 
 #d models_paper_url \
    http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=2006ApJS..167...26H&amp;db_key=AST
-#d models_paper \ifhtml{\url{\models_paper_url}{Houck & Allen (2006)}}{Houck & Allen (2006) [ApJS, in press, (astro-ph/0607574)]}
+#d models_paper \ifhtml{\url{\models_paper_url}{Houck & Allen (2006)}}{Houck & Allen (2006) [ApJS, 167, 26]}
 
 \linuxdoc
 \begin{\documentstyle}
