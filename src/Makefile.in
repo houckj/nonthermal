@@ -121,8 +121,8 @@ install_modules:
 	@cd $(ELFDIR) ; \
 	for X in $(MODULES); \
 	do \
-		echo $(INSTALL_DATA) $$X $(DEST_MODULE_INSTALL_DIR); \
-		$(INSTALL_DATA) $$X $(DEST_MODULE_INSTALL_DIR); \
+		echo $(INSTALL) $$X $(DEST_MODULE_INSTALL_DIR); \
+		$(INSTALL) $$X $(DEST_MODULE_INSTALL_DIR); \
 		if [ "$$?" != "0" ]; then \
 		  exit 1; \
 		fi; \
