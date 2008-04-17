@@ -81,6 +81,7 @@ ALL_FC_FLAGS = @ELF_FC_FCFLAGS@ $(FFLAGS)
 FC_ELFCOMPILE_CMD = $(FC) -c $(ALL_FC_FLAGS)
 
 bspline_22_C_FLAGS = $(FC_DEFS)
+dlamch_FC_FLAGS = -ffloat-store
 
 all: $(ELFDIR) $(MODULES)
 
