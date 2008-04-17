@@ -6802,8 +6802,8 @@ echo "$as_me: error: unable to find the slang library and header file $jd_slang_
 
 
 
-    { echo "$as_me:$LINENO: checking for the gsl library and header files " >&5
-echo $ECHO_N "checking for the gsl library and header files ... $ECHO_C" >&6; }
+    { echo "$as_me:$LINENO: checking for the gsl library and header files gsl/gsl_const_cgsm.h" >&5
+echo $ECHO_N "checking for the gsl library and header files gsl/gsl_const_cgsm.h... $ECHO_C" >&6; }
 
 
 
@@ -6887,7 +6887,7 @@ echo "$as_me: error: --with-gslinc requres a value" >&2;}
 
   if test X"$jd_with_gsl_library" = X
   then
-    jd_gsl_inc_file=
+    jd_gsl_inc_file=gsl/gsl_const_cgsm.h
     jd_with_gsl_library="yes"
 
     if test "X$jd_gsl_inc_file" = "X"

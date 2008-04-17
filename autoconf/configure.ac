@@ -27,7 +27,7 @@ AC_PATH_XTRA
 JD_WITH_LIBRARY(slang)
 
 dnl# Add libraries here
-JD_WITH_LIBRARY(gsl)
+JD_WITH_LIBRARY(gsl,gsl/gsl_const_cgsm.h)
 JD_WITH_LIBRARY(isis)
 
 dnl# This macro inits the module installation dir
