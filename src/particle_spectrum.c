@@ -79,26 +79,16 @@ static double max_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int pdf_pc_cutoff (Particle_Type *pt, double pc, double *ne) /*{{{*/
+static double pdf_pc_cutoff1 (double pc, double g, double a, double cutoff)
 {
-   double x, g, e0, f;
-
-   if (pt == NULL || ne == NULL)
-     return -1;
-
-   /* params:  [index, curvature, cutoff] */
-   if (pt->num_params != 3)
-     return -1;
-
-   *ne = 0.0;
+   double x, e0, f;
 
    x = pc / GEV;
-   g = pt->params[0];
-   e0  = pt->params[2] * TEV;
+   e0  = cutoff * TEV;
 
    /* no curvature below 1 GeV */
-   if ((pt->params[1] != 0.0) && (x > Min_Curvature_Pc))
-     g -= pt->params[1] * log10(x);
+   if ((a != 0.0) && (x > Min_Curvature_Pc))
+     g -= a * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
    f = pow (x, -g) * exp ((GEV-pc)/e0);
@@ -106,7 +96,19 @@ static int pdf_pc_cutoff (Particle_Type *pt, double pc, double *ne) /*{{{*/
    if (!finite(f))
      f = 0.0;
 
-   *ne = f;
+   return f;
+}
+
+static int pdf_pc_cutoff (Particle_Type *pt, double pc, double *ne) /*{{{*/
+{
+   if (pt == NULL || ne == NULL)
+     return -1;
+
+   /* params:  [index, curvature, cutoff] */
+   if (pt->num_params != 3)
+     return -1;
+
+   *ne = pdf_pc_cutoff1 (pc, pt->params[0], pt->params[1], pt->params[2]);
 
    return 0;
 }
@@ -393,26 +395,14 @@ static double max_rboltz_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-/* FIXME -- should merge boltz and rboltz so that one 
- * function spans the full range from non-relativistic to relativistic */ 
-static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
+static double pdf_rboltz1 (double pc, double kT, double mass)
 {
-   double E, kT, mc2, x, mu, K2_scaled, f, f2, z;
+   double E, mc2, mu, K2_scaled, f, f2, z;
 
-   if (pt == NULL || n == NULL)
-     return -1;
-
-   /* params:  [kT_kev] */
-   if (pt->num_params != 1)
-     return -1;
-
-   *n = 0.0;
-
-   kT = pt->params[0] * KEV;
    if (kT <= 0.0)
-     return 0;
+     return 0.0;
 
-   mc2 = pt->mass * C_SQUARED;
+   mc2 = mass * C_SQUARED;
    f = pc / mc2;
    f2 = f*f;
    E = mc2 * sqrt (1.0 + f2);
@@ -420,11 +410,11 @@ static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
    mu = mc2 / kT;
    K2_scaled = gsl_sf_bessel_Kn_scaled (2, mu);
    if (K2_scaled <= 0.0)
-     return 0;
+     return 0.0;
 
-   x = E / kT;
    if (f > 1.e-3)
      {
+        double x = E / kT;
         z = mu * (x/mu - 1.0);
      }
    else
@@ -436,14 +426,119 @@ static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
      }
 
    if (z < 0.0 || 500.0 < z)
-     return 0;
+     return 0.0;
 
-   *n = (mu * f * f / mc2 / K2_scaled) * exp(-z);
+   return (mu * f * f / mc2 / K2_scaled) * exp(-z);
+}
+
+static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
+{
+   if (pt == NULL || n == NULL)
+     return -1;
+
+   /* params:  [kT_kev] */
+   if (pt->num_params != 1)
+     return -1;
+
+   *n = pdf_rboltz1 (pc, pt->params[0] * KEV, pt->mass);
 
    return 0;
 }
 
 /*}}}*/
+
+static double min_full1_momentum (Particle_Type *pt) /*{{{*/
+{
+   double kT;
+   kT = pt->params[0] * KEV;
+   return 1.e-6 * kT;
+}
+
+/*}}}*/
+
+static double max_full1_momentum (Particle_Type *pt) /*{{{*/
+{
+   double e_cutoff, mc2, r, p_max, f=1.e-8;
+   double cutoff_energy;
+
+   cutoff_energy = pt->params[4];
+
+   if (cutoff_energy == 0)
+     return fixed_max_momentum (pt);
+
+   /* Choose max momentum high enough so that the exponential cutoff
+    * represents a factor of 'f' decline in particle density
+    */
+
+   mc2 = pt->mass * C_SQUARED;
+   e_cutoff = cutoff_energy * TEV;
+   r = (GEV - e_cutoff * log(f)) / mc2;
+   p_max = mc2 * sqrt ((r + 1.0)*(r - 1.0));
+
+   return p_max;
+}
+
+/*}}}*/
+
+static int pdf_full1 (Particle_Type *pt, double pc, double *n)
+{
+   static double pb_saved = -1, factor_saved = -1;
+   double kT, pc_offset, index, curvature, cutoff;
+   double v_peak, beta_peak, gamma_peak, pc_peak;
+   double thresh = 30;
+
+   if (pt == NULL || n == NULL)
+     return -1;
+
+   kT = pt->params[0] * KEV;
+   pc_offset = pt->params[1];
+   index = pt->params[2];
+   curvature = pt->params[3];
+   cutoff = pt->params[4];
+
+   /* particle momentum at the thermal peak */
+   v_peak = sqrt (2 * kT / pt->mass);
+   beta_peak = v_peak / GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   gamma_peak = 1.0 / sqrt ((1.0 - beta_peak) * (1.0 + beta_peak));
+   pc_peak = gamma_peak * pt->mass * v_peak * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   if (pc/pc_peak < thresh)
+     {
+        *n = pdf_rboltz1 (pc, kT, pt->mass);
+     }
+   else *n = 0.0;
+
+   if (pc > pc_peak)
+     {
+        double n_pl, pb, factor;
+
+        if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
+          return 0;
+
+        /* attach the nonthermal distribution at pc=pb */
+        pb = (1 + pc_offset) * pc_peak;
+
+        /* OPTIMIZATION:  avoid recomputing the norm factor */
+        if (fabs (1.0 - pb/pb_saved) < 10*DBL_EPSILON)
+          {
+             factor = factor_saved;
+          }
+        else
+          {
+             factor = (pdf_rboltz1 (pb, kT, pt->mass)/
+                       pdf_pc_cutoff1 (pb, index, curvature, cutoff));
+             factor_saved = factor;
+             pb_saved = pb;
+          }
+
+        n_pl *= factor;
+
+        if (n_pl > *n)
+          *n = n_pl;
+     }
+
+   return 0;
+}
 
 static int init_pdf_params1 (Particle_Type *pt, unsigned int type, /*{{{*/
                             double *pars, unsigned int num_pars)
@@ -499,6 +594,7 @@ static struct Particle_Type Particle_Methods[] =
    PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum),
    PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum),
    PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum),
+   PARTICLE_METHOD("full1", 5, pdf_full1, min_full1_momentum, max_full1_momentum),
    NULL_PARTICLE_TYPE
 };
 

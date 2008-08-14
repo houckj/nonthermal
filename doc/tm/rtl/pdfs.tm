@@ -124,12 +124,64 @@
 \done
 
  \function{boltz}
- \synopsis{Non-relativistic Maxwell-Boltzman Distribution}
+ \synopsis{Non-relativistic Maxwell-Boltzmann Distribution}
  \usage{boltz(id)}
  \description
- The only fit parameter is the temperature, \ivar{kT},
- in keV.
+ This distribution function provides a non-relativistic
+ Maxwell-Boltzmann thermal particle distribution.  The only
+ fit parameter is the temperature, \ivar{kT}, in keV.
 #% \example
 #% \notes
  \seealso{add_pdf}
+\done
+
+ \function{rboltz}
+ \synopsis{Relativistic Maxwell-Boltzmann Distribution}
+ \usage{rboltz(id)}
+ \description
+
+ This distribution function provides a relativistic
+ Maxwell-Boltzmann thermal particle distribution. The only fit
+ parameter is the temperature, \ivar{kT}, in keV.
+
+#% \example
+#% \notes
+ \seealso{add_pdf, full1}
+\done
+
+ \function{full1}
+ \synopsis{RMB + Cutoff Power-Law PDF}
+ \usage{full1(id)}
+ \description
+ This particle distribution function consists of a relativistic
+ Maxwell-Boltzmann thermal distribution (\ifun{rboltz}) plus a
+ nonthermal tail (\ifun{default}), extending above some
+ specified momentum offset above the thermal peak. The fit
+ parameters are those of \ifun{rboltz} and \ifun{default} plus
+ the additional parameter, \ivar{p_offset}, giving the momentum
+ offset in units of the particle momentum at the thermal peak.
+
+ For example, setting \exmp{p_offset=2}, means that the density
+ of nonthermal particles exceeds the thermal particle density
+ for momenta \exmp{p > (1+p_offset)*p_peak}, where
+#v+
+     p_peak = gamma * m * v
+     v = sqrt (2kT/m)
+     beta = v/c
+     gamma = 1/sqrt (1-beta^2)
+#v-
+
+ When using this distribution function, note that the overall
+ spectral normalization is scaled to the thermal particle density
+ rather than the nonthermal particle density at 1 GeV.  For
+ example, when used in conjunction with the \ifun{ntbrem} model,
+ the spectral norm should be interpreted as
+#v+
+      norm = n_t n0 V / (r \pi d^2)
+#v-
+ where \exmp{n0} is the number density of thermal electrons.
+
+#% \example
+#% \notes
+ \seealso{add_pdf, rboltz, default}
 \done
