@@ -489,6 +489,7 @@ static int pdf_full1 (Particle_Type *pt, double pc, double *n)
    static double pb_saved = -1, factor_saved = -1;
    double kT, pc_offset, index, curvature, cutoff;
    double v_peak, beta_peak, gamma_peak, pc_peak;
+   double n_pl, pb, factor;
    double thresh = 30;
 
    if (pt == NULL || n == NULL)
@@ -499,6 +500,12 @@ static int pdf_full1 (Particle_Type *pt, double pc, double *n)
    index = pt->params[2];
    curvature = pt->params[3];
    cutoff = pt->params[4];
+
+   if (pc_offset < 0)
+     {
+        fprintf (stderr, "*** Error: full1: p_offset must be >= 0\n");
+        return -1;
+     }
 
    /* particle momentum at the thermal peak */
    v_peak = sqrt (2 * kT / pt->mass);
@@ -512,34 +519,32 @@ static int pdf_full1 (Particle_Type *pt, double pc, double *n)
      }
    else *n = 0.0;
 
-   if (pc > pc_peak)
+   if (pc < pc_peak)
+     return 0;
+
+   if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
+     return 0;
+
+   /* attach the nonthermal distribution at pc=pb */
+   pb = (1 + pc_offset) * pc_peak;
+
+   /* OPTIMIZATION:  avoid recomputing the norm factor */
+   if (fabs (1.0 - pb/pb_saved) < 10*DBL_EPSILON)
      {
-        double n_pl, pb, factor;
-
-        if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
-          return 0;
-
-        /* attach the nonthermal distribution at pc=pb */
-        pb = (1 + pc_offset) * pc_peak;
-
-        /* OPTIMIZATION:  avoid recomputing the norm factor */
-        if (fabs (1.0 - pb/pb_saved) < 10*DBL_EPSILON)
-          {
-             factor = factor_saved;
-          }
-        else
-          {
-             factor = (pdf_rboltz1 (pb, kT, pt->mass)/
-                       pdf_pc_cutoff1 (pb, index, curvature, cutoff));
-             factor_saved = factor;
-             pb_saved = pb;
-          }
-
-        n_pl *= factor;
-
-        if (n_pl > *n)
-          *n = n_pl;
+        factor = factor_saved;
      }
+   else
+     {
+        factor = (pdf_rboltz1 (pb, kT, pt->mass)/
+                  pdf_pc_cutoff1 (pb, index, curvature, cutoff));
+        factor_saved = factor;
+        pb_saved = pb;
+     }
+
+   n_pl *= factor;
+
+   if (n_pl > *n)
+     *n = n_pl;
 
    return 0;
 }
