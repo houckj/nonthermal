@@ -79,7 +79,7 @@ static double max_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static double pdf_pc_cutoff1 (double pc, double g, double a, double cutoff)
+static double pdf_pc_cutoff1 (double pc, double g, double a, double cutoff) /*{{{*/
 {
    double x, e0, f;
 
@@ -98,6 +98,8 @@ static double pdf_pc_cutoff1 (double pc, double g, double a, double cutoff)
 
    return f;
 }
+
+/*}}}*/
 
 static int pdf_pc_cutoff (Particle_Type *pt, double pc, double *ne) /*{{{*/
 {
@@ -395,7 +397,7 @@ static double max_rboltz_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static double pdf_rboltz1 (double pc, double kT, double mass)
+static double pdf_rboltz1 (double pc, double kT, double mass) /*{{{*/
 {
    double E, mc2, mu, K2_scaled, f, f2, z;
 
@@ -430,6 +432,8 @@ static double pdf_rboltz1 (double pc, double kT, double mass)
 
    return (mu * f * f / mc2 / K2_scaled) * exp(-z);
 }
+
+/*}}}*/
 
 static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
 {
