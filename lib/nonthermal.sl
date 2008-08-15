@@ -270,11 +270,11 @@ private define init_pdfs () %{{{
                    [0.0],
                    [1.0e9]);
 
-   add_pdf_fitfun ("full1", ["kT [keV]", "p_offset", "index", "curvature", "cutoff [TeV]"],
-                   [ 1.0,   3, 2.0,  0.0, 10.0],
-                   [   1,   0,   0,    1,    0],
-                   [ 0.0,   0, 1.0, -1.0,  1.0],
-                   [10.0, 100, 3.0,  1.0, 1.e2]);
+   add_pdf_fitfun ("full1", ["kT [keV]", "f_GeV [x 1.e6]", "index", "curvature", "cutoff [TeV]"],
+                   [ 1.0,    1, 2.0,  0.0, 10.0],
+                   [   1,    0,   0,    1,    0],
+                   [ 0.0,    0, 1.0, -1.0,  1.0],
+                   [10.0, 1.e3, 3.0,  1.0, 1.e2]);
 }
 
 %}}}

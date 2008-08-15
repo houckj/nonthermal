@@ -31,6 +31,14 @@
 #include "_nonthermal.h"
 #include "isis.h"
 
+#ifdef NAN
+#define NT_NAN   NAN
+#elif defined(INFINITY)
+#define NT_NAN  (INFINITY/INFINITY)
+#else
+#define NT_NAN  (0.0/0.0)
+#endif
+
 extern double Min_Curvature_Pc;
 double Min_Curvature_Pc = 1.0;  /* GeV */
 
@@ -484,30 +492,125 @@ static double max_full1_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int pdf_full1_n_nl (Particle_Type *pt, double pc, double *n, double *nl) /*{{{*/
+static int find_crossover (double kT, double m, double index, double f_gev, /*{{{*/
+                           double *pb)
 {
-   double kT, pc_offset, index, curvature, cutoff;
+   static double x_saved = -1.0;
+   double a, p0, bb, b, s, xt, y, x_guess, x;
+   int num_tries, num_restarts;
+
+   /* Find the momentum at which the two distribution functions
+    * intersect.  For simplicity, assume the intersection occurs
+    * at a non-relativistic momentum.
+    *
+    * The two distributions may intersect in 0, 1 or 2 points.
+    * To decide which, consider the tangent point coordinate.
+    * To find the tangent point, set the two PDFs equal:
+    *       rboltz(p) = pdf_pc_cutoff(p),
+    * and gather constants, obtaining an equation of the form
+    *       x = s * sqrt (log(x/b))                 (**)
+    * If it exists, the tangent point coordinate, xt, satisfies
+    * both
+    *     d/dx ( s*sqrt(log(x/b)) ) = 1.
+    * and equation (**).
+    * If y \equiv s * sqrt(log(xt/b) = xt, then the two distributions
+    * intersect in exactly one point.
+    * If y > xt, the distributions intersect in two points.
+    */
+
+   a = 2 * m * kT;
+   p0 = GEV / GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   bb = ((f_gev * pow(p0, index) * GSL_CONST_CGSM_SPEED_OF_LIGHT)
+         / (2 * M_2_SQRTPI * pow(a, 0.5*(index-1))));
+   b = pow(bb, 1.0/(index+2));
+   s = sqrt (index+2);
+
+   xt = s * sqrt(b/2);
+   y = s * sqrt(log(xt/b));
+
+   if ((b > xt) || (y < xt))
+     {
+        fprintf (stdout, "*** Error: non-thermal particle density exceeds thermal peak\n");
+        *pb = NT_NAN;
+        return -1;
+     }
+
+   /* We want the intersection point x > xt.
+    *
+    * OPTIMIZATION:  If the last result looks reasonable, try using it.
+    * If it fails, then derive a new one starting from the tangent point.
+    */
+
+   num_restarts = 0;
+restart:
+   if ((num_restarts != 0) || (x_saved < xt))
+     x_guess = xt;
+   else
+     x_guess = x_saved;
+
+   num_tries = 0;
+
+   for (;;)
+     {
+        /* force the search to find the larger root */
+        if (x_guess < xt)
+          x_guess = xt + fabs (x_guess - xt);
+
+        x = s * sqrt (log(x_guess/b));
+
+        if (fabs(x/x_guess - 1) < 100*DBL_EPSILON)
+          break;
+
+        if (num_tries > 100)
+          {
+             if (num_restarts)
+               {
+                  /* this should never happen */
+                  fprintf (stdout, "*** Error: find_crossover: too many iterations\n");
+                  exit(1);
+               }
+             num_restarts++;
+             goto restart;
+          }
+
+        num_tries++;
+        x_guess = x;
+     }
+
+   x_saved = x;
+
+   *pb = x * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   return 0;
+}
+
+/*}}}*/
+
+static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr) /*{{{*/
+{
+   double kT, f_gev, index, curvature, cutoff;
    double v_peak, beta_peak, gamma_peak, pc_peak;
-   double n_pl, pb;
+   double n_pl, pi;
    double thresh = 30;
 
    if (pt == NULL || n == NULL)
      return -1;
 
    *n = 0.0;
-   *nl = 0.0;
+   *ncr = 0.0;
+
+   /* It's possible for f_gev to be chosen such that the two distributions
+    * don't intersect (the "overshoot" problem).  That's unfortunate, but
+    * at least (kT, index, f_gev) are relatively uncorrelated. I suspect
+    * that any parameterization that avoids the "overshoot" problem will
+    * force strong correlations between the fit parameters.
+    */
 
    kT = pt->params[0] * KEV;
-   pc_offset = pt->params[1];
+   f_gev = pt->params[1] * 1.e-6;
    index = pt->params[2];
    curvature = pt->params[3];
    cutoff = pt->params[4];
-
-   if (pc_offset < 0)
-     {
-        fprintf (stderr, "*** Error: full1: p_offset must be >= 0\n");
-        return -1;
-     }
 
    /* particle momentum at the thermal peak */
    v_peak = sqrt (2 * kT / pt->mass);
@@ -521,22 +624,23 @@ static int pdf_full1_n_nl (Particle_Type *pt, double pc, double *n, double *nl) 
         *n = pdf_rboltz1 (pc, kT, pt->mass);
      }
 
-   if (pc < pc_peak)
+   if ((pc < pc_peak) || (f_gev <= 0))
      return 0;
 
-   if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
-     return 0;
-
-   /* attach the nonthermal distribution at pc=pb */
-   pb = (1 + pc_offset) * pc_peak;
-
-   n_pl *= (pdf_rboltz1 (pb, kT, pt->mass)/
-            pdf_pc_cutoff1 (pb, index, curvature, cutoff));
-
-   if (n_pl > *n)
+   /* attach the nonthermal distribution above the intersection point */
+   if (-1 == find_crossover (kT, pt->mass, index, f_gev, &pi))
      {
+        *n = NT_NAN;
+        return -1;
+     }
+
+   if (pc > pi)
+     {
+        if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
+          return 0;
+        n_pl *= f_gev;
         /* number density of supra-thermal particles */
-        *nl = n_pl - *n;
+        *ncr = n_pl - *n;
         /* particle number density, thermal or not */
         *n = n_pl;
      }
@@ -548,16 +652,16 @@ static int pdf_full1_n_nl (Particle_Type *pt, double pc, double *n, double *nl) 
 
 static int pdf_full1_n (Particle_Type *pt, double pc, double *n) /*{{{*/
 {
-   double nl;
-   return pdf_full1_n_nl (pt, pc, n, &nl);
+   double ncr;
+   return pdf_full1_n_ncr (pt, pc, n, &ncr);
 }
 
 /*}}}*/
 
-static int pdf_full1_nl (Particle_Type *pt, double pc, double *nl) /*{{{*/
+static int pdf_full1_ncr (Particle_Type *pt, double pc, double *ncr) /*{{{*/
 {
    double n;
-   return pdf_full1_n_nl (pt, pc, &n, nl);
+   return pdf_full1_n_ncr (pt, pc, &n, ncr);
 }
 
 /*}}}*/
@@ -616,7 +720,7 @@ static struct Particle_Type Particle_Methods[] =
    PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum, NULL),
    PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum, NULL),
    PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum, NULL),
-   PARTICLE_METHOD("full1", 5, pdf_full1_n, min_full1_momentum, max_full1_momentum, pdf_full1_nl),
+   PARTICLE_METHOD("full1", 5, pdf_full1_n, min_full1_momentum, max_full1_momentum, pdf_full1_ncr),
    NULL_PARTICLE_TYPE
 };
 
