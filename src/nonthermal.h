@@ -26,6 +26,7 @@ struct Particle_Type
    Particle_Type *next;
    char *method;
    int (*spectrum)(Particle_Type *, double, double *);
+   int (*spectrum_nl)(Particle_Type *, double, double *);
    double (*momentum_min)(Particle_Type *);
    double (*momentum_max)(Particle_Type *);
    double *params;
@@ -33,7 +34,7 @@ struct Particle_Type
    double mass;
 };
 #define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,NULL,NULL,0,0.0}
-#define PARTICLE_METHOD(n,num,m,mn,mx) {NULL,(n),m,mn,mx,NULL,num,0.0}
+#define PARTICLE_METHOD(n,num,m,mn,mx,mnl) {NULL,(n),m,mnl,mn,mx,NULL,num,0.0}
 
 #define NONTHERMAL_PDF_MODULE(name,p,o) \
    extern int Pdf_##name##_init(Particle_Type *p, char *o); \

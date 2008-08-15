@@ -166,6 +166,37 @@ static double particle_distrib (double *pc, unsigned int *type) /*{{{*/
 }
 /*}}}*/
 
+static double nl_particle_distrib (double *pc, unsigned int *type) /*{{{*/
+{
+   Particle_Type pt;
+   double f;
+
+   memset ((char *)&pt, 0, sizeof(pt));
+
+   if (-1 == init_pdf (&pt, *type))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        free_pdf (&pt);
+        return -1.0;
+     }
+
+   if (pt.spectrum_nl == NULL)
+     {
+        fprintf (stdout, "*** Error:  PDF '%s': operation not supported\n",
+                 pt.method);
+        free_pdf (&pt);
+        return -1.0;
+     }
+
+   /* dn/d(Pc) */
+   (void) (*pt.spectrum_nl)(&pt, *pc, &f);
+
+   free_pdf (&pt);
+
+   return f;
+}
+/*}}}*/
+
 static double root_func (double mv, void *cd) /*{{{*/
 {
    Density_Info *di = (Density_Info *)cd;
@@ -611,6 +642,7 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
 {
    MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
    MAKE_INTRINSIC_2("particle_distrib", particle_distrib, D, D, UI),
+   MAKE_INTRINSIC_2("nl_particle_distrib", nl_particle_distrib, D, D, UI),
    MAKE_INTRINSIC_1("conserve_charge", conserve_charge, D, I),
    MAKE_INTRINSIC("_find_momentum_min", _find_momentum_min, D, 0),
    MAKE_INTRINSIC("_nontherm_density", nontherm_density, D, 0),

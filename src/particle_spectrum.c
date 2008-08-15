@@ -484,16 +484,18 @@ static double max_full1_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int pdf_full1 (Particle_Type *pt, double pc, double *n)
+static int pdf_full1_n_nl (Particle_Type *pt, double pc, double *n, double *nl) /*{{{*/
 {
-   static double pb_saved = -1, factor_saved = -1;
    double kT, pc_offset, index, curvature, cutoff;
    double v_peak, beta_peak, gamma_peak, pc_peak;
-   double n_pl, pb, factor;
+   double n_pl, pb;
    double thresh = 30;
 
    if (pt == NULL || n == NULL)
      return -1;
+
+   *n = 0.0;
+   *nl = 0.0;
 
    kT = pt->params[0] * KEV;
    pc_offset = pt->params[1];
@@ -513,11 +515,11 @@ static int pdf_full1 (Particle_Type *pt, double pc, double *n)
    gamma_peak = 1.0 / sqrt ((1.0 - beta_peak) * (1.0 + beta_peak));
    pc_peak = gamma_peak * pt->mass * v_peak * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
+   /* always include the thermal particles */
    if (pc/pc_peak < thresh)
      {
         *n = pdf_rboltz1 (pc, kT, pt->mass);
      }
-   else *n = 0.0;
 
    if (pc < pc_peak)
      return 0;
@@ -528,26 +530,37 @@ static int pdf_full1 (Particle_Type *pt, double pc, double *n)
    /* attach the nonthermal distribution at pc=pb */
    pb = (1 + pc_offset) * pc_peak;
 
-   /* OPTIMIZATION:  avoid recomputing the norm factor */
-   if (fabs (1.0 - pb/pb_saved) < 10*DBL_EPSILON)
-     {
-        factor = factor_saved;
-     }
-   else
-     {
-        factor = (pdf_rboltz1 (pb, kT, pt->mass)/
-                  pdf_pc_cutoff1 (pb, index, curvature, cutoff));
-        factor_saved = factor;
-        pb_saved = pb;
-     }
-
-   n_pl *= factor;
+   n_pl *= (pdf_rboltz1 (pb, kT, pt->mass)/
+            pdf_pc_cutoff1 (pb, index, curvature, cutoff));
 
    if (n_pl > *n)
-     *n = n_pl;
+     {
+        /* number density of supra-thermal particles */
+        *nl = n_pl - *n;
+        /* particle number density, thermal or not */
+        *n = n_pl;
+     }
 
    return 0;
 }
+
+/*}}}*/
+
+static int pdf_full1_n (Particle_Type *pt, double pc, double *n) /*{{{*/
+{
+   double nl;
+   return pdf_full1_n_nl (pt, pc, n, &nl);
+}
+
+/*}}}*/
+
+static int pdf_full1_nl (Particle_Type *pt, double pc, double *nl) /*{{{*/
+{
+   double n;
+   return pdf_full1_n_nl (pt, pc, &n, nl);
+}
+
+/*}}}*/
 
 static int init_pdf_params1 (Particle_Type *pt, unsigned int type, /*{{{*/
                             double *pars, unsigned int num_pars)
@@ -595,15 +608,15 @@ void free_pdf (Particle_Type *pt) /*{{{*/
 
 static struct Particle_Type Particle_Methods[] =
 {
-   PARTICLE_METHOD("default", 3, pdf_pc_cutoff, min_momentum, max_momentum),
-   PARTICLE_METHOD("etot", 1, pdf_etot, min_momentum, etot_max_momentum),
-   PARTICLE_METHOD("mori", 0, pdf_mori, min_momentum, mori_max_momentum),
-   PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum),
-   PARTICLE_METHOD("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum),
-   PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum),
-   PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum),
-   PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum),
-   PARTICLE_METHOD("full1", 5, pdf_full1, min_full1_momentum, max_full1_momentum),
+   PARTICLE_METHOD("default", 3, pdf_pc_cutoff, min_momentum, max_momentum, NULL),
+   PARTICLE_METHOD("etot", 1, pdf_etot, min_momentum, etot_max_momentum, NULL),
+   PARTICLE_METHOD("mori", 0, pdf_mori, min_momentum, mori_max_momentum, NULL),
+   PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum, NULL),
+   PARTICLE_METHOD("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum, NULL),
+   PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum, NULL),
+   PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum, NULL),
+   PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum, NULL),
+   PARTICLE_METHOD("full1", 5, pdf_full1_n, min_full1_momentum, max_full1_momentum, pdf_full1_nl),
    NULL_PARTICLE_TYPE
 };
 
