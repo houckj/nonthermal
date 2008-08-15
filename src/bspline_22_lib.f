@@ -2242,7 +2242,15 @@ c %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       middle = nbandu + 1
       nrowm1 = nrow - 1
 
-      if (nrowm1) 999,900,10
+cJCH replaced obsolete arithmetic 'if' statement:
+cJCH  if (nrowm1) 999,900,10
+      if (nrowm1 < 0) then
+        goto 999
+      else if (nrowm1 > 0) then
+        goto 10
+      else
+        goto 900
+      endif
 
  10   if (nbandl .gt. 0) go to 30
 
