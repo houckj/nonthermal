@@ -31,14 +31,6 @@
 #include "_nonthermal.h"
 #include "isis.h"
 
-#ifdef NAN
-#define NT_NAN   NAN
-#elif defined(INFINITY)
-#define NT_NAN  (INFINITY/INFINITY)
-#else
-#define NT_NAN  (0.0/0.0)
-#endif
-
 extern double Min_Curvature_Pc;
 double Min_Curvature_Pc = 1.0;  /* GeV */
 
@@ -459,6 +451,8 @@ static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
 
 /*}}}*/
 
+#define FULL1_FGEV_NORM   1.e-6
+
 static double min_full1_momentum (Particle_Type *pt) /*{{{*/
 {
    double kT;
@@ -493,7 +487,7 @@ static double max_full1_momentum (Particle_Type *pt) /*{{{*/
 /*}}}*/
 
 static int find_crossover (double kT, double m, double index, double f_gev, /*{{{*/
-                           double *pb)
+                           double *pc_equal)
 {
    static double x_saved = -1.0;
    double a, p0, bb, b, s, xt, y, x_guess, x;
@@ -531,7 +525,7 @@ static int find_crossover (double kT, double m, double index, double f_gev, /*{{
    if ((b > xt) || (y < xt))
      {
         fprintf (stdout, "*** Error: non-thermal particle density exceeds thermal peak\n");
-        *pb = NT_NAN;
+        *pc_equal = NT_NAN;
         return -1;
      }
 
@@ -579,9 +573,25 @@ restart:
 
    x_saved = x;
 
-   *pb = x * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   *pc_equal = x * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    return 0;
+}
+
+/*}}}*/
+
+static double eq_full1_momentum (Particle_Type *pt) /*{{{*/
+{
+   double kT, f_gev, index, pc_equal;
+
+   kT = pt->params[0] * KEV;
+   f_gev = pt->params[1] * FULL1_FGEV_NORM;
+   index = pt->params[2];
+
+   if (-1 == find_crossover (kT, pt->mass, index, f_gev, &pc_equal))
+        return NT_NAN;
+
+   return pc_equal;
 }
 
 /*}}}*/
@@ -590,7 +600,7 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
 {
    double kT, f_gev, index, curvature, cutoff;
    double v_peak, beta_peak, gamma_peak, pc_peak;
-   double n_pl, pi;
+   double n_pl, pc_equal;
    double thresh = 30;
 
    if (pt == NULL || n == NULL)
@@ -607,7 +617,7 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
     */
 
    kT = pt->params[0] * KEV;
-   f_gev = pt->params[1] * 1.e-6;
+   f_gev = pt->params[1] * FULL1_FGEV_NORM;
    index = pt->params[2];
    curvature = pt->params[3];
    cutoff = pt->params[4];
@@ -628,13 +638,13 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
      return 0;
 
    /* attach the nonthermal distribution above the intersection point */
-   if (-1 == find_crossover (kT, pt->mass, index, f_gev, &pi))
+   if (-1 == find_crossover (kT, pt->mass, index, f_gev, &pc_equal))
      {
         *n = NT_NAN;
         return -1;
      }
 
-   if (pc > pi)
+   if (pc > pc_equal)
      {
         if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
           return 0;
@@ -712,15 +722,15 @@ void free_pdf (Particle_Type *pt) /*{{{*/
 
 static struct Particle_Type Particle_Methods[] =
 {
-   PARTICLE_METHOD("default", 3, pdf_pc_cutoff, min_momentum, max_momentum, NULL),
-   PARTICLE_METHOD("etot", 1, pdf_etot, min_momentum, etot_max_momentum, NULL),
-   PARTICLE_METHOD("mori", 0, pdf_mori, min_momentum, mori_max_momentum, NULL),
-   PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum, NULL),
-   PARTICLE_METHOD("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum, NULL),
-   PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum, NULL),
-   PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum, NULL),
-   PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum, NULL),
-   PARTICLE_METHOD("full1", 5, pdf_full1_n, min_full1_momentum, max_full1_momentum, pdf_full1_ncr),
+   PARTICLE_METHOD("default", 3, pdf_pc_cutoff, min_momentum, max_momentum, NULL, NULL),
+   PARTICLE_METHOD("etot", 1, pdf_etot, min_momentum, etot_max_momentum, NULL, NULL),
+   PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum, NULL, NULL),
+   PARTICLE_METHOD("mori", 0, pdf_mori, min_momentum, mori_max_momentum, NULL, NULL),
+   PARTICLE_METHOD("dermer", 2, pdf_dermer, min_momentum, fixed_max_momentum, NULL, NULL),
+   PARTICLE_METHOD("cbreak", 4, pdf_cbreak, min_momentum, max_momentum, NULL, NULL),
+   PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum, NULL, NULL),
+   PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum, NULL, NULL),
+   PARTICLE_METHOD("full1", 5, pdf_full1_n, min_full1_momentum, max_full1_momentum, pdf_full1_ncr, eq_full1_momentum),
    NULL_PARTICLE_TYPE
 };
 

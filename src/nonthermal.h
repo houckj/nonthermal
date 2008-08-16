@@ -29,12 +29,13 @@ struct Particle_Type
    int (*spectrum_ncr)(Particle_Type *, double, double *);
    double (*momentum_min)(Particle_Type *);
    double (*momentum_max)(Particle_Type *);
+   double (*momentum_eq)(Particle_Type *);                            
    double *params;
    unsigned int num_params;
    double mass;
 };
-#define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,NULL,NULL,0,0.0}
-#define PARTICLE_METHOD(n,num,m,mn,mx,mncr) {NULL,(n),m,mncr,mn,mx,NULL,num,0.0}
+#define NULL_PARTICLE_TYPE {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0.0}
+#define PARTICLE_METHOD(n,num,m,mn,mx,mncr,meq) {NULL,(n),m,mncr,mn,mx,meq,NULL,num,0.0}
 
 #define NONTHERMAL_PDF_MODULE(name,p,o) \
    extern int Pdf_##name##_init(Particle_Type *p, char *o); \

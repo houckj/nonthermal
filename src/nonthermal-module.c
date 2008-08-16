@@ -1,6 +1,6 @@
 /* -*- mode: C; mode: fold -*- */
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck 
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
@@ -34,10 +34,6 @@
 #include "_nonthermal.h"
 #include "interp.h"
 #include "version.h"
-
-#ifndef M_2_SQRTPI
-#define M_2_SQRTPI 1.12837916709551257390  /* 2/sqrt(pi) */
-#endif
 
 typedef struct
 {
@@ -239,10 +235,10 @@ static double root_func (double mv, void *cd) /*{{{*/
 
 /*}}}*/
 
-static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
+static int find_momentum_min (Density_Info *di, double *pc) /*{{{*/
 {
    Particle_Type *pt = &di->particle;
-   double mc, p_th, pmax, p, f_lo, f_hi;
+   double mc, p_th, pmax, p, f_lo, f_hi, gamma, beta;
    int status = 0;
 
    /* FIXME: This won't handle pathological cases, e.g. where
@@ -275,7 +271,9 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
    if (status || p > mc)
      p = p_th;
 
-   *momentum = p;
+   beta = p / mc;
+   gamma = 1.0 / sqrt ((1.0 + beta)*(1.0 - beta));
+   *pc = gamma * p * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    return 0;
 }
@@ -285,7 +283,8 @@ static int find_momentum_min (Density_Info *di, double *momentum) /*{{{*/
 static double _find_momentum_min (void) /*{{{*/
 {
    Density_Info di = NULL_DENSITY_INFO;
-   double p;
+   Particle_Type *pt;
+   double pc;
 
    if (-1 == pop_density_info (&di))
      {
@@ -293,28 +292,30 @@ static double _find_momentum_min (void) /*{{{*/
         return 0.0;
      }
 
-   if (-1 == find_momentum_min (&di, &p))
+   pt = &di.particle;
+   if (pt->momentum_eq != NULL)
+     {
+        pc = (*pt->momentum_eq)(pt);
+     }
+   else if (-1 == find_momentum_min (&di, &pc))
      {
         fprintf (stderr, "find_momentum_min: no solution -- using thermal peak momentum\n");
      }
 
    free_pdf (&di.particle);
 
-   return p;
+   return pc;
 }
 
 /*}}}*/
 
-static int Failed_Finding_Momentum_Min;
-
-static int eval_nontherm_integral (gsl_function *f, double *value) /*{{{*/
+static int eval_nontherm_integral (gsl_function *f, double pc_min, double *value) /*{{{*/
 {
-   Density_Info *di = (Density_Info *)f->params;
-   Particle_Type *pt = &di->particle;
+   Particle_Type *pt = (Particle_Type *)f->params;
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
    double epsabs, epsrel, abserr;
-   double p_min, beta, gamma, pc_min, pc_max;
+   double pc_max;
    size_t limit;
    int status;
 
@@ -323,16 +324,6 @@ static int eval_nontherm_integral (gsl_function *f, double *value) /*{{{*/
    epsabs = 0.0;
    epsrel = 1.e-7;
    limit = MAX_QAG_SUBINTERVALS;
-
-   Failed_Finding_Momentum_Min = 0;
-   if (-1 == find_momentum_min (di, &p_min))
-     {
-        Failed_Finding_Momentum_Min = 1;
-     }
-
-   beta = (p_min / pt->mass) / GSL_CONST_CGSM_SPEED_OF_LIGHT;
-   gamma = 1.0 / sqrt ((1.0 + beta)*(1.0 - beta));
-   pc_min = gamma * p_min * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    /* For simpler continuity into the relativistic regime,
     * we use the relativistic momentum,
@@ -368,16 +359,17 @@ static int eval_nontherm_integral (gsl_function *f, double *value) /*{{{*/
 
 /*}}}*/
 
-static int nontherm_integral (Density_Info *di, double (*func)(double, void *), double *x) /*{{{*/
+static int nontherm_integral (Particle_Type *pt, double (*func)(double, void *), /*{{{*/
+                              double pc_min, double *x)
 {
    gsl_function f;
 
    *x = 0.0;
 
    f.function = func;
-   f.params = di;
+   f.params = pt;
 
-   if (-1 == eval_nontherm_integral (&f, x))
+   if (-1 == eval_nontherm_integral (&f, pc_min, x))
      return -1;
 
    return 0;
@@ -387,8 +379,7 @@ static int nontherm_integral (Density_Info *di, double (*func)(double, void *), 
 
 static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
 {
-   Density_Info *di = (Density_Info *)cd;
-   Particle_Type *pt = &di->particle;
+   Particle_Type *pt = (Particle_Type *)cd;
    double mc2 = pt->mass * C_SQUARED;
    double ne, x, gamma, e_kinetic;
 
@@ -396,7 +387,10 @@ static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
    pc = exp(pc);
 
    /* dn/d(Pc) */
-   (void) (*pt->spectrum)(pt, pc, &ne);
+   if (pt->spectrum_ncr != NULL)
+     (void) (*pt->spectrum_ncr)(pt, pc, &ne);
+   else
+     (void) (*pt->spectrum)(pt, pc, &ne);
 
    /* relativistic momentum = Pc = gamma * m * v */
    x = pc / mc2;
@@ -413,8 +407,7 @@ static double nontherm_energy_density_integrand (double pc, void *cd) /*{{{*/
 
 static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
 {
-   Density_Info *di = (Density_Info *)cd;
-   Particle_Type *pt = &di->particle;
+   Particle_Type *pt = (Particle_Type *)cd;
    double ne;
 
    /* changed integration variable */
@@ -423,7 +416,10 @@ static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
    /* relativistic momentum = Pc = gamma * m * v */
 
    /* dn/d(Pc) */
-   (void) (*pt->spectrum)(pt, pc, &ne);
+   if (pt->spectrum_ncr != NULL)
+     (void) (*pt->spectrum_ncr)(pt, pc, &ne);
+   else
+     (void) (*pt->spectrum)(pt, pc, &ne);
 
    /* changed integration variable */
    ne *= pc;
@@ -433,9 +429,10 @@ static double nontherm_density_integrand (double pc, void *cd) /*{{{*/
 
 /*}}}*/
 
-static double nontherm_energy_density (void) /*{{{*/
+static double nontherm_energy_density (double *pc_min) /*{{{*/
 {
    Density_Info di = NULL_DENSITY_INFO;
+   Particle_Type *pt;
    double ne;
 
    if (-1 == pop_density_info (&di))
@@ -444,8 +441,12 @@ static double nontherm_energy_density (void) /*{{{*/
         return -1;
      }
 
-   if (-1 == nontherm_integral (&di, &nontherm_energy_density_integrand, &ne))
+   pt = &di.particle;
+
+   if (-1 == nontherm_integral (pt, &nontherm_energy_density_integrand, *pc_min, &ne))
      ne = 0.0;
+
+   ne *= pt->momentum_eq ? di.n_th : di.n_GeV;
 
    free_pdf (&di.particle);
 
@@ -453,9 +454,10 @@ static double nontherm_energy_density (void) /*{{{*/
 }
 /*}}}*/
 
-static double nontherm_density (void) /*{{{*/
+static double nontherm_density (double *pc_min) /*{{{*/
 {
    Density_Info di = NULL_DENSITY_INFO;
+   Particle_Type *pt;
    double n;
 
    if (-1 == pop_density_info (&di))
@@ -464,8 +466,12 @@ static double nontherm_density (void) /*{{{*/
         return -1;
      }
 
-   if (-1 == nontherm_integral (&di, &nontherm_density_integrand, &n))
+   pt = &di.particle;
+
+   if (-1 == nontherm_integral (pt, &nontherm_density_integrand, *pc_min, &n))
      n = 0.0;
+
+   n *= pt->momentum_eq ? di.n_th : di.n_GeV;
 
    free_pdf (&di.particle);
 
@@ -495,11 +501,18 @@ static double CR_Electron_Density;
 
 static double charge_error (double p_norm, void *cl) /*{{{*/
 {
-   Density_Info *dp = (Density_Info *)cl;
-   double fp;
+   Density_Info *di = (Density_Info *)cl;
+   double fp, pc_min;
+   
+   if (-1 == find_momentum_min (di, &pc_min))
+     {
+        fprintf (stderr, "failed finding momentum for lower integration limit\n");
+        /* SLang_set_error (SL_INTRINSIC_ERROR); */
+        return -1.0;
+     }
 
-   dp->n_GeV = p_norm;
-   if (-1 == nontherm_integral (dp, &nontherm_density_integrand, &fp))
+   di->n_GeV = p_norm;
+   if (-1 == nontherm_integral (&di->particle, &nontherm_density_integrand, pc_min, &fp))
      {
         fprintf (stderr, "failed integrating proton distribution\n");
         /* SLang_set_error (SL_INTRINSIC_ERROR); */
@@ -513,9 +526,16 @@ static double charge_error (double p_norm, void *cl) /*{{{*/
 
 static double equal_integrated_nonthermal_densities (Density_Info *de, Density_Info *dp) /*{{{*/
 {
-   double fe, p_norm;
+   double fe, p_norm, pc_min;
 
-   if (-1 == nontherm_integral (de, &nontherm_density_integrand, &fe))
+   if (-1 == find_momentum_min (de, &pc_min))
+     {
+        fprintf (stderr, "failed finding momentum for lower integration limit\n");
+        /* SLang_set_error (SL_INTRINSIC_ERROR); */
+        return -1.0;
+     }
+   
+   if (-1 == nontherm_integral (&de->particle, &nontherm_density_integrand, pc_min, &fe))
      {
         fprintf (stderr, "failed integrating electron distribution\n");
         /* SLang_set_error (SL_INTRINSIC_ERROR); */
@@ -608,7 +628,7 @@ static double conserve_charge (int *method) /*{{{*/
 static void add_user_pdf_intrin (char *path, char *name, char *options) /*{{{*/
 {
    Particle_Type *pt;
-   
+
    if (NULL == (pt = load_pdf (path, name, options)))
      {
         SLang_set_error (SL_INTRINSIC_ERROR);
@@ -620,7 +640,7 @@ static void add_user_pdf_intrin (char *path, char *name, char *options) /*{{{*/
         SLang_set_error (SL_INTRINSIC_ERROR);
         free_pdf(pt);
         return;
-     }        
+     }
 }
 
 /*}}}*/
@@ -645,8 +665,8 @@ static SLang_Intrin_Fun_Type Intrinsics [] =
    MAKE_INTRINSIC_2("ncr_particle_distrib", ncr_particle_distrib, D, D, UI),
    MAKE_INTRINSIC_1("conserve_charge", conserve_charge, D, I),
    MAKE_INTRINSIC("_find_momentum_min", _find_momentum_min, D, 0),
-   MAKE_INTRINSIC("_nontherm_density", nontherm_density, D, 0),
-   MAKE_INTRINSIC("_nontherm_energy_density", nontherm_energy_density, D, 0),
+   MAKE_INTRINSIC_1("_nontherm_density", nontherm_density, D, D),
+   MAKE_INTRINSIC_1("_nontherm_energy_density", nontherm_energy_density, D, D),
    MAKE_INTRINSIC_2("bspline_open_intrin", bspline_open_intrin, V, I, I),
    MAKE_INTRINSIC_3("bspline_eval_intrin", bspline_eval_intrin, D, MT, D, D),
    MAKE_INTRINSIC_1("bspline_init_info_intrin", bspline_init_info_intrin, V, MT),
@@ -675,7 +695,7 @@ static SLang_Intrin_Var_Type Intrin_Variables [] =
 {
    MAKE_VARIABLE("_nonthermal_module_version_string", &Module_Version_String, SLANG_STRING_TYPE, 1),
    MAKE_VARIABLE("_nonthermal_install_prefix", &Module_Install_Prefix, SLANG_STRING_TYPE, 1),
-   MAKE_VARIABLE("_nonthermal_curvature_momentum_gev", &Min_Curvature_Pc, SLANG_DOUBLE_TYPE, 0),   
+   MAKE_VARIABLE("_nonthermal_curvature_momentum_gev", &Min_Curvature_Pc, SLANG_DOUBLE_TYPE, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
 

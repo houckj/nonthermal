@@ -679,7 +679,8 @@ define find_momentum_min (s) %{{{
 %!%-
 define nontherm_density (s) %{{{
 {
-   return s.n_GeV * _nontherm_density (struct_args(s));
+   variable pc_min = find_momentum_min (s);
+   return _nontherm_density (struct_args(s), pc_min);
 }
 
 %}}}
@@ -702,7 +703,8 @@ define nontherm_density (s) %{{{
 %!%-
 define nontherm_energy_density (s) %{{{
 {
-   return s.n_GeV * _nontherm_energy_density (struct_args(s));
+   variable pc_min = find_momentum_min (s);
+   return _nontherm_energy_density (struct_args(s), pc_min);
 }
 
 %}}}

@@ -28,6 +28,18 @@
 
 #include "slang.h"
 
+#ifdef NAN
+#define NT_NAN   NAN
+#elif defined(INFINITY)
+#define NT_NAN  (INFINITY/INFINITY)
+#else
+#define NT_NAN  (0.0/0.0)
+#endif
+
+#ifndef M_2_SQRTPI
+#define M_2_SQRTPI 1.12837916709551257390  /* 2/sqrt(pi) */
+#endif
+
 #ifndef isnan
 #define isnan(a)  ((a)!=(a))
 #endif
