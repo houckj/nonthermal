@@ -559,7 +559,7 @@ restart:
              if (num_restarts)
                {
                   fprintf (stdout, "*** Error: find_pc_equal: too many iterations, then restart failed\n");
-                  fprintf (stdout, "***        This should never happen!\n")
+                  fprintf (stdout, "***        This should never happen!\n");
                   exit(1);
                }
              num_restarts++;
