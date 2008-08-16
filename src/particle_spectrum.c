@@ -486,11 +486,11 @@ static double max_full1_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int find_crossover (double kT, double m, double index, double f_gev, /*{{{*/
+static int find_pc_equal (double kT, double m, double index, double f_gev, /*{{{*/
                            double *pc_equal)
 {
    static double x_saved = -1.0;
-   double a, p0, bb, b, s, xt, y, x_guess, x;
+   double a, p0, bb, b, s, xt, x_guess, x;
    int num_tries, num_restarts;
 
    /* Find the momentum at which the two distribution functions
@@ -520,9 +520,8 @@ static int find_crossover (double kT, double m, double index, double f_gev, /*{{
    s = sqrt (index+2);
 
    xt = s * sqrt(b/2);
-   y = s * sqrt(log(xt/b));
 
-   if ((b > xt) || (y < xt))
+   if ((xt < b) || (s * sqrt(log(xt/b)) < xt))
      {
         fprintf (stdout, "*** Error: non-thermal particle density exceeds thermal peak\n");
         *pc_equal = NT_NAN;
@@ -559,8 +558,8 @@ restart:
           {
              if (num_restarts)
                {
-                  /* this should never happen */
-                  fprintf (stdout, "*** Error: find_crossover: too many iterations\n");
+                  fprintf (stdout, "*** Error: find_pc_equal: too many iterations, then restart failed\n");
+                  fprintf (stdout, "***        This should never happen!\n")
                   exit(1);
                }
              num_restarts++;
@@ -572,7 +571,6 @@ restart:
      }
 
    x_saved = x;
-
    *pc_equal = x * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    return 0;
@@ -588,7 +586,7 @@ static double eq_full1_momentum (Particle_Type *pt) /*{{{*/
    f_gev = pt->params[1] * FULL1_FGEV_NORM;
    index = pt->params[2];
 
-   if (-1 == find_crossover (kT, pt->mass, index, f_gev, &pc_equal))
+   if (-1 == find_pc_equal (kT, pt->mass, index, f_gev, &pc_equal))
         return NT_NAN;
 
    return pc_equal;
@@ -609,11 +607,13 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
    *n = 0.0;
    *ncr = 0.0;
 
-   /* It's possible for f_gev to be chosen such that the two distributions
-    * don't intersect (the "overshoot" problem).  That's unfortunate, but
-    * at least (kT, index, f_gev) are relatively uncorrelated. I suspect
-    * that any parameterization that avoids the "overshoot" problem will
-    * force strong correlations between the fit parameters.
+   /* If f_gev is too large, the nonthermal particle density at the
+    * thermal peak may exceed the thermal particle density, so that the
+    * two distributions don't intersect (the "overshoot" problem).  This
+    * is unfortunate, but at least (kT, index, f_gev) are relatively
+    * uncorrelated. I suspect that any parameterization that avoids the
+    * "overshoot" problem will force strong correlations between the
+    * fit parameters.
     */
 
    kT = pt->params[0] * KEV;
@@ -628,7 +628,7 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
    gamma_peak = 1.0 / sqrt ((1.0 - beta_peak) * (1.0 + beta_peak));
    pc_peak = gamma_peak * pt->mass * v_peak * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   /* always include the thermal particles */
+   /* thermal particle contribution */
    if (pc/pc_peak < thresh)
      {
         *n = pdf_rboltz1 (pc, kT, pt->mass);
@@ -638,7 +638,7 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
      return 0;
 
    /* attach the nonthermal distribution above the intersection point */
-   if (-1 == find_crossover (kT, pt->mass, index, f_gev, &pc_equal))
+   if (-1 == find_pc_equal (kT, pt->mass, index, f_gev, &pc_equal))
      {
         *n = NT_NAN;
         return -1;
