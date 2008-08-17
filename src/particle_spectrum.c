@@ -374,6 +374,11 @@ static int pdf_boltz (Particle_Type *pt, double pc, double *ne) /*{{{*/ /*{{{*/
 
    *ne = 2 * M_2_SQRTPI * x * exp (-x) / sqrt (a) / GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
+   /* The nonthermal PDFs have a norm which is per GeV
+    * so for consistency, we have to change units here:
+    */
+   *ne *= GEV;
+
    return 0;
 }
 
@@ -399,7 +404,7 @@ static double max_rboltz_momentum (Particle_Type *pt) /*{{{*/
 
 static double pdf_rboltz1 (double pc, double kT, double mass) /*{{{*/
 {
-   double E, mc2, mu, K2_scaled, f, f2, z;
+   double E, mc2, mu, K2_scaled, f, f2, z, ne;
 
    if (kT <= 0.0)
      return 0.0;
@@ -430,7 +435,14 @@ static double pdf_rboltz1 (double pc, double kT, double mass) /*{{{*/
    if (z < 0.0 || 500.0 < z)
      return 0.0;
 
-   return (mu * f * f / mc2 / K2_scaled) * exp(-z);
+   ne = (mu * f * f / mc2 / K2_scaled) * exp(-z);
+
+   /* The nonthermal PDFs have a norm which is per GeV
+    * so for consistency, we have to change units here:
+    */ 
+   ne *= GEV;
+
+   return ne;
 }
 
 /*}}}*/
@@ -451,7 +463,7 @@ static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
 
 /*}}}*/
 
-#define FULL1_FGEV_NORM   1.e-6
+#define FULL1_FGEV_NORM   1.e-9
 
 static double min_full1_momentum (Particle_Type *pt) /*{{{*/
 {
@@ -515,7 +527,7 @@ static int find_pc_equal (double kT, double m, double index, double f_gev, /*{{{
    a = 2 * m * kT;
    p0 = GEV / GSL_CONST_CGSM_SPEED_OF_LIGHT;
    bb = ((f_gev * pow(p0, index) * GSL_CONST_CGSM_SPEED_OF_LIGHT)
-         / (2 * M_2_SQRTPI * pow(a, 0.5*(index-1))));
+         / (2 * M_2_SQRTPI * GEV * pow(a, 0.5*(index-1))));
    b = pow(bb, 1.0/(index+2));
    s = sqrt (index+2);
 
