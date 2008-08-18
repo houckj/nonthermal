@@ -463,7 +463,7 @@ static int pdf_rboltz (Particle_Type *pt, double pc, double *n) /*{{{*/ /*{{{*/
 
 /*}}}*/
 
-#define FULL1_FGEV_NORM   1.e-9
+#define FULL1_AGEV_NORM   1.e-9
 
 static double min_full1_momentum (Particle_Type *pt) /*{{{*/
 {
@@ -498,7 +498,7 @@ static double max_full1_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static int find_pc_equal (double kT, double m, double index, double f_gev, /*{{{*/
+static int find_pc_equal (double kT, double m, double index, double a_gev, /*{{{*/
                            double *pc_equal)
 {
    static double x_saved = -1.0;
@@ -526,7 +526,7 @@ static int find_pc_equal (double kT, double m, double index, double f_gev, /*{{{
 
    a = 2 * m * kT;
    p0 = GEV / GSL_CONST_CGSM_SPEED_OF_LIGHT;
-   bb = ((f_gev * pow(p0, index) * GSL_CONST_CGSM_SPEED_OF_LIGHT)
+   bb = ((a_gev * pow(p0, index) * GSL_CONST_CGSM_SPEED_OF_LIGHT)
          / (2 * M_2_SQRTPI * GEV * pow(a, 0.5*(index-1))));
    b = pow(bb, 1.0/(index+2));
    s = sqrt (index+2);
@@ -592,13 +592,13 @@ restart:
 
 static double eq_full1_momentum (Particle_Type *pt) /*{{{*/
 {
-   double kT, f_gev, index, pc_equal;
+   double kT, a_gev, index, pc_equal;
 
    kT = pt->params[0] * KEV;
-   f_gev = pt->params[1] * FULL1_FGEV_NORM;
+   a_gev = pt->params[1] * FULL1_AGEV_NORM;
    index = pt->params[2];
 
-   if (-1 == find_pc_equal (kT, pt->mass, index, f_gev, &pc_equal))
+   if (-1 == find_pc_equal (kT, pt->mass, index, a_gev, &pc_equal))
         return NT_NAN;
 
    return pc_equal;
@@ -608,7 +608,7 @@ static double eq_full1_momentum (Particle_Type *pt) /*{{{*/
 
 static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr) /*{{{*/
 {
-   double kT, f_gev, index, curvature, cutoff;
+   double kT, a_gev, index, curvature, cutoff;
    double v_peak, beta_peak, gamma_peak, pc_peak;
    double n_pl, pc_equal;
    double thresh = 30;
@@ -619,17 +619,17 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
    *n = 0.0;
    *ncr = 0.0;
 
-   /* If f_gev is too large, the nonthermal particle density at the
+   /* If a_gev is too large, the nonthermal particle density at the
     * thermal peak may exceed the thermal particle density, so that the
     * two distributions don't intersect (the "overshoot" problem).  This
-    * is unfortunate, but at least (kT, index, f_gev) are relatively
+    * is unfortunate, but at least (kT, index, a_gev) are relatively
     * uncorrelated. I suspect that any parameterization that avoids the
     * "overshoot" problem will force strong correlations between the
     * fit parameters.
     */
 
    kT = pt->params[0] * KEV;
-   f_gev = pt->params[1] * FULL1_FGEV_NORM;
+   a_gev = pt->params[1] * FULL1_AGEV_NORM;
    index = pt->params[2];
    curvature = pt->params[3];
    cutoff = pt->params[4];
@@ -646,11 +646,11 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
         *n = pdf_rboltz1 (pc, kT, pt->mass);
      }
 
-   if ((pc < pc_peak) || (f_gev <= 0))
+   if ((pc < pc_peak) || (a_gev <= 0))
      return 0;
 
    /* attach the nonthermal distribution above the intersection point */
-   if (-1 == find_pc_equal (kT, pt->mass, index, f_gev, &pc_equal))
+   if (-1 == find_pc_equal (kT, pt->mass, index, a_gev, &pc_equal))
      {
         *n = NT_NAN;
         return -1;
@@ -660,7 +660,7 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
      {
         if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
           return 0;
-        n_pl *= f_gev;
+        n_pl *= a_gev;
         /* number density of supra-thermal particles */
         *ncr = n_pl - *n;
         /* particle number density, thermal or not */

@@ -159,25 +159,8 @@
  Maxwell-Boltzmann thermal distribution (\ifun{rboltz}) plus a
  nonthermal tail (\ifun{default}). The fit parameters are those
  of \ifun{rboltz} plus \ifun{default} plus an additional
- parameter,
-#v+
-     f_GeV = N(1 GeV/c) / N(p_peak),
-#v-
- where \ivar{p_peak} is the momentum corresponding to the
- thermal peak, e.g.
-#v+
-     p_peak = sqrt (2mkT).
-#v-
-
- When using this distribution function, the overall spectral
- normalization is scaled to the thermal particle density rather
- than the nonthermal particle density at 1 GeV.  For example,
- when used in conjunction with the \ifun{ntbrem} model, the
- spectral norm should be interpreted as
-#v+
-      norm = n_t n0 V / (r \pi d^2)
-#v-
- where \exmp{n0} is the number density of thermal electrons.
+ parameter, \ivar{A_GeV} which gives the density of nonthermal
+ particles with p=1 GeV/c [cm^-3 GeV^-1].
 
 #% \example
 #% \notes
