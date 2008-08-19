@@ -498,19 +498,21 @@ static double max_full1_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
+#undef DEBUG_PC_EQUAL
+
 static int find_pc_equal (double kT, double m, double index, double a_gev, /*{{{*/
                            double *pc_equal)
 {
-   static double x_saved = -1.0;
+   static double x_saved = -1.0, pc_saved = -1.0;
    double a, p0, bb, b, s, xt, x_guess, x;
+   double err, tol1=1.e-12, tol2=1.e-12;
    double pc, pc1;
    int num_tries, num_restarts;
 
    /* Find the momentum at which the two distribution functions
-    * intersect.  For simplicity, assume the intersection occurs
-    * at a non-relativistic momentum.  If kT is high enough
-    * for relativistic effects to be important, an application of
-    * Newton's method will yield the more general solution.
+    * intersect.  To get an initial estimate, assume the intersection
+    * occurs at a non-relativistic momentum.  Use Newton's method
+    * to refine the solution and include relativistic effects.
     *
     * The two distributions may intersect in 0, 1 or 2 points.
     * To decide which, consider the tangent point coordinate.
@@ -538,7 +540,15 @@ static int find_pc_equal (double kT, double m, double index, double a_gev, /*{{{
 
    if ((xt < b) || (s * sqrt(log(xt/b)) < xt))
      {
+#if 1
         fprintf (stdout, "*** Error: non-thermal particle density exceeds thermal peak\n");
+        fprintf (stdout, "A_GeV=%0.17g\n", a_gev);
+        fprintf (stdout, "   xt=%0.17g\n", xt);
+        fprintf (stdout, "    b=%0.17g\n", b);
+        if (xt > b)
+          fprintf (stdout, "    y=%0.17g  (solution exists when xt < y)\n", s * sqrt(log(xt/b)));
+        exit(1);  /* FIXME ? */
+#endif
         *pc_equal = NT_NAN;
         return -1;
      }
@@ -566,17 +576,19 @@ restart:
 
         x = s * sqrt (log(x_guess/b));
 
-        if (fabs(x/x_guess - 1) < 100*DBL_EPSILON)
+        err = x/x_guess - 1;
+        if (fabs(err) < tol1)
           break;
 
-        if (num_tries > 100)
+#ifdef DEBUG_PC_EQUAL
+        fprintf (stderr, "x=%0.17g x_guess=%0.17g err=%0.17g\n", x, x_guess, err);
+#endif
+
+        /* Testing suggests that it's better to try hard at this point. */
+        if (num_tries > 50)
           {
-             if (num_restarts)
-               {
-                  fprintf (stdout, "*** Error: find_pc_equal: too many iterations, then restart failed\n");
-                  fprintf (stdout, "***        This should never happen!\n");
-                  exit(1);
-               }
+             if ((fabs(err) < 10*tol1) || (num_restarts > 0))
+               goto refine_root;
              num_restarts++;
              goto restart;
           }
@@ -585,19 +597,22 @@ restart:
         x_guess = x;
      }
 
+refine_root:
+
    x_saved = x;
    *pc_equal = x * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   if (kT < 10 * KEV)
-     return 0;
-
-   /* For high temperatures kT > 10 keV, relativistic effects
-    * become important, so the non-relativistic solution
-    * isn't quite right.  Fix that by starting Newton's method
-    * at the non-relativistic solution:
+   /* Use Newton's method to polish the solution.
+    * For kT > 10 keV, this step is important because relativistic
+    * effects are important for the thermal particles, and Newton's
+    * method uses the relativistic Maxwell-Boltzmann distribution.
     */
 
-   pc = *pc_equal;
+   if ((num_tries == 0) && (pc_saved > 0))
+     pc = pc_saved;
+   else
+     pc = *pc_equal;
+
    num_tries = 0;
 
    for (;;)
@@ -605,14 +620,28 @@ restart:
         double y = pdf_rboltz1 (pc, kT, m) / (a_gev * pow (pc/GEV, -index));
         double e = hypot (pc, m * C_SQUARED);
         pc1 = pc * (1.0  - (y - 1.0) / y / (index + 2 - pc*pc / kT / e));
-        if (fabs (pc/pc1 - 1.0) < 100 * DBL_EPSILON)
+        err = pc/pc1 - 1.0;
+#ifdef DEBUG_PC_EQUAL
+        fprintf (stderr, "pc=%0.17g pc1=%0.17g err=%0.17g\n", pc, pc1, err);
+#endif
+        if (fabs (err) < tol2)
           break;
         pc = pc1;
         num_tries++;
+        /* don't give up too soon here... */
         if (num_tries > 100)
-          return 0;
+          {
+#ifdef DEBUG_PC_EQUAL
+             fprintf (stderr, "QUIT\n");
+#endif
+             return 0;
+          }
      }
+#ifdef DEBUG_PC_EQUAL
+   fprintf (stderr, "CONVERGED\n");
+#endif
 
+   pc_saved = pc;
    *pc_equal = pc;
 
    return 0;
