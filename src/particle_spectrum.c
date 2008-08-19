@@ -507,7 +507,8 @@ static int find_pc_equal (double kT, double m, double index, double a_gev, /*{{{
 
    /* Find the momentum at which the two distribution functions
     * intersect.  For simplicity, assume the intersection occurs
-    * at a non-relativistic momentum.
+    * at a non-relativistic momentum [Needless to say, if that's 
+    * not true, then this method won't work very well...]
     *
     * The two distributions may intersect in 0, 1 or 2 points.
     * To decide which, consider the tangent point coordinate.
