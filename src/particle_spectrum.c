@@ -540,15 +540,13 @@ static int find_pc_equal (double kT, double m, double index, double a_gev, /*{{{
 
    if ((xt < b) || (s * sqrt(log(xt/b)) < xt))
      {
-#if 1
         fprintf (stdout, "*** Error: non-thermal particle density exceeds thermal peak\n");
         fprintf (stdout, "A_GeV=%0.17g\n", a_gev);
         fprintf (stdout, "   xt=%0.17g\n", xt);
         fprintf (stdout, "    b=%0.17g\n", b);
         if (xt > b)
           fprintf (stdout, "    y=%0.17g  (solution exists when xt < y)\n", s * sqrt(log(xt/b)));
-        exit(1);  /* FIXME ? */
-#endif
+        SLang_set_error (SL_INTRINSIC_ERROR);
         *pc_equal = NT_NAN;
         return -1;
      }
