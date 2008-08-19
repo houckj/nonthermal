@@ -439,7 +439,7 @@ static double pdf_rboltz1 (double pc, double kT, double mass) /*{{{*/
 
    /* The nonthermal PDFs have a norm which is per GeV
     * so for consistency, we have to change units here:
-    */ 
+    */
    ne *= GEV;
 
    return ne;
@@ -503,12 +503,14 @@ static int find_pc_equal (double kT, double m, double index, double a_gev, /*{{{
 {
    static double x_saved = -1.0;
    double a, p0, bb, b, s, xt, x_guess, x;
+   double pc, pc1;
    int num_tries, num_restarts;
 
    /* Find the momentum at which the two distribution functions
     * intersect.  For simplicity, assume the intersection occurs
-    * at a non-relativistic momentum [Needless to say, if that's 
-    * not true, then this method won't work very well...]
+    * at a non-relativistic momentum.  If kT is high enough
+    * for relativistic effects to be important, an application of
+    * Newton's method will yield the more general solution.
     *
     * The two distributions may intersect in 0, 1 or 2 points.
     * To decide which, consider the tangent point coordinate.
@@ -585,6 +587,33 @@ restart:
 
    x_saved = x;
    *pc_equal = x * sqrt(a) * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+
+   if (kT < 10 * KEV)
+     return 0;
+
+   /* For high temperatures kT > 10 keV, relativistic effects
+    * become important, so the non-relativistic solution
+    * isn't quite right.  Fix that by starting Newton's method
+    * at the non-relativistic solution:
+    */
+
+   pc = *pc_equal;
+   num_tries = 0;
+
+   for (;;)
+     {
+        double y = pdf_rboltz1 (pc, kT, m) / (a_gev * pow (pc/GEV, -index));
+        double e = hypot (pc, m * C_SQUARED);
+        pc1 = pc * (1.0  - (y - 1.0) / y / (index + 2 - pc*pc / kT / e));
+        if (fabs (pc/pc1 - 1.0) < 100 * DBL_EPSILON)
+          break;
+        pc = pc1;
+        num_tries++;
+        if (num_tries > 100)
+          return 0;
+     }
+
+   *pc_equal = pc;
 
    return 0;
 }
