@@ -619,7 +619,8 @@ refine_root:
      {
         double y = pdf_rboltz1 (pc, kT, m) / (a_gev * pow (pc/GEV, -index));
         double e = hypot (pc, m * C_SQUARED);
-        pc1 = pc * (1.0  - (y - 1.0) / y / (index + 2 - pc*pc / kT / e));
+        /* FIXME?  Expect this to behave badly near the tangent point... */
+        pc1 = pc * (1.0  - (y - 1.0) / y / (index + 2 - pc * pc / kT / e));
         err = pc/pc1 - 1.0;
 #ifdef DEBUG_PC_EQUAL
         fprintf (stderr, "pc=%0.17g pc1=%0.17g err=%0.17g\n", pc, pc1, err);
