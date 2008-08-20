@@ -707,18 +707,25 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
    if ((pc < pc_peak) || (a_gev <= 0))
      return 0;
 
-   /* attach the nonthermal distribution above the intersection point */
-   if (-1 == find_pc_equal (kT, pt->mass, index, a_gev, &pc_equal))
+   /* If near the peak, look for the cross-over point. */
+   if (pc/pc_peak < thresh)
      {
-        *n = NT_NAN;
-        return -1;
+        if (-1 == find_pc_equal (kT, pt->mass, index, a_gev, &pc_equal))
+          {
+             *n = NT_NAN;
+             return -1;
+          }
+        if (pc < pc_equal)
+          return 0;
      }
 
-   if (pc > pc_equal)
+   /* nonthermal particle contribution */
+   if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
+     return 0;
+   n_pl *= a_gev;
+
+   if (n_pl > *n)
      {
-        if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
-          return 0;
-        n_pl *= a_gev;
         /* number density of supra-thermal particles */
         *ncr = n_pl - *n;
         /* particle number density, thermal or not */
