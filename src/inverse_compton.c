@@ -92,7 +92,7 @@ static int c01 (double p, double *val) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   (void) gsl_integration_qags (&f, 0, 1, epsabs, epsrel, limit,
+   (void) gsl_integration_qags (&f, 0.0, 1.0, epsabs, epsrel, limit,
                                work, val, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
@@ -125,7 +125,7 @@ static int c1i (double p, double *val) /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   (void) gsl_integration_qagiu (&f, 1, epsabs, epsrel, limit,
+   (void) gsl_integration_qagiu (&f, 1.0, epsabs, epsrel, limit,
                                  work, val, &abserr);
 
    gsl_set_error_handler (gsl_error_handler);
