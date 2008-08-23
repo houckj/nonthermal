@@ -56,7 +56,8 @@ void nonthermal_error_hook (Nonthermal_Error_Type *e, Particle_Type *p, /*{{{*/
      {
         fprintf (stderr, "*** %s\n", e->error_msg);
         fprintf (stderr, "*** occurred at %s:%d\n", file, line);
-        exit(1);
+        SLang_set_error (SL_INTRINSIC_ERROR);
+        return;
      }
 
    npars = p->num_params;
