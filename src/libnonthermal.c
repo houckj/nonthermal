@@ -545,7 +545,7 @@ static void _ntb_free_client_data (void) /*{{{*/
 
 /*}}}*/
 
-static int init_brem_stationary (double *par, unsigned int npar, Brems_Type *b, Particle_Type *elec) /*{{{*/
+static int init_brem (double *par, unsigned int npar, Brems_Type *b, Particle_Type *elec) /*{{{*/
 {
    (void) par; (void) npar;
 
@@ -568,16 +568,16 @@ static int init_brem_stationary (double *par, unsigned int npar, Brems_Type *b, 
 
 /*}}}*/
 
-static int binned_brem_stationary (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
+static int binned_brem (double *val, Isis_Hist_t *g, double *par, unsigned int npar) /*{{{*/
 {
    Brems_Type b = NULL_BREMS_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
    int status;
 
-   if (-1 == init_brem_stationary (par, npar, &b, &elec))
+   if (-1 == init_brem (par, npar, &b, &elec))
      return -1;
 
-   status = _nt_binned_contin ((void *)&b, &ntb_brems_stationary, val, g, par, npar);
+   status = _nt_binned_contin ((void *)&b, &ntb_brems, val, g, par, npar);
    free_pdf (&elec);
 
    return status;
@@ -585,16 +585,16 @@ static int binned_brem_stationary (double *val, Isis_Hist_t *g, double *par, uns
 
 /*}}}*/
 
-static int unbinned_brem_stationary (double *val, Isis_User_Grid_t *g, double *par, unsigned int npar) /*{{{*/
+static int unbinned_brem (double *val, Isis_User_Grid_t *g, double *par, unsigned int npar) /*{{{*/
 {
    Brems_Type b = NULL_BREMS_TYPE;
    Particle_Type elec = NULL_PARTICLE_TYPE;
    int status;
 
-   if (-1 == init_brem_stationary (par, npar, &b, &elec))
+   if (-1 == init_brem (par, npar, &b, &elec))
      return -1;
 
-   status = _nt_contin ((void *)&b, &ntb_brems_stationary, val, g, par, npar);
+   status = _nt_contin ((void *)&b, &ntb_brems, val, g, par, npar);
    free_pdf (&elec);
 
    return status;
@@ -819,8 +819,8 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
    static unsigned int norm_indexes[] = {0};
 
    p->function_exit = NULL;
-   p->binned = binned_brem_stationary;
-   p->unbinned = unbinned_brem_stationary;
+   p->binned = binned_brem;
+   p->unbinned = unbinned_brem;
    p->parameter_names = (char **)parameter_names;
    p->parameter_units = (char **) parameter_units;
    p->default_max = default_max;

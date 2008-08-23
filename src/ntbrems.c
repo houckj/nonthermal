@@ -434,7 +434,7 @@ static double delta_mu_integrand (double deltamu, void *p) /*{{{*/
 
 /*}}}*/
 
-static void handle_gsl_status (int status) /*{{{*/
+static void handle_gsl_status (int status, char *file, int line) /*{{{*/
 {
    if (status == 0)
      return;
@@ -444,7 +444,10 @@ static void handle_gsl_status (int status) /*{{{*/
    if ((status != GSL_EROUND)
        && (status != GSL_EMAXITER)
        && (status != GSL_ESING))
-     fprintf (stderr, "*** %s\n", gsl_strerror (status));
+     {
+        fprintf (stderr, "*** %s\n", gsl_strerror (status));
+        fprintf (stderr, "  %s:%d\n", file ? file : "??", line);
+     }
 }
 
 /*}}}*/
@@ -572,7 +575,7 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
         status = gsl_integration_qag (&f, mu_min, 1.0-eps, epsabs, epsrel,
                                       limit, GSL_INTEG_GAUSS61,
                                       work, val, &abserr);
-        handle_gsl_status (status);
+        handle_gsl_status (status, __FILE__, __LINE__);
      }
 
    if (eps > 0.0)
@@ -591,7 +594,7 @@ static int angular_integral (double een, double pen, double *val) /*{{{*/
         status = gsl_integration_qag (&f, 0.0, tmax, epsabs, epsrel,
                                       limit, GSL_INTEG_GAUSS61,
                                       work, &eps_val, &abserr);
-        handle_gsl_status (status);
+        handle_gsl_status (status, __FILE__, __LINE__);
         *val += eps_val;
      }
 
@@ -882,7 +885,7 @@ static int lab_angular_integral (double een, double pen, double *val) /*{{{*/
    status = gsl_integration_qag (&f, 0.0, one_minus_mu_min, epsabs, epsrel,
                                  limit, GSL_INTEG_GAUSS15,
                                  work, val, &abserr);
-   handle_gsl_status (status);
+   handle_gsl_status (status, __FILE__, __LINE__);
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
@@ -954,7 +957,7 @@ double _ntb_ee_sigma_haug_lab (double gm1, double e_ph) /*{{{*/
 
 /*}}}*/
 
-static double ntb_integrand_stationary (double pc, void *pt) /*{{{*/
+static double ntb_integrand (double pc, void *pt) /*{{{*/
 {
    Brems_Type *b = (Brems_Type *)pt;
    Particle_Type *elec = b->electrons;
@@ -1006,13 +1009,12 @@ static double ntb_integrand_stationary (double pc, void *pt) /*{{{*/
 
 static int integral_over_electrons (Brems_Type *b, /*{{{*/
                                     double (*integrand)(double, void *),
-                                    double epsrel,
                                     double *val)
 {
    gsl_error_handler_t *gsl_error_handler;
    gsl_integration_workspace *work;
    gsl_function f;
-   double epsabs, abserr;
+   double epsrel, epsabs, abserr;
    double pc_min, pc_max;
    size_t limit;
    int status;
@@ -1023,6 +1025,7 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
    f.function = integrand;
    f.params = b;
    epsabs = 0.0;
+   epsrel = 1.e-10;
    limit = MAX_QAG_SUBINTERVALS;
 
    if (NULL == (work = gsl_integration_workspace_alloc (limit)))
@@ -1040,7 +1043,10 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
    if (status)
      {
         if ((status != GSL_EROUND) && (status != GSL_ESING))
-          fprintf (stderr, "*** ntbrem: %s\n", gsl_strerror (status));
+          {                
+             fprintf (stderr, "*** ntbrem: %s\n", gsl_strerror (status));
+             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
+          }        
      }
 
    return 0;
@@ -1048,17 +1054,15 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
 
 /*}}}*/
 
-int ntb_brems_stationary (void *vb, double photon_energy, double *emissivity) /*{{{*/
+int ntb_brems (void *vb, double photon_energy, double *emissivity) /*{{{*/
 {
    Brems_Type *b = (Brems_Type *)vb;
-   double epsrel = 1.e-10;
 
    /* photon energy eV -> units of electron mc^2 */
    b->photon_energy = photon_energy
      * GSL_CONST_CGSM_ELECTRON_VOLT / ELECTRON_REST_ENERGY;
 
-   return integral_over_electrons (b, &ntb_integrand_stationary,
-                                   epsrel, emissivity);
+   return integral_over_electrons (b, &ntb_integrand, emissivity);
 }
 
 /*}}}*/

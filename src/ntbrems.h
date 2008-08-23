@@ -68,7 +68,6 @@ extern double _ntb_ee_sigma_haug_lab (double electron_kinetic_energy, double pho
 
 
 extern double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy);
-extern int ntb_brems_stationary (void *vs, double photon_energy, double *emissivity);
-extern int ntb_brems_non_stationary (void *vs, double photon_energy, double *emissivity);
+extern int ntb_brems (void *vs, double photon_energy, double *emissivity);
 
 #endif
