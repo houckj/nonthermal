@@ -36,6 +36,8 @@ struct Brems_Type
 
 #define NULL_BREMS_TYPE  {NULL,NULL,NULL,0.0,0.0,0.0,0.0,0.0,0,NULL}
 
+extern double Ntb_Epsrel;
+
 enum
 {
    NTB_ee = 0,

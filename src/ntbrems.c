@@ -1042,11 +1042,18 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
 
    if (status)
      {
-        if ((status != GSL_EROUND) && (status != GSL_ESING))
-          {                
+        if ((fabs(*val) > 0) && (abserr < Ntb_Epsrel * fabs(*val)))
+          return 0;
+        /* if ((status != GSL_EROUND) && (status != GSL_ESING)) */
+          {
              fprintf (stderr, "*** ntbrem: %s\n", gsl_strerror (status));
              fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
-          }        
+             fprintf (stderr, "    val = %0.17e\n", *val);
+             fprintf (stderr, " abserr = %0.17e\n", abserr);
+             fprintf (stderr, " epsrel = %0.17e\n", epsrel);
+             fprintf (stderr, "_ntbrem_epsrel = %g\n", Ntb_Epsrel);
+             exit(1);
+          }
      }
 
    return 0;

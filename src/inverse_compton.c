@@ -1,6 +1,6 @@
 /* -*- mode: C; mode: fold -*- */
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck 
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
@@ -43,7 +43,7 @@
 /*{{{ Compute constant appearing in asymptotic solution
  * for the extreme Klein-Nishina limit.
  * Blumenthal & Gould, equations 2.85 and 2.86
- */ 
+ */
 
 static double dratio (double x, double p) /*{{{*/
 {
@@ -169,8 +169,8 @@ static double incident_photons_integrand (double lnq, void *p) /*{{{*/
 #if 0
    f_kn = 2 * q * log(q) + (1.0 - q) * (1.0 + 2*q + 0.5*gq*gq/(1.0 + gq));
 #else
-   f_kn = 2 * q * lnq - expm1(lnq) * (1.0 + 2*q + 0.5*gq*gq/(1.0 + gq));   
-#endif   
+   f_kn = 2 * q * lnq - expm1(lnq) * (1.0 + 2*q + 0.5*gq*gq/(1.0 + gq));
+#endif
 
    (void) (*ic->incident_photons) (omega_i, &num_photons);
    if (num_photons == 0.0)
@@ -269,6 +269,7 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
    gsl_integration_workspace *work;
    gsl_function f;
    double epsabs, epsrel, abserr;
+   double estimated_err, allowed_err, allowed_tol = Invc_Epsrel;
    double pc_min, pc_max;
    double pcm, gamma_min, max_omega_i, tmin, tmax1, s;
    double omega = ic->energy_final_photon;
@@ -310,6 +311,8 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
     * loss of significant digits by summing terms of more
     * equal magnitude
     */
+   estimated_err = 0.0;
+   allowed_err = 0.0;
    s = 0.0;
    tmin = sqrt(pc_min);
    tmax1 = sqrt(pc_max*1.e3);
@@ -325,19 +328,33 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
         if (status == 0) status = istatus;
         s += ds;
         tmin = tmax;
+        if (fabs(ds) > 0)
+          {
+             estimated_err += abserr;
+             allowed_err += fabs(ds) * allowed_tol;
+          }
      }
    while (tmin < tmax1);
+
+   if (status)
+     {
+        /* if ((status != GSL_EROUND) && (status != GSL_ESING)) */
+        if (estimated_err > allowed_err)
+          {
+             fprintf (stderr, "*** invc:  %s\n", gsl_strerror (status));
+             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
+             fprintf (stderr, "    est. error = %0.17e\n", estimated_err);
+             fprintf (stderr, " allowed error = %0.17e\n", allowed_err);
+             fprintf (stderr, "        epsrel = %0.17e\n", epsrel);
+             fprintf (stderr, "  _invc_epsrel = %g\n", Invc_Epsrel);
+             exit(1);
+          }
+     }
 
    *val = s / ELECTRON_REST_ENERGY;
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
-
-   if (status)
-     {
-        if ((status != GSL_EROUND) && (status != GSL_ESING))
-          fprintf (stderr, "*** invc:  %s\n", gsl_strerror (status));
-     }
 
    return 0;
 }

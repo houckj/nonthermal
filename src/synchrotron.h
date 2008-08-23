@@ -33,6 +33,8 @@ Synchrotron_Type;
 
 #define NULL_SYNCHROTRON_TYPE  {NULL,0.0,0.0,0,NULL}
 
+extern double Sync_Epsrel;
+
 extern int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity);
 extern int syn_angular_integral (double x, double *y);
 

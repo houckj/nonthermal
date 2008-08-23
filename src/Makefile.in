@@ -107,7 +107,7 @@ libnonthermal.so: libnonthermal.c $(ELFOBJS)
 test:
 	@for X in tests/test_*.sl; \
 	do \
-		slsh $$X; \
+		isis $$X; \
 	done
 #---------------------------------------------------------------------------
 # Installation Rules

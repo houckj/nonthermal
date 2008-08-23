@@ -1,6 +1,6 @@
 /* -*- mode: C; mode: fold -*- */
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck 
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
@@ -179,17 +179,6 @@ static int eval_angular_integral (double x, void *pt, double *y) /*{{{*/
 
 /*}}}*/
 
-static void handle_status (int status) /*{{{*/
-{
-   if (status)
-     {
-        if (status != GSL_EROUND)
-          fprintf (stderr, "status = %d:  %s\n", status, gsl_strerror (status));
-     }
-}
-
-/*}}}*/
-
 static double Coef;
 
 static double synchrotron_integrand (double t, void *pt) /*{{{*/
@@ -268,10 +257,23 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
      (&f, log(xmin), log(xmax),
       epsabs, epsrel, limit, GSL_INTEG_GAUSS31, work, &integral, &abserr);
 
+   if (status)
+     {
+        /* if (status != GSL_EROUND) */
+        if ((fabs(integral) > 0) && (abserr > Sync_Epsrel * fabs(integral)))
+          {
+             fprintf (stderr, "*** sync:  %s\n", gsl_strerror (status));
+             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
+             fprintf (stderr, "    val = %0.17e\n", integral);
+             fprintf (stderr, " abserr = %0.17e\n", abserr);
+             fprintf (stderr, " epsrel = %0.17e\n", epsrel);
+             fprintf (stderr, "_sync_epsrel = %g\n", Sync_Epsrel);
+             exit(1);
+          }
+     }
+
    /* constant coefficient from change of integration variable */
    integral *= 0.5 * sqrt (Coef) * ELECTRON_REST_ENERGY;
-
-   handle_status (status);
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);

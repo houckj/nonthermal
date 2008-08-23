@@ -1,6 +1,6 @@
 /* -*- mode: C; mode: fold -*- */
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck 
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
@@ -832,7 +832,7 @@ static double pizero_integrand (double w, void *x) /*{{{*/
    Pizero_Type *p = (Pizero_Type *)x;
    double q, s, e_pizero;
    int status;
-   
+
    /* use log-variable in integral */
    w = exp(w);
 
@@ -856,7 +856,7 @@ static double pizero_integrand (double w, void *x) /*{{{*/
 
    /* from change of variables removing singularity */
    s *= 2.0;
-   
+
    /* from change to log integration interval */
    s *= w;
 
@@ -886,16 +886,16 @@ static int pizero_max_energy (Particle_Type *protons, double *e_pizero) /*{{{*/
    /* double e_pizero_cm, gamma_cm, pc_max, s; */
 
    /* If we use a constant here, the spectrum model
-    * satisfies the recurrence relation more accurately 
+    * satisfies the recurrence relation more accurately
     * near photon_energy = 0.5*pizero_rest_mass
-    */ 
+    */
 #if 0
    pc_max = (*protons->momentum_max)(protons) / PROTON_REST_ENERGY;
    gp_max = hypot (pc_max, 1.0);
 #else
    (void) protons;
    gp_max = 1.e12;
-#endif   
+#endif
 
 #if 0
    /* lab frame max energy */
@@ -968,11 +968,24 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);
 
-   if (status > 0 && status != GSL_EROUND)
-     fprintf (stderr, "*** pizero: pizero integral: %s\n", gsl_strerror (status));
-
    if (isnan(*val))
      *val = 0.0;
+
+   if (status > 0)
+     {
+        /* if (status != GSL_EROUND) */
+        if ((fabs(*val) > 0) && (abserr < Pizero_Epsrel * fabs(*val)))
+          {             
+             fprintf (stderr, "*** pizero: pizero integral: %s\n",
+                      gsl_strerror (status));
+             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
+             fprintf (stderr, "    val = %0.17e\n", *val);
+             fprintf (stderr, " abserr = %0.17e\n", abserr);
+             fprintf (stderr, " epsrel = %0.17e\n", epsrel);
+             fprintf (stderr, "_pizero_epsrel = %g\n", Pizero_Epsrel);
+             exit(1);
+          }
+     }
 
    /* two photons per pion */
    *val *= 2.0;
