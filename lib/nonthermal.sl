@@ -23,6 +23,8 @@ import("nonthermal");
 $1 = path_concat (path_dirname (__FILE__), "nonthermal");
 prepend_to_isis_load_path ($1);
 private variable Data_Path = path_concat ($1, "data");
+if (NULL == stat_file (Data_Path))
+  Data_Path = "../data";
 
 private define push_array_values (a) %{{{
 {

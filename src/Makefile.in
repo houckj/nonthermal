@@ -96,10 +96,10 @@ $(ELFDIR):
 	-mkdir $(ELFDIR)
 
 nonthermal-module.so: nonthermal-module.c $(MODULE_OBJS)
-	$(CC_SHARED) $(INCS) nonthermal-module.c -o $(ELFDIR)/nonthermal-module.so -DINSTALL_PREFIX=\"${prefix}\" $(MODULE_OBJS) $(LIBS)
+	$(CC_SHARED) $(INCS) nonthermal-module.c -o nonthermal-module.so -DINSTALL_PREFIX=\"${prefix}\" $(MODULE_OBJS) $(LIBS)
 
 libnonthermal.so: libnonthermal.c $(ELFOBJS)
-	$(CC_SHARED) $(INCS) libnonthermal.c -o $(ELFDIR)/libnonthermal.so $(ELFOBJS) $(LIBS)
+	$(CC_SHARED) $(INCS) libnonthermal.c -o libnonthermal.so $(ELFOBJS) $(LIBS)
 
 #---------------------------------------------------------------------------
 # Regression tests
@@ -119,7 +119,6 @@ install_directories:
 	$(MKINSDIR) $(DEST_DATA_FILES_INSTALL_DIR)
 
 install_modules:
-	@cd $(ELFDIR) ; \
 	for X in $(MODULES); \
 	do \
 		echo $(INSTALL) $$X $(DEST_MODULE_INSTALL_DIR); \

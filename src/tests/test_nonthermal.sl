@@ -1,3 +1,12 @@
+%
+if (NULL != stat_file ("nonthermal-module.so"))
+{
+   $1 = getcwd();
+   prepend_to_isis_module_path ($1);
+   prepend_to_isis_load_path (path_concat ($1, "../lib"));
+}
+%
+
 require ("nonthermal");
 require ("readascii");
 
