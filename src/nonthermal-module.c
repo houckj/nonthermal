@@ -45,9 +45,12 @@ static SLang_CStruct_Field_Type Error_Type_Layout [] =
    SLANG_END_CSTRUCT_TABLE
 };
 
-void nonthermal_error_hook (Nonthermal_Error_Type *e, char *file, int line) /*{{{*/
+void nonthermal_error_hook (Nonthermal_Error_Type *e, Particle_Type *p, /*{{{*/
+                            char *file, int line)
 {
    char *hook_name = "nonthermal_error_hook";
+   SLang_Array_Type *sl_par = NULL;
+   int npars;
 
    if (2 != SLang_is_defined (hook_name))
      {
@@ -56,8 +59,17 @@ void nonthermal_error_hook (Nonthermal_Error_Type *e, char *file, int line) /*{{
         exit(1);
      }
 
+   npars = p->num_params;
+   if (NULL == (sl_par = SLang_create_array (SLANG_DOUBLE_TYPE, 0, NULL, &npars, 1)))
+     {
+        SLang_set_error (SL_INTRINSIC_ERROR);
+     }
+   memcpy ((char *)sl_par->data, (char *)p->params, p->num_params * sizeof(double));
+
    SLang_start_arg_list ();
    (void) SLang_push_cstruct ((VOID_STAR)e, Error_Type_Layout);
+   SLang_push_string (p->method);
+   SLang_push_array (sl_par, 1);
    SLang_push_string (file);
    SLang_push_integer (line);
    SLang_end_arg_list ();

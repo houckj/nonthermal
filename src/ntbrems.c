@@ -1052,7 +1052,7 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
              e.estimated_abserr = abserr;
              e.allowed_abserr = Ntb_Epsrel * fabs(*val);
              e.allowed_epsrel = Ntb_Epsrel;
-             nonthermal_error_hook (&e, __FILE__, __LINE__);
+             nonthermal_error_hook (&e, b->electrons, __FILE__, __LINE__);
           }
      }
 

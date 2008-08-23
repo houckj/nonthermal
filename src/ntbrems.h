@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck 
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
@@ -24,8 +24,6 @@ typedef struct Brems_Type Brems_Type;
 struct Brems_Type
 {
    Particle_Type *electrons;  /* relativistic electrons */
-   Particle_Type *e_target;   /* non-relativistic */
-   Particle_Type *i_target;   /* non-relativistic */
    double photon_energy;
    double ee_weight;
    double ep_weight;
@@ -34,19 +32,19 @@ struct Brems_Type
    void *client_data;
 };
 
-#define NULL_BREMS_TYPE  {NULL,NULL,NULL,0.0,0.0,0.0,0.0,0.0,0,NULL}
+#define NULL_BREMS_TYPE  {NULL,0.0,0.0,0.0,0.0,0.0,0,NULL}
 
 extern double Ntb_Epsrel;
 
 enum
 {
    NTB_ee = 0,
-   NTB_ep = 1   
+   NTB_ep = 1
 };
 
 /* electron_kinetic_energy = (\gamma-1)
  * photon_energy in units of electron-rest-energy
- * differential cross-section in CM system in barns/keV 
+ * differential cross-section in CM system in barns/keV
  */
 
 extern double _ntb_ee_sigma_haug (double electron_kinetic_energy, double photon_energy);
@@ -61,13 +59,12 @@ extern double _ntb_ee_sigma_haug_lab (double electron_kinetic_energy, double pho
  *    sigma is computed in the lab-frame, then integrated over
  *    angles.  The lab-frame code is written in such a way to
  *    make it prone to lose significant figures so it doesnt
- *    work very well in the ultra-relativistic regime.  
+ *    work very well in the ultra-relativistic regime.
  *    The CM frame code suffers fromt he same problem, but
  *    the gamma values used in the CM frame are the sqrt()
  *    of the lab-frame gamma, so the precision loss is much less
  *    important for electron energies of interest.
- */ 
-
+ */
 
 extern double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy);
 extern int ntb_brems (void *vs, double photon_energy, double *emissivity);

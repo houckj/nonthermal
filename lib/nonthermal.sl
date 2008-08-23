@@ -26,7 +26,7 @@ private variable Data_Path = path_concat ($1, "data");
 if (NULL == stat_file (Data_Path))
   Data_Path = "../data";
 
-public define nonthermal_error_hook (s, file, line) %{{{
+public define nonthermal_error_hook (s, pdf, pars, file, line) %{{{
 {
    vmessage ("\n*** %s", s.error_msg);
    vmessage ("    occurred at $file:$line"$);
@@ -34,6 +34,15 @@ public define nonthermal_error_hook (s, file, line) %{{{
    vmessage ("%0.17e = approx. absolute error", s.estimated_abserr);
    vmessage ("%0.17e = allowed absolute error", s.allowed_abserr);
    vmessage ("%0.17e = allowed relative error", s.allowed_epsrel);
+   if (pars != NULL)
+     {
+        vmessage ("PDF $pdf params:"$);
+        foreach (pars)
+          {
+             variable p = ();
+             vmessage ("%0.10e", p);
+          }
+     }
    vmessage ("\n===> exiting from nonthermal_error_hook\n");
    exit(1);
 }

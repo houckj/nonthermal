@@ -564,8 +564,6 @@ static int init_brem (double *par, unsigned int npar, Brems_Type *b, Particle_Ty
      }
 
    b->electrons = elec;
-   b->e_target = NULL;
-   b->i_target = NULL;
    b->ee_weight = Ntb_ee_weight;
    b->ep_weight = Ntb_ep_weight;
    b->client_data = ntb_client_data;

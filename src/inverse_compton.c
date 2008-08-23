@@ -347,7 +347,7 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
              e.estimated_abserr = estimated_err;
              e.allowed_abserr = allowed_err;
              e.allowed_epsrel = Invc_Epsrel;
-             nonthermal_error_hook (&e, __FILE__, __LINE__);
+             nonthermal_error_hook (&e, ic->electrons, __FILE__, __LINE__);
           }
      }
 

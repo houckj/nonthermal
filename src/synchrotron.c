@@ -268,7 +268,7 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
              e.estimated_abserr = abserr;
              e.allowed_abserr = Sync_Epsrel * fabs(integral);
              e.allowed_epsrel = Sync_Epsrel;
-             nonthermal_error_hook (&e, __FILE__, __LINE__);
+             nonthermal_error_hook (&e, s->electrons, __FILE__, __LINE__);
           }
      }
 
