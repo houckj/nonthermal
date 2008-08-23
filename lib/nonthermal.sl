@@ -26,8 +26,6 @@ private variable Data_Path = path_concat ($1, "data");
 if (NULL == stat_file (Data_Path))
   Data_Path = "../data";
 
-new_exception ("EvaluationError", InternalError, "Error while computing spectral model");
-
 public define nonthermal_error_hook (s, pdf, pars, file, line) %{{{
 {
    vmessage ("\n*** %s", s.error_msg);
@@ -46,7 +44,9 @@ public define nonthermal_error_hook (s, pdf, pars, file, line) %{{{
           }
      }
 
-   throw EvaluationError;
+   throw ApplicationError, "exiting from nonthermal_error_hook";
+
+   return -1;
 }
 
 %}}}

@@ -114,7 +114,7 @@ static int _nt_binned_contin (void *cl, /*{{{*/
         double el, eh, sl, sm, sh, area;
         int n;
         
-        if (isis_user_break())
+        if (isis_user_break() || (0 != SLang_get_error ()))
           return -1;
 
         n = g->notice_list[i];
@@ -173,7 +173,7 @@ static int _nt_contin (void *cl, /*{{{*/
     for (i=0; i < g->npts; i++)
      {
         double s;
-        if (isis_user_break())
+        if (isis_user_break() || (0 != SLang_get_error ()))
           return -1;
         (void) (*eval_contin) (cl, g->x[i], &s);
         val[i] = norm * s;

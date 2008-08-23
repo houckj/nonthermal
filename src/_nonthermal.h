@@ -101,8 +101,8 @@ struct Nonthermal_Error_Type
 
 #include "nonthermal.h"
 
-extern void nonthermal_error_hook (Nonthermal_Error_Type *e, Particle_Type *p,
-                                   char *file, int line);
+extern int nonthermal_error_hook (Nonthermal_Error_Type *e, Particle_Type *p,
+                                  char *file, int line);
 
 extern Particle_Type *load_pdf (char *path, char *name, char *options);
 extern int append_pdf (Particle_Type *pt);

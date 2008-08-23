@@ -257,6 +257,9 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
      (&f, log(xmin), log(xmax),
       epsabs, epsrel, limit, GSL_INTEG_GAUSS31, work, &integral, &abserr);
 
+   gsl_set_error_handler (gsl_error_handler);
+   gsl_integration_workspace_free (work);
+
    if (status)
      {
         /* if (status != GSL_EROUND) */
@@ -268,15 +271,13 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
              e.estimated_abserr = abserr;
              e.allowed_abserr = Sync_Epsrel * fabs(integral);
              e.allowed_epsrel = Sync_Epsrel;
-             nonthermal_error_hook (&e, s->electrons, __FILE__, __LINE__);
+             if (nonthermal_error_hook (&e, s->electrons, __FILE__, __LINE__))
+               return -1;
           }
      }
 
    /* constant coefficient from change of integration variable */
    integral *= 0.5 * sqrt (Coef) * ELECTRON_REST_ENERGY;
-
-   gsl_set_error_handler (gsl_error_handler);
-   gsl_integration_workspace_free (work);
 
    eph = photon_energy * GSL_CONST_CGSM_ELECTRON_VOLT;
    *emissivity = (SYNCHROTRON_COEF * s->B_tot * integral) / eph;

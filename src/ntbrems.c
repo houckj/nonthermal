@@ -1042,9 +1042,8 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
 
    if (status)
      {
-        if ((fabs(*val) > 0) && (abserr < Ntb_Epsrel * fabs(*val)))
-          return 0;
         /* if ((status != GSL_EROUND) && (status != GSL_ESING)) */
+        if ((fabs(*val) > 0) && (abserr > Ntb_Epsrel * fabs(*val)))
           {
              Nonthermal_Error_Type e;
              e.error_msg = gsl_strerror (status);
@@ -1052,7 +1051,8 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
              e.estimated_abserr = abserr;
              e.allowed_abserr = Ntb_Epsrel * fabs(*val);
              e.allowed_epsrel = Ntb_Epsrel;
-             nonthermal_error_hook (&e, b->electrons, __FILE__, __LINE__);
+             if (nonthermal_error_hook (&e, b->electrons, __FILE__, __LINE__))
+               return -1;
           }
      }
 

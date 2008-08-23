@@ -982,7 +982,8 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
              e.estimated_abserr = abserr;
              e.allowed_abserr = Pizero_Epsrel * fabs (*val);             
              e.allowed_epsrel = Pizero_Epsrel;
-             nonthermal_error_hook (&e, p->protons, __FILE__, __LINE__);
+             if (nonthermal_error_hook (&e, p->protons, __FILE__, __LINE__))
+               return -1;
           }
      }
 

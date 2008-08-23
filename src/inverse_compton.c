@@ -336,6 +336,9 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
      }
    while (tmin < tmax1);
 
+   gsl_set_error_handler (gsl_error_handler);
+   gsl_integration_workspace_free (work);
+   
    if (status)
      {
         /* if ((status != GSL_EROUND) && (status != GSL_ESING)) */
@@ -347,14 +350,12 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
              e.estimated_abserr = estimated_err;
              e.allowed_abserr = allowed_err;
              e.allowed_epsrel = Invc_Epsrel;
-             nonthermal_error_hook (&e, ic->electrons, __FILE__, __LINE__);
+             if (nonthermal_error_hook (&e, ic->electrons, __FILE__, __LINE__))
+               return -1;
           }
      }
 
    *val = s / ELECTRON_REST_ENERGY;
-
-   gsl_set_error_handler (gsl_error_handler);
-   gsl_integration_workspace_free (work);
 
    return 0;
 }
