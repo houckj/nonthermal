@@ -1046,13 +1046,13 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
           return 0;
         /* if ((status != GSL_EROUND) && (status != GSL_ESING)) */
           {
-             fprintf (stderr, "*** ntbrem: %s\n", gsl_strerror (status));
-             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
-             fprintf (stderr, "    val = %0.17e\n", *val);
-             fprintf (stderr, " abserr = %0.17e\n", abserr);
-             fprintf (stderr, " epsrel = %0.17e\n", epsrel);
-             fprintf (stderr, "_ntbrem_epsrel = %g\n", Ntb_Epsrel);
-             exit(1);
+             Nonthermal_Error_Type e;
+             e.error_msg = gsl_strerror (status);
+             e.value = *val;
+             e.estimated_abserr = abserr;
+             e.allowed_abserr = Ntb_Epsrel * fabs(*val);
+             e.allowed_epsrel = Ntb_Epsrel;
+             nonthermal_error_hook (&e, __FILE__, __LINE__);
           }
      }
 

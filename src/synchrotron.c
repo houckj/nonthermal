@@ -262,13 +262,13 @@ int syn_calc_synchrotron (void *vs, double photon_energy, double *emissivity)/*{
         /* if (status != GSL_EROUND) */
         if ((fabs(integral) > 0) && (abserr > Sync_Epsrel * fabs(integral)))
           {
-             fprintf (stderr, "*** sync:  %s\n", gsl_strerror (status));
-             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
-             fprintf (stderr, "    val = %0.17e\n", integral);
-             fprintf (stderr, " abserr = %0.17e\n", abserr);
-             fprintf (stderr, " epsrel = %0.17e\n", epsrel);
-             fprintf (stderr, "_sync_epsrel = %g\n", Sync_Epsrel);
-             exit(1);
+             Nonthermal_Error_Type e;
+             e.error_msg = gsl_strerror (status);
+             e.value = integral;
+             e.estimated_abserr = abserr;
+             e.allowed_abserr = Sync_Epsrel * fabs(integral);
+             e.allowed_epsrel = Sync_Epsrel;
+             nonthermal_error_hook (&e, __FILE__, __LINE__);
           }
      }
 

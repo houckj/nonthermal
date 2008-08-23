@@ -976,14 +976,13 @@ static int integral_over_pizero_energies (Pizero_Type *p, double photon_energy, 
         /* if (status != GSL_EROUND) */
         if ((fabs(*val) > 0) && (abserr < Pizero_Epsrel * fabs(*val)))
           {             
-             fprintf (stderr, "*** pizero: pizero integral: %s\n",
-                      gsl_strerror (status));
-             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
-             fprintf (stderr, "    val = %0.17e\n", *val);
-             fprintf (stderr, " abserr = %0.17e\n", abserr);
-             fprintf (stderr, " epsrel = %0.17e\n", epsrel);
-             fprintf (stderr, "_pizero_epsrel = %g\n", Pizero_Epsrel);
-             exit(1);
+             Nonthermal_Error_Type e;
+             e.error_msg = gsl_strerror (status);
+             e.value = *val;
+             e.estimated_abserr = abserr;
+             e.allowed_abserr = Pizero_Epsrel * fabs (*val);             
+             e.allowed_epsrel = Pizero_Epsrel;
+             nonthermal_error_hook (&e, __FILE__, __LINE__);
           }
      }
 

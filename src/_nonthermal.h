@@ -89,6 +89,18 @@ enum
    PROTON
 };
 
+typedef struct Nonthermal_Error_Type Nonthermal_Error_Type;
+struct Nonthermal_Error_Type
+{
+   const char *error_msg;
+   double value;
+   double estimated_abserr;
+   double allowed_abserr;
+   double allowed_epsrel;
+};
+
+extern void nonthermal_error_hook (Nonthermal_Error_Type *e, char *file, int line);
+
 #include "nonthermal.h"
 
 extern Particle_Type *load_pdf (char *path, char *name, char *options);

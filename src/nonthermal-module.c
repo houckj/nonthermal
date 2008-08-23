@@ -35,6 +35,38 @@
 #include "interp.h"
 #include "version.h"
 
+static SLang_CStruct_Field_Type Error_Type_Layout [] =
+{
+   MAKE_CSTRUCT_FIELD (Nonthermal_Error_Type, error_msg, "error_msg", SLANG_STRING_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Nonthermal_Error_Type, value, "value", SLANG_DOUBLE_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Nonthermal_Error_Type, estimated_abserr, "estimated_abserr", SLANG_DOUBLE_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Nonthermal_Error_Type, allowed_abserr, "allowed_abserr", SLANG_DOUBLE_TYPE, 0),
+   MAKE_CSTRUCT_FIELD (Nonthermal_Error_Type, allowed_epsrel, "allowed_epsrel", SLANG_DOUBLE_TYPE, 0),
+   SLANG_END_CSTRUCT_TABLE
+};
+
+void nonthermal_error_hook (Nonthermal_Error_Type *e, char *file, int line) /*{{{*/
+{
+   char *hook_name = "nonthermal_error_hook";
+
+   if (2 != SLang_is_defined (hook_name))
+     {
+        fprintf (stderr, "*** %s\n", e->error_msg);
+        fprintf (stderr, "*** occurred at %s:%d\n", file, line);
+        exit(1);
+     }
+
+   SLang_start_arg_list ();
+   (void) SLang_push_cstruct ((VOID_STAR)e, Error_Type_Layout);
+   SLang_push_string (file);
+   SLang_push_integer (line);
+   SLang_end_arg_list ();
+
+   SLang_execute_function (hook_name);
+}
+
+/*}}}*/
+
 typedef struct
 {
    Particle_Type particle;
@@ -503,7 +535,7 @@ static double charge_error (double p_norm, void *cl) /*{{{*/
 {
    Density_Info *di = (Density_Info *)cl;
    double fp, pc_min;
-   
+
    if (-1 == find_momentum_min (di, &pc_min))
      {
         fprintf (stderr, "failed finding momentum for lower integration limit\n");
@@ -534,7 +566,7 @@ static double equal_integrated_nonthermal_densities (Density_Info *de, Density_I
         /* SLang_set_error (SL_INTRINSIC_ERROR); */
         return -1.0;
      }
-   
+
    if (-1 == nontherm_integral (&de->particle, &nontherm_density_integrand, pc_min, &fe))
      {
         fprintf (stderr, "failed integrating electron distribution\n");

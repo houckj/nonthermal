@@ -341,13 +341,13 @@ static int ic_integral_over_electrons (Inverse_Compton_Type *ic, /*{{{*/
         /* if ((status != GSL_EROUND) && (status != GSL_ESING)) */
         if (estimated_err > allowed_err)
           {
-             fprintf (stderr, "*** invc:  %s\n", gsl_strerror (status));
-             fprintf (stderr, "  %s:%d\n", __FILE__, __LINE__);
-             fprintf (stderr, "    est. error = %0.17e\n", estimated_err);
-             fprintf (stderr, " allowed error = %0.17e\n", allowed_err);
-             fprintf (stderr, "        epsrel = %0.17e\n", epsrel);
-             fprintf (stderr, "  _invc_epsrel = %g\n", Invc_Epsrel);
-             exit(1);
+             Nonthermal_Error_Type e;
+             e.error_msg = gsl_strerror (status);
+             e.value = s;
+             e.estimated_abserr = estimated_err;
+             e.allowed_abserr = allowed_err;
+             e.allowed_epsrel = Invc_Epsrel;
+             nonthermal_error_hook (&e, __FILE__, __LINE__);
           }
      }
 

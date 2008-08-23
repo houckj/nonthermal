@@ -26,6 +26,20 @@ private variable Data_Path = path_concat ($1, "data");
 if (NULL == stat_file (Data_Path))
   Data_Path = "../data";
 
+public define nonthermal_error_hook (s, file, line) %{{{
+{
+   vmessage ("\n*** %s", s.error_msg);
+   vmessage ("    occurred at $file:$line"$);
+   vmessage ("%0.17e = value", s.value);
+   vmessage ("%0.17e = approx. absolute error", s.estimated_abserr);
+   vmessage ("%0.17e = allowed absolute error", s.allowed_abserr);
+   vmessage ("%0.17e = allowed relative error", s.allowed_epsrel);
+   vmessage ("\n===> exiting from nonthermal_error_hook\n");
+   exit(1);
+}
+
+%}}}
+
 private define push_array_values (a) %{{{
 {
    foreach (a)
