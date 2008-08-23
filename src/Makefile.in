@@ -157,7 +157,7 @@ install: install_directories install_modules install_slfiles install_datafiles \
 clean:
 	-/bin/rm -f $(ELFDIR)/*.o *~ \#*
 distclean: clean
-	-/bin/rm -f config.h Makefile
+	-/bin/rm -f config.h Makefile nonthermal-module.so libnonthermal.so
 	-/bin/rm -rf $(ELFDIR)
 
 #---------------------------------------------------------------------------
