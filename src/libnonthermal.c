@@ -51,6 +51,8 @@ double Invc_Epsrel = 1.e-6;
 double Ntb_Epsrel  = 1.e-6;
 double Pizero_Epsrel = 1.e-6;
 
+int Ntb_Integration_Method = 0;
+
 static void *ic_client_data = NULL;
 static void *sync_client_data = NULL;
 static void *ntb_client_data = NULL;
@@ -356,7 +358,7 @@ static void sync_free_client_data (void) /*{{{*/
 
 static SLang_Intrin_Var_Type Sync_Intrin_Vars [] =
 {
-   MAKE_VARIABLE("Syn_Interpolate", &Syn_Interpolate, I, 0),
+   MAKE_VARIABLE("_sync_interpolate", &Syn_Interpolate, I, 0),
    MAKE_VARIABLE("_sync_epsrel", &Sync_Epsrel, D, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
@@ -468,8 +470,8 @@ static double invc_knlimit_constant_intrin (double *p)
 
 static SLang_Intrin_Var_Type Invc_Intrin_Vars [] =
 {
-   MAKE_VARIABLE("IC_Interpolate", &IC_Interpolate, I, 0),
-   MAKE_VARIABLE("IC_Complain_On_Extrapolation", &IC_Complain_On_Extrapolation, I, 0),
+   MAKE_VARIABLE("_invc_interpolate", &IC_Interpolate, I, 0),
+   MAKE_VARIABLE("_invc_complain_on_extrapolation", &IC_Complain_On_Extrapolation, I, 0),
    MAKE_VARIABLE("_invc_epsrel", &Invc_Epsrel, D, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
@@ -766,7 +768,8 @@ static SLang_IConstant_Type Ntb_Intrin_Const [] =
 
 static SLang_Intrin_Var_Type Ntb_Intrin_Vars [] =
 {
-   MAKE_VARIABLE("Ntb_Interpolate", &Ntb_Interpolate, I, 0),
+   MAKE_VARIABLE("_ntbrem_interpolate", &Ntb_Interpolate, I, 0),
+   MAKE_VARIABLE("_ntbrem_integration_method", &Ntb_Integration_Method, I, 0),
    MAKE_VARIABLE("_ntbrem_epsrel", &Ntb_Epsrel, D, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };
@@ -970,8 +973,8 @@ static int Pizero_Interpolate = 0;
 
 static SLang_Intrin_Var_Type Pizero_Intrin_Vars [] =
 {
-   MAKE_VARIABLE("Pizero_Method", &Pizero_Method, I, 0),
-   MAKE_VARIABLE("Pizero_Interpolate", &Pizero_Interpolate, I, 0),
+   MAKE_VARIABLE("_pizero_method", &Pizero_Method, I, 0),
+   MAKE_VARIABLE("_pizero_interpolate", &Pizero_Interpolate, I, 0),
    MAKE_VARIABLE("_pizero_epsrel", &Pizero_Epsrel, D, 0),
    SLANG_END_INTRIN_VAR_TABLE
 };

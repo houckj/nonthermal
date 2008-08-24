@@ -1017,7 +1017,7 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
    double epsrel, epsabs, abserr;
    double pc_min, pc_max;
    size_t limit;
-   int status;
+   int status, method = Ntb_Integration_Method;
 
    pc_min = b->photon_energy * ELECTRON_REST_ENERGY;
    pc_max = GAMMA_MAX_DEFAULT * ELECTRON_REST_ENERGY;
@@ -1033,9 +1033,23 @@ static int integral_over_electrons (Brems_Type *b, /*{{{*/
 
    gsl_error_handler = gsl_set_error_handler_off ();
 
-   status = gsl_integration_qag (&f, log(pc_min), log(pc_max), epsabs, epsrel,
-                                 limit, GSL_INTEG_GAUSS31, work,
-                                 val, &abserr);
+   /* In original development and testing, I used qag with
+    * GSL_INTEG_GAUSS31. Although qags is somewhat faster, it
+    * gets slightly different answers.  I vaguely recall that
+    * the recurrence relation was better satisfied using qag,
+    * but I have not checked this.
+    */
+   if (method == 0)
+     {
+        status = gsl_integration_qag (&f, log(pc_min), log(pc_max), epsabs, epsrel,
+                                      limit, GSL_INTEG_GAUSS31, work,
+                                      val, &abserr);
+     }
+   else
+     {
+        status = gsl_integration_qags (&f, log(pc_min), log(pc_max), epsabs, epsrel,
+                                       limit, work, val, &abserr);
+     }
 
    gsl_set_error_handler (gsl_error_handler);
    gsl_integration_workspace_free (work);

@@ -39,7 +39,7 @@ where
   By default, the value of the angular integral is determined via
   spline interpolation in a pre-computed table. To compute the
   angular integral value via direct integration, set the
-  intrinsic variable \ivar{Syn_Interpolate} to a non-zero value.
+  intrinsic variable \ivar{_sync_interpolate} to a non-zero value.
 \seealso{_sync_angular_integral}
 \done
 
@@ -86,7 +86,7 @@ where
   energies is determined via spline interpolation in a
   pre-computed table and the value of the \var{T_photon}
   parameter is not used. To compute this integral via direct
-  integration, set the intrinsic variable \ivar{IC_Interpolate}
+  integration, set the intrinsic variable \ivar{_invc_interpolate}
   to a non-zero value.
 \seealso{_invc_photon_integral}
 \done
@@ -136,11 +136,17 @@ where
   cross-section is determined via spline interpolation in a
   pre-computed table. To compute these cross-sections without
   interpolation, set the intrinsic variable
-  \ivar{Ntb_Interpolate} to a non-zero value.
+  \ivar{_ntbrem_interpolate} to a non-zero value.
 
   The relative contributions of electron-electron and
   electron-proton bremsstrahlung are controlled by the
   \ifun{ntb_set_process_weights} function.
+
+  To use an alternate, somewhat faster, numerical integration
+  algorithm, set the integer intrinsic variable
+  \ivar{_ntbrem_integration_method} to a non-zero value.
+  Note that changing the numerical integration method will
+  cause small changes in the computed model values.
 
 \seealso{ntb_set_process_weights,_ee_haug1,_ee_haug1_lab}
 \done
