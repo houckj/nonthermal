@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <gsl/gsl_ieee_utils.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf.h>
@@ -814,6 +815,12 @@ int init_nonthermal_module_ns (char *ns_name)
         || (-1 == SLns_add_intrin_var_table (ns, Intrin_Variables, NULL))
         || (-1 == SLns_add_iconstant_table (ns, Intrin_Const, NULL)))
      return -1;
+
+   /* Read the GSL_IEEE_MODE environment variable.
+    * If it's set, configure the IEEE floating point environment
+    * accordingly.  Otherwise, do nothing.
+    */
+   gsl_ieee_env_setup ();
 
    return 0;
 }
