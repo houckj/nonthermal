@@ -97,7 +97,10 @@ double _ntb_ei_sigma (double electron_kinetic_energy, double photon_energy) /*{{
    /* energy conservation */
    g = g0 - k;
 
-   if ((g0 <= 1.0) || (g <= 1.0))
+   /* prevent b=0 below */
+   g = nextafter (g, g0);
+
+   if (! ((g > 1.0) && (g0 > 1.0)))
      return 0.0;
 
    g02 = g0*g0;

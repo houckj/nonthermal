@@ -201,7 +201,7 @@ int ic_integral_over_incident_photons (Inverse_Compton_Type *ic, /*{{{*/
    *val = 0.0;
 
    x = omega / gamma;
-   if (x >= 1.0)
+   if (! (x < 1.0))
      return 0;
 
    h = 0.25 * x / (1.0 - x) / gamma;

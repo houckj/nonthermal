@@ -259,7 +259,7 @@ static double root_func (double mv, void *cd) /*{{{*/
 
    /* non-relativistic momentum, p = m*v */
    beta = mv / (pt->mass * GSL_CONST_CGSM_SPEED_OF_LIGHT);
-   if (beta >= 1.0)
+   if (!(beta < 1.0))
      {
         fprintf (stderr, "crazy momentum value:  beta = %e\n", beta);
         SLang_set_error (SL_INTRINSIC_ERROR);
@@ -305,7 +305,7 @@ static int find_momentum_min (Density_Info *di, double *pc) /*{{{*/
    do
      {
         pmax *= 2;
-        if (pmax >= mc)
+        if (!(pmax < mc))
           break;
         f_hi = root_func (pmax, di);
      }
