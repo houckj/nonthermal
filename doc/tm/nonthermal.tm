@@ -261,12 +261,12 @@
 
 \it{Note on differential vs. histogram forms}
 
-Differential and histogram forms of each spectral model are
-provided.  The histogram form is the one used in fitting models
-to data.  For this reason, input data must be converted to
-histogram form.  The differential form is normally used for
-testing and for making plots. See the \isis-documentation for
-additional details.
+ Differential and histogram forms of each spectral model are
+ provided.  The histogram form is the one used in fitting
+ models to data.  For this reason, input data must be converted
+ to histogram form.  The differential form is normally used for
+ testing and for making plots. See the \isis-documentation for
+ additional details.
 
 #i rtl/models.tm
 

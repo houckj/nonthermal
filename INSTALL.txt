@@ -29,7 +29,14 @@ module by typing:
 
   make
   make install
-  
+
+A number of regression tests are available to make sure the module
+is working properly.  To run these tests, type:
+
+  make test
+
+These tests may be run at any time after compiling the module.
+
 If the module is installed in a non-standard location, it may
 be necessary to specify the directory search path so that isis
 can find it. For example:
