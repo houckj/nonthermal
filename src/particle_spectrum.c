@@ -536,7 +536,7 @@ static int find_pc_equal (double kT, double m, double index, double a_gev, /*{{{
    b = pow(bb, 1.0/(index+2));
    s = sqrt (index+2);
 
-   xt = s * sqrt(b/2);
+   xt = s / sqrt(2);
 
    if ((xt < b) || (s * sqrt(log(xt/b)) < xt))
      {
