@@ -206,9 +206,11 @@ void *ic_init_client_data (const char *file) /*{{{*/
 
    SLang_free_array (sl_fs);
 
-   for (f = fs; *f != NULL; f++)
+   for (f = fs; *f != NULL && **f != 0; f++)
      {
         IC_Table_Type *s;
+
+        /* fprintf (stdout, "loading IC table %s\n", *f); */
 
         if (NULL == (s = pop_table (*f)))
           goto error_return;

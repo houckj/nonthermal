@@ -318,8 +318,8 @@ static int find_momentum_min (Density_Info *di, double *pc) /*{{{*/
         status = bisection (&root_func, p_th, pmax, di, &p);
      }
 
-   /* No solution, use thermal peak */
-   if (status || p > mc)
+   /* No good solution, use thermal peak */
+   if (status || (p < p_th) || (p > mc))
      p = p_th;
 
    beta = p / mc;

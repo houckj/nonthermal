@@ -79,24 +79,73 @@ static double max_momentum (Particle_Type *pt) /*{{{*/
 
 /*}}}*/
 
-static double pdf_pc_cutoff1 (double pc, double g, double a, double cutoff) /*{{{*/
+static double pdf_pc_cutoff1 (double pc, double g, double a, double cutoff, double pc_scale) /*{{{*/
 {
    double x, e0, f;
 
-   x = pc / GEV;
+   x = pc / pc_scale;
    e0  = cutoff * TEV;
 
-   /* no curvature below 1 GeV */
+   /* no curvature below Min_Curvature_Pc */
    if ((a != 0.0) && (x > Min_Curvature_Pc))
      g -= a * log10(x);
 
    /* dn/d(Pc) (norm factored out) */
-   f = pow (x, -g) * exp ((GEV-pc)/e0);
+   f = pow (x, -g) * exp ((pc_scale-pc)/e0);
 
    if (!finite(f))
      f = 0.0;
 
    return f;
+}
+
+/*}}}*/
+
+static double min_scaled_momentum (Particle_Type *pt) /*{{{*/
+{
+   return KEV;
+}
+
+/*}}}*/
+
+static double max_scaled_momentum (Particle_Type *pt) /*{{{*/
+{
+   double e_cutoff, mc2, r, p_max, f=1.e-8;
+   double cutoff_energy, pc_scale;
+
+   cutoff_energy = pt->params[2];
+   pc_scale = pt->params[3] * GSL_CONST_CGSM_ELECTRON_VOLT;
+
+   if (cutoff_energy == 0)
+     return pc_scale;
+
+   /* Choose max momentum high enough so that the exponential cutoff
+    * represents a factor of 'f' decline in particle density
+    */
+
+   mc2 = pt->mass * C_SQUARED;
+   e_cutoff = cutoff_energy * TEV;
+   r = (pc_scale - e_cutoff * log(f)) / mc2;
+   p_max = mc2 * sqrt ((r + 1.0)*(r - 1.0));
+
+   return p_max;
+}
+
+/*}}}*/
+
+static int pdf_pc_cutoff_scaled (Particle_Type *pt, double pc, double *ne) /*{{{*/
+{
+   if (pt == NULL || ne == NULL)
+     return -1;
+
+   /* params:  [index, curvature, cutoff, pc_scale] */
+   if (pt->num_params != 4)
+     return -1;
+
+   *ne = pdf_pc_cutoff1 (pc, pt->params[0], pt->params[1], pt->params[2],
+                         pt->params[3] * GSL_CONST_CGSM_ELECTRON_VOLT);
+
+   return 0;
 }
 
 /*}}}*/
@@ -110,7 +159,7 @@ static int pdf_pc_cutoff (Particle_Type *pt, double pc, double *ne) /*{{{*/
    if (pt->num_params != 3)
      return -1;
 
-   *ne = pdf_pc_cutoff1 (pc, pt->params[0], pt->params[1], pt->params[2]);
+   *ne = pdf_pc_cutoff1 (pc, pt->params[0], pt->params[1], pt->params[2], GEV);
 
    return 0;
 }
@@ -657,7 +706,7 @@ static double eq_full1_momentum (Particle_Type *pt) /*{{{*/
    index = pt->params[2];
 
    if (-1 == find_pc_equal (kT, pt->mass, index, a_gev, &pc_equal))
-        return NT_NAN;
+     return NT_NAN;
 
    return pc_equal;
 }
@@ -713,14 +762,15 @@ static int pdf_full1_n_ncr (Particle_Type *pt, double pc, double *n, double *ncr
         if (-1 == find_pc_equal (kT, pt->mass, index, a_gev, &pc_equal))
           {
              *n = NT_NAN;
-             return -1;
+             *ncr = NT_NAN;
+             return 0;  /* FIXME? */
           }
         if (pc < pc_equal)
           return 0;
      }
 
    /* nonthermal particle contribution */
-   if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff)) <= 0)
+   if ((n_pl = pdf_pc_cutoff1 (pc, index, curvature, cutoff, GEV)) <= 0)
      return 0;
    n_pl *= a_gev;
 
@@ -787,6 +837,27 @@ static int init_pdf_params1 (Particle_Type *pt, unsigned int type, /*{{{*/
 
 /*}}}*/
 
+static int pdf_bykov (Particle_Type *pt, double pc, double *n)
+{
+   double pc_star, pc_cut, gamma, x;
+
+   pc_star = pt->params[0] * GEV;
+   gamma   = pt->params[1];
+   pc_cut  = pt->params[2] * TEV;
+
+   if (pc < pc_star)
+     x = pc_star / pc;
+   else
+     x = pow (pc_star / pc, gamma);
+
+   if (pc > pc_cut)
+     x *= exp (1.0 - pc / pc_cut);
+
+   *n = x;
+
+   return 0;
+}
+
 void free_pdf (Particle_Type *pt) /*{{{*/
 {
    if (pt == NULL)
@@ -800,6 +871,7 @@ void free_pdf (Particle_Type *pt) /*{{{*/
 static struct Particle_Type Particle_Methods[] =
 {
    PARTICLE_METHOD("default", 3, pdf_pc_cutoff, min_momentum, max_momentum, NULL, NULL),
+   PARTICLE_METHOD("default_scaled", 4, pdf_pc_cutoff_scaled, min_scaled_momentum, max_scaled_momentum, NULL, NULL),
    PARTICLE_METHOD("etot", 1, pdf_etot, min_momentum, etot_max_momentum, NULL, NULL),
    PARTICLE_METHOD("ke_cutoff", 3, pdf_ke_cutoff, min_momentum, max_momentum, NULL, NULL),
    PARTICLE_METHOD("mori", 0, pdf_mori, min_momentum, mori_max_momentum, NULL, NULL),
@@ -808,6 +880,7 @@ static struct Particle_Type Particle_Methods[] =
    PARTICLE_METHOD("boltz", 1, pdf_boltz, min_boltz_momentum, max_boltz_momentum, NULL, NULL),
    PARTICLE_METHOD("rboltz", 1, pdf_rboltz, min_rboltz_momentum, max_rboltz_momentum, NULL, NULL),
    PARTICLE_METHOD("full1", 5, pdf_full1_n, min_full1_momentum, max_full1_momentum, pdf_full1_ncr, eq_full1_momentum),
+   PARTICLE_METHOD("bykov", 3, pdf_bykov, min_momentum, max_momentum, NULL, NULL),
    NULL_PARTICLE_TYPE
 };
 

@@ -4,12 +4,15 @@ require ("gsl");
 private variable Special_Log= -50.0;
 private variable Special_Val = 10.0^Special_Log;
 
-private variable Electron_Rest_Energy = Const_m_e * Const_c^2;
 private variable CBR_Temp = 2.725;
-private variable Omega_CBR = (Const_k * CBR_Temp) / Electron_Rest_Energy;
+
+private variable Temperature = 1.e4; %3.e4;
+
+private variable Electron_Rest_Energy = Const_m_e * Const_c^2;
+private variable Omega_T = (Const_k * Temperature) / Electron_Rest_Energy;
 
 % magic number 32.42 to get results similar to earlier table
-private variable Omega0 = 32.42 * Omega_CBR;
+private variable Omega0 = 32.42 * Omega_T;
 
 % Maximum range of interest
 private variable Log_X_Range = [1.0, 9.5];    % gamma
@@ -73,11 +76,11 @@ private define fcn (xlg, ylg)
    variable f;
    if (length(gam) == 1)
      {
-        f = _invc_photon_integral(gam, ef, CBR_Temp, 0);
+        f = _invc_photon_integral(gam, ef, Temperature, 0);
      }
    else
      {
-        f = array_map (Double_Type, &_invc_photon_integral, gam, ef, CBR_Temp, 0);
+        f = array_map (Double_Type, &_invc_photon_integral, gam, ef, Temperature, 0);
      }
 
    return safe_log10 (f / Sigma0);
@@ -205,6 +208,8 @@ private define compute_table (file)
 
 define _invc_make_table (file)
 {
+   vmessage ("Generating IC table for T=%0.3e K blackbody"$, Temperature);
+   vmessage ("output file = $file"$);
    compute_table(file);
 }
 

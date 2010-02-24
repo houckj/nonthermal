@@ -28,6 +28,11 @@ if (NULL == stat_file (Data_Path))
 
 public define nonthermal_error_hook (s, pdf, pars, file, line) %{{{
 {
+   % Don't bother complaining unless the error is bigger than 1%  (FIXME?)
+   if (s.estimated_abserr < 0.01 * abs(s.value))
+     return 0;
+
+   vmessage ("\n*** default nonthermal_error_hook");
    vmessage ("\n*** %s", s.error_msg);
    vmessage ("    occurred at $file:$line"$);
    vmessage ("%0.17e = value", s.value);
@@ -44,9 +49,9 @@ public define nonthermal_error_hook (s, pdf, pars, file, line) %{{{
           }
      }
 
-   throw ApplicationError, "exiting from nonthermal_error_hook";
+   %throw ApplicationError, "exiting from nonthermal_error_hook";
 
-   return -1;
+   return 0;
 }
 
 %}}}
@@ -187,7 +192,25 @@ _invc_table_file_name = "ic_table.fits";
 
 define _invc_table_file () %{{{
 {
-   return path_concat (Data_Path, _invc_table_file_name);
+   variable
+     s = _invc_table_file_name,
+     indirect = 0;
+
+   if (_invc_table_file_name[0] == '@')
+     {
+        indirect=1;
+        s = _invc_table_file_name[[1:]];
+     }
+
+   if (0 == access (s, R_OK))
+     return _invc_table_file_name;
+
+   s = path_concat (Data_Path, s);
+
+   ifnot (0 == access (s, R_OK))
+     throw ApplicationError, "Can't find file $_invc_table_file_name"$;
+
+   return indirect ? "@" + s : s;
 }
 
 %}}}
@@ -267,6 +290,11 @@ private define init_pdfs () %{{{
                    [1.0, -1.0, 1.0],
                    [3.0, 1.0, 1.e2]);
 
+   add_pdf_fitfun ("default_scaled", ["index", "curvature", "cutoff [TeV]", "pc_scale [eV]"],
+                   [2.0, 0.0, 10.0, 1.e4], [0, 1, 0, 1],
+                   [1.0, -1.0, 1.0,  1.e3],
+                   [3.0, 1.0, 1.e2, 1.e12]);
+
    add_pdf_fitfun ("etot", ["index"],
                    [2.0], [0], [1.0], [3.0]);
 
@@ -302,6 +330,12 @@ private define init_pdfs () %{{{
                    [    1,    0,   0,    1,    0],
                    [  0.0,    0, 1.0, -1.0,  1.0],
                    [100.0, 1.e3, 3.0,  1.0, 1.e2]);
+
+   add_pdf_fitfun ("bykov", ["pc_break [GeV]", "index", "pc_cutoff [TeV]"],
+                   [0.1, 4.5, 1.0],
+                   [0, 0, 0],
+                   [0.01, 4.0, 0.01],
+                   [5.0,  10.0, 100]);
 }
 
 %}}}
