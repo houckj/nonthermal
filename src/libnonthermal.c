@@ -1,6 +1,6 @@
 /* -*- mode: C; mode: fold -*- */
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck 
+  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007, 2008 John C. Houck
 
   This file is part of the nonthermal module
 
@@ -115,7 +115,7 @@ static int _nt_binned_contin (void *cl, /*{{{*/
      {
         double el, eh, sl, sm, sh, area;
         int n;
-        
+
         if (isis_user_break() || (0 != SLang_get_error ()))
           return -1;
 
@@ -463,6 +463,20 @@ static double invc_knlimit_constant_intrin (double *p)
    return ic_knlimit_constant (*p);
 }
 
+static int invc_load_table (char *file) /*{{{*/
+{
+   if (ic_client_data != NULL)
+     invc_free_client_data ();
+
+   fprintf (stderr, "invc_load_table:  loading %s\n", file);
+   if (NULL == (ic_client_data = ic_init_client_data (file)))
+     return -1;
+
+   return 0;
+}
+
+/*}}}*/
+
 #define D SLANG_DOUBLE_TYPE
 #define I SLANG_INT_TYPE
 #define S SLANG_STRING_TYPE
@@ -481,6 +495,7 @@ static SLang_Intrin_Fun_Type Invc_Intrinsics [] =
    MAKE_INTRINSIC("_invc_set_dilution_factors", _invc_set_dilution_factors, V, 0),
    MAKE_INTRINSIC_4("_invc_photon_integral", _invc_photon_integral, D, D,D,D,I),
    MAKE_INTRINSIC_1("_invc_knlimit_constant_intrin", invc_knlimit_constant_intrin, D, D),
+   MAKE_INTRINSIC_1("invc_load_table_intrin", invc_load_table, I, S),
    SLANG_END_INTRIN_FUN_TABLE
 };
 

@@ -215,6 +215,26 @@ define _invc_table_file () %{{{
 
 %}}}
 
+define invc_load_table ()
+{
+   if (_NARGS == 0)
+     usage ("invc_load_table (file)");
+
+   variable file = ();
+
+   ifnot (0 == access (file, R_OK))
+     {
+        variable s = path_concat (Data_Path, file);
+        ifnot (0 == access (s, R_OK))
+          throw ApplicationError, "Can't find file $file"$;
+        file = s;
+     }
+
+   % this seems a little hacky...
+   variable f = __get_reference ("invc_load_table_intrin");
+   (@f)(file);
+}
+
 variable _ntbrem_table_file_name;
 #ifexists NTB_Table_File
 _ntbrem_table_file_name = NTB_Table_File;

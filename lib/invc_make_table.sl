@@ -1,18 +1,22 @@
 require ("nonthermal");
 require ("gsl");
 
+private variable Electron_Rest_Energy = Const_m_e * Const_c^2;
+
 private variable Special_Log= -50.0;
 private variable Special_Val = 10.0^Special_Log;
 
 private variable CBR_Temp = 2.725;
 
-private variable Temperature = 1.e4; %3.e4;
+private variable Temperature, Omega_T, Omega0;
+private define set_temperature (t)
+{
+   Temperature = t;
 
-private variable Electron_Rest_Energy = Const_m_e * Const_c^2;
-private variable Omega_T = (Const_k * Temperature) / Electron_Rest_Energy;
-
-% magic number 32.42 to get results similar to earlier table
-private variable Omega0 = 32.42 * Omega_T;
+   Omega_T = (Const_k * Temperature) / Electron_Rest_Energy;
+   % magic number 32.42 to get results similar to earlier table
+   Omega0 = 32.42 * Omega_T;
+}
 
 % Maximum range of interest
 private variable Log_X_Range = [1.0, 9.5];    % gamma
@@ -208,7 +212,9 @@ private define compute_table (file)
 
 define _invc_make_table (file)
 {
-   vmessage ("Generating IC table for T=%0.3e K blackbody"$, Temperature);
+   variable t = qualifier ("temp", CBR_Temp);
+   set_temperature (t);
+   vmessage ("Generating IC table for T=%0.3e K blackbody"$, t);
    vmessage ("output file = $file"$);
    compute_table(file);
 }
