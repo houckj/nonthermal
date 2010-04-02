@@ -143,6 +143,17 @@ define perform_tests (dir)
         vmessage ("%2d. err: mean=%9.3e max=%9.3e [%7.3f sec] %s",
                   n, mean(abs(err)), max(abs(err)), dt,
                   path_basename (test_file));
+
+#iffalse
+        xlabel ("E [eV]");
+        ylabel (latex2pg ("Photon Flux [photons s^{-1} cm^{-2}]"));
+        xlog;
+        ylog;
+        title (path_basename(test_file));
+        hplot (elo, ehi, tf);
+        ohplot (elo, ehi, f);
+        plot_pause;
+#endif
      }
 }
 
