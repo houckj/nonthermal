@@ -718,6 +718,8 @@ PROGRAM_ELFOBJECTS
 PROGRAM_FC_OFILES
 PROGRAM_FC_OBJECTS
 PROGRAM_FC_ELFOBJECTS
+CPARAMLIB_INC
+CPARAMLIB_LIB
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -1319,6 +1321,7 @@ Optional Packages:
   --with-isis=DIR      Use DIR/lib and DIR/include for isis
   --with-isislib=DIR   isis library in DIR
   --with-isisinc=DIR   isis include files in DIR
+  --with-cparamlib=DIR  Use Kamae et al neutral pion-decay cross-sections
 
 Some influential environment variables:
   FC          Fortran compiler command
@@ -9783,6 +9786,27 @@ _ACEOF
 
 
 
+# Check whether --with-cparamlib was given.
+if test "${with_cparamlib+set}" = set; then
+  withval=$with_cparamlib;   jch_use_cparamlib=$withval
+else
+  jch_use_cparamlib=no
+fi
+
+CPARAMLIB_INC=#
+CPARAMLIB_LIB=#
+if test "x$jch_use_cparamlib" != "xno" ; then
+   CPARAMLIB_INC="-I${jch_use_cparamlib}/include"
+   CPARAMLIB_LIB="-L${jch_use_cparamlib}/lib -lcparamlib"
+   cat >>confdefs.h <<\_ACEOF
+#define USE_CPARAMLIB 1
+_ACEOF
+
+fi
+
+
+
+
 if test "X$libdir" != "X"
 then
   if test "X$RPATH" = "X"
@@ -10595,11 +10619,13 @@ PROGRAM_ELFOBJECTS!$PROGRAM_ELFOBJECTS$ac_delim
 PROGRAM_FC_OFILES!$PROGRAM_FC_OFILES$ac_delim
 PROGRAM_FC_OBJECTS!$PROGRAM_FC_OBJECTS$ac_delim
 PROGRAM_FC_ELFOBJECTS!$PROGRAM_FC_ELFOBJECTS$ac_delim
+CPARAMLIB_INC!$CPARAMLIB_INC$ac_delim
+CPARAMLIB_LIB!$CPARAMLIB_LIB$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 9; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 11; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

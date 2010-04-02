@@ -13,3 +13,6 @@
 #undef SIZEOF_FLOAT
 #undef SIZEOF_DOUBLE
 
+/* Define this if you want to use the Kamae et al neutral pion-decay
+ * cross-sections */
+#undef USE_CPARAMLIB

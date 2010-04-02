@@ -40,11 +40,14 @@ SLANG_LIB	= @SLANG_LIB@ -lslang
 #---------------------------------------------------------------------------
 # Additional Libraries required by the module
 #---------------------------------------------------------------------------
-GSL_INC	= @GSL_INC@
-GSL_LIB	= @GSL_LIB@ -lgsl -lgslcblas
-ISIS_INC= @ISIS_INC@
-ISIS_LIB= @ISIS_LIB@ -lisis
-MODULE_LIBS = $(GSL_LIB) $(ISIS_LIB)
+GSL_INC	  = @GSL_INC@
+GSL_LIB	  = @GSL_LIB@ -lgsl -lgslcblas
+ISIS_INC  = @ISIS_INC@
+ISIS_LIB  = @ISIS_LIB@ -lisis
+CPARAMLIB_INC = @CPARAMLIB_INC@
+CPARAMLIB_LIB = @CPARAMLIB_LIB@
+MODULE_INCS = $(GSL_INC) $(ISIS_INC) $(CPARAMLIB_INC)
+MODULE_LIBS = $(GSL_LIB) $(ISIS_LIB) $(CPARAMLIB_LIB)
 RPATH		= @RPATH@
 
 #---------------------------------------------------------------------------
@@ -64,7 +67,7 @@ DEST_DATA_FILES_INSTALL_DIR = $(DESTDIR)$(DATA_FILES_INSTALL_DIR)
 
 #---------------------------------------------------------------------------
 LIBS = $(MODULE_LIBS) $(RPATH) $(DL_LIB) -lm
-INCS = $(SLANG_INC) $(ISIS_INC) $(GSL_INC) 
+INCS = $(SLANG_INC) $(MODULE_INCS)
 
 config_dir = @CONFIG_DIR@
 SRCDIR = $(config_dir)/src

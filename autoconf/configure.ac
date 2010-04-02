@@ -48,6 +48,19 @@ AC_CHECK_SIZEOF(long, 4)
 AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 
+AC_ARG_WITH(cparamlib,
+  [  --with-cparamlib[=DIR]  Use Kamae et al neutral pion-decay cross-sections ],
+  [  jch_use_cparamlib=$withval ], [jch_use_cparamlib=no])
+CPARAMLIB_INC=#
+CPARAMLIB_LIB=#
+if test "x$jch_use_cparamlib" != "xno" ; then
+   CPARAMLIB_INC="-I${jch_use_cparamlib}/include"
+   CPARAMLIB_LIB="-L${jch_use_cparamlib}/lib -lcparamlib"
+   AC_DEFINE(USE_CPARAMLIB)
+fi
+AC_SUBST(CPARAMLIB_INC)
+AC_SUBST(CPARAMLIB_LIB)
+
 JD_SET_RPATH($libdir)
 ELF_CFLAGS="$ELF_CFLAGS $IEEE_CFLAGS"
 CFLAGS="$CFLAGS $IEEE_CFLAGS"

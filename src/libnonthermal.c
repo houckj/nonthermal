@@ -862,9 +862,8 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
 
 /*}}}*/
 
-/* #define USE_KAMAE */
-#ifdef USE_KAMAE
-#include "pizero_kamae.c"
+#ifdef USE_CPARAMLIB
+#include "pizero_cparamlib.c"
 #else
 
 static int init_pizero (double *par, unsigned int npar, Pizero_Type *p, Particle_Type *proton);
