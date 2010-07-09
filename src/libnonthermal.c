@@ -406,6 +406,7 @@ ISIS_USER_SOURCE_MODULE(sync,p,options) /*{{{*/
    static double default_max[]   = {1.0e10, 1.0e3};
    static double default_value[] = { 1.0,  1.0};
    static double default_min[]   = { 0.0,  0.0};
+   static double default_relstep[] = {1.e-4, 1.e-4};
    static unsigned int default_freeze[] = {0, 0};
    static unsigned int norm_indexes[] = {0};
 
@@ -424,6 +425,7 @@ ISIS_USER_SOURCE_MODULE(sync,p,options) /*{{{*/
    p->default_max = default_max;
    p->default_value = default_value;
    p->default_min = default_min;
+   p->default_relstep = default_relstep;
    p->default_freeze = default_freeze;
    p->norm_indexes = norm_indexes;
    p->num_norms = 1;
@@ -540,6 +542,7 @@ ISIS_USER_SOURCE_MODULE(invc,p,options) /*{{{*/
    static double default_max[]   = {1.0e10, 1.e10};
    static double default_value[] = { 1.0, CBR_TEMPERATURE};
    static double default_min[]   = { 0.0, 0.0};
+   static double default_relstep[] = {1.e-4, 1.e-4};
    static unsigned int default_freeze[] = {0, 1};
    static unsigned int norm_indexes[] = {0};
 
@@ -551,6 +554,7 @@ ISIS_USER_SOURCE_MODULE(invc,p,options) /*{{{*/
    p->default_max = default_max;
    p->default_value = default_value;
    p->default_min = default_min;
+   p->default_relstep = default_relstep;
    p->default_freeze = default_freeze;
    p->norm_indexes = norm_indexes;
    p->num_norms = 1;
@@ -840,6 +844,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
    static double default_max[]   = {1.e10};
    static double default_value[] = { 1.0};
    static double default_min[]   = { 0.0};
+   static double default_relstep[] = {1.e-4};
    static unsigned int default_freeze[] = {0};
    static unsigned int norm_indexes[] = {0};
 
@@ -851,6 +856,7 @@ ISIS_USER_SOURCE_MODULE(ntbrem,p,options) /*{{{*/
    p->default_max = default_max;
    p->default_value = default_value;
    p->default_min = default_min;
+   p->default_relstep = default_relstep;
    p->default_freeze = default_freeze;
    p->norm_indexes = norm_indexes;
    p->num_norms = 1;
@@ -1080,6 +1086,7 @@ ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
    static double default_max[]   = {1.e10};
    static double default_value[] = { 1.0};
    static double default_min[]   = { 0.0};
+   static double default_relstep[] = {1.e-4};
    static unsigned int default_freeze[] = {0};
    static unsigned int norm_indexes[] = {0};
 
@@ -1093,6 +1100,7 @@ ISIS_USER_SOURCE_MODULE(pizero,p,options) /*{{{*/
    p->default_max = default_max;
    p->default_value = default_value;
    p->default_min = default_min;
+   p->default_relstep = default_relstep;
    p->default_freeze = default_freeze;
    p->norm_indexes = norm_indexes;
    p->num_norms = 1;

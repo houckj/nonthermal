@@ -251,7 +251,18 @@ define _ntbrem_table_file () %{{{
 
 private define pdf_param_defaults (i, val, freeze, min, max) %{{{
 {
-   return (val[i], freeze[i], min[i], max[i]);
+   variable d = struct
+     {
+        value  = val[i],
+        freeze = freeze[i],
+        min = min[i],
+        max = max[i],
+        hard_min = -_Inf,
+        hard_max = _Inf,
+        step = 0,
+        relstep = Isis_Default_Relstep
+     };
+   return d;
 }
 
 %}}}
