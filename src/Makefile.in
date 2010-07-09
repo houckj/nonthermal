@@ -6,6 +6,7 @@
 MODULES = libnonthermal.so nonthermal-module.so
 SL_FILES = nonthermal.sl sync_make_table.sl invc_make_table.sl ntbrem_make_table.sl
 DATA_FILES = syn_table.fits ic_table.fits ntb_ee_table.fits
+MODULE_VERSION = `./mkversion.sh`
 
 #---------------------------------------------------------------------------
 # Installation Directories
@@ -56,7 +57,9 @@ RPATH		= @RPATH@
 #---------------------------------------------------------------------------
 INSTALL		= @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
-MKINSDIR = ../autoconf/mkinsdir.sh
+MKINSDIR        = ../autoconf/mkinsdir.sh
+RM              = rm -f
+LN              = ln -s
 
 #---------------------------------------------------------------------------
 # DESTDIR is designed to facilitate making packages.  Normally it is empty
@@ -124,13 +127,17 @@ install_directories:
 	$(MKINSDIR) $(DEST_DATA_FILES_INSTALL_DIR)
 
 install_modules:
-	for X in $(MODULES); \
+	@for X in $(MODULES); \
 	do \
-		echo $(INSTALL) $$X $(DEST_MODULE_INSTALL_DIR); \
-		$(INSTALL) $$X $(DEST_MODULE_INSTALL_DIR); \
+		Y=$$X.$(MODULE_VERSION); \
+		YDEST=$(DEST_MODULE_INSTALL_DIR)/$$Y; \
+		echo $(INSTALL_DATA) $$X $$YDEST; \
+		$(INSTALL_DATA) $$X $$YDEST; \
 		if [ "$$?" != "0" ]; then \
 		  exit 1; \
 		fi; \
+		$(RM) $(DEST_MODULE_INSTALL_DIR)/$$X; \
+		$(LN) $$Y $(DEST_MODULE_INSTALL_DIR)/$$X; \
 	done
 install_slfiles:
 	@cd $(config_dir)/lib ; \
