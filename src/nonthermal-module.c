@@ -145,7 +145,7 @@ int init_pdf (Particle_Type *p, unsigned int type) /*{{{*/
 static int pop_density_info (Density_Info *di) /*{{{*/
 {
    Particle_Type *p = &di->particle;
-   SLtype particle_type;
+   int particle_type;
 
    if (-1 == SLang_pop_double (&di->n_th)
        || -1 == SLang_pop_double (&di->kT)
@@ -155,7 +155,7 @@ static int pop_density_info (Density_Info *di) /*{{{*/
         return -1;
      }
 
-   if (-1 == init_pdf (p, particle_type))
+   if (-1 == init_pdf (p, (unsigned int) particle_type))
      {
         free_pdf (p);
         return -1;
@@ -165,16 +165,48 @@ static int pop_density_info (Density_Info *di) /*{{{*/
 }
 /*}}}*/
 
-static double thermal_distrib (double *mv, double *pkT_keV, double *pmass) /*{{{*/
+/* Maxwell-Juttner distribution (relativistic Maxwellian) */
+static double maxwell_juttner (double *pc, double *pkT_keV, double *pmass)
+{
+   double m = *pmass;
+   double mc2 = m * C_SQUARED;
+   double theta = (*pkT_keV * KEV) / mc2;
+   double x = (*pc) / mc2;
+   double x2 = x*x;
+   double gm1, f;
+
+   if (x2 > 0.001)
+     gm1 = sqrt (1.0 + x2) - 1.0;
+   else
+     {
+        gm1 = ((x2/2.0)*
+                  (1.0 + (x2/4.0)*
+                      (-1.0 + (3*x2/6.0)*
+                          (1.0 + (5*x2/8.0)*
+                              (-1.0 + (7*x2/10.0))))));
+     }
+
+   f = x2 * exp (-gm1/theta)
+     / (mc2 * theta * gsl_sf_bessel_Kn_scaled(2, 1.0/theta));
+
+   /* dn/d(Pc) */
+   return f;
+}
+
+#if 0
+/* Maxwell-Boltzmann distribution (non-relativistic Maxwellian) */
+static double maxwell_boltzmann (double *pc, double *pkT_keV, double *pmass) /*{{{*/
 {
    /* Maxwellian momentum distribution */
-   double p = *mv;
    double m = *pmass;
    double kT = *pkT_keV * KEV;
-   double a, x, f;
+   double a, x, f, p;
 
-   if (kT <= 0.0 || p <= 0.0 || m <= 0.0)
+   if (kT <= 0.0 || m <= 0.0)
      return 0.0;
+
+   /* assume gamma = 1 */
+   p = (*pc) / GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    /* p is non-relativistic momentum, p = m*v */
    a = 2 * m * kT;
@@ -189,6 +221,7 @@ static double thermal_distrib (double *mv, double *pkT_keV, double *pmass) /*{{{
 }
 
 /*}}}*/
+#endif
 
 static double particle_distrib (double *pc, unsigned int *type) /*{{{*/
 {
@@ -244,11 +277,11 @@ static double ncr_particle_distrib (double *pc, unsigned int *type) /*{{{*/
 }
 /*}}}*/
 
-static double root_func (double mv, void *cd) /*{{{*/
+static double root_func (double pc, void *cd) /*{{{*/
 {
    Density_Info *di = (Density_Info *)cd;
    Particle_Type *pt = &di->particle;
-   double f_th, f_nth, gamma, gamma2, beta, pc;
+   double f_th, f_nth;
 
    if (di->n_th <= 0.0 || di->n_GeV <= 0.0)
      {
@@ -258,73 +291,54 @@ static double root_func (double mv, void *cd) /*{{{*/
         return 0.0;
      }
 
-   /* non-relativistic momentum, p = m*v */
-   beta = mv / (pt->mass * GSL_CONST_CGSM_SPEED_OF_LIGHT);
-   if (!(beta < 1.0))
-     {
-        fprintf (stderr, "crazy momentum value:  beta = %e\n", beta);
-        SLang_set_error (SL_INTRINSIC_ERROR);
-        return 0.0;
-     }
-
-   /* dn/dp */
-   f_th = thermal_distrib (&mv, &di->kT, &pt->mass);
+   /* dn/d(Pc) */
+   f_th = maxwell_juttner (&pc, &di->kT, &pt->mass);
    f_th *= di->n_th;
-
-   gamma2 = 1.0 /((1.0 + beta) * (1.0 - beta));
-   gamma = sqrt(gamma2);
-   pc = gamma * mv * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
    /* dn/d(Pc) */
    (void) (*pt->spectrum) (pt, pc, &f_nth);
-   f_nth *= di->n_GeV * GSL_CONST_CGSM_SPEED_OF_LIGHT / GEV;
-   /* dn/dp = dP/dp * dn/dP;   p = m*v, P = gamma*mv */
-   f_nth *= gamma2 * gamma;
+   f_nth *= di->n_GeV / GEV;
 
    return f_th - f_nth;
 }
 
 /*}}}*/
 
-static int find_momentum_min (Density_Info *di, double *pc) /*{{{*/
+static int find_momentum_min (Density_Info *di, double *p_pc) /*{{{*/
 {
    Particle_Type *pt = &di->particle;
-   double mc, p_th, pmax, p, f_lo, f_hi, gamma, beta;
-   int status = 0;
+   double pc_th, pc_max, f_lo, f_hi;
 
    /* FIXME: This won't handle pathological cases, e.g. where
     * the two curves cross at a tangent point or where there are
     * two roots above the thermal peak.  I'm not worried about
     * that right now though. */
 
-   p_th = sqrt (2 * pt->mass * di->kT * KEV);
-   mc = pt->mass * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   pc_th = sqrt (2 * pt->mass * di->kT * KEV)
+     * GSL_CONST_CGSM_SPEED_OF_LIGHT;
 
-   f_lo = root_func (p_th, di);
-   pmax = p_th;
-
-   do
+   f_lo = root_func (pc_th, di);
+   if (f_lo < 0)
      {
-        pmax *= 2;
-        if (!(pmax < mc))
-          break;
-        f_hi = root_func (pmax, di);
-     }
-   while (f_lo * f_hi >= 0);
-
-   if (pmax < mc)
-     {
-        /* root should be bracketed */
-        status = bisection (&root_func, p_th, pmax, di, &p);
+        fprintf (stderr, "*** find_momentum_min:  no solution\n");
+        *p_pc = NT_NAN;
+        return -1;
      }
 
-   /* No good solution, use thermal peak */
-   if (status || (p < p_th) || (p > mc))
-     p = p_th;
+   pc_max = GEV;
+   f_hi = root_func (pc_max, di);
+   if (f_hi > 0)
+     {
+        fprintf (stderr, "*** find_momentum_min:  root not bracketed\n");
+        *p_pc = NT_NAN;
+        return -1;
+     }
 
-   beta = p / mc;
-   gamma = 1.0 / sqrt ((1.0 + beta)*(1.0 - beta));
-   *pc = gamma * p * GSL_CONST_CGSM_SPEED_OF_LIGHT;
+   if (bisection (&root_func, pc_th, pc_max, di, p_pc) < 0)
+     {
+        fprintf (stderr, "*** find_momentum_min:  bisection failed???\n");
+        *p_pc = pc_th;
+     }
 
    return 0;
 }
@@ -711,7 +725,7 @@ static void add_user_pdf_intrin (char *path, char *name, char *options) /*{{{*/
 
 static SLang_Intrin_Fun_Type Intrinsics [] =
 {
-   MAKE_INTRINSIC_3("thermal_distrib", thermal_distrib, D, D, D, D),
+   MAKE_INTRINSIC_3("thermal_distrib", maxwell_juttner, D, D, D, D),
    MAKE_INTRINSIC_2("particle_distrib", particle_distrib, D, D, UI),
    MAKE_INTRINSIC_2("ncr_particle_distrib", ncr_particle_distrib, D, D, UI),
    MAKE_INTRINSIC_1("conserve_charge", conserve_charge, D, I),
