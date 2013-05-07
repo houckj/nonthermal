@@ -623,7 +623,7 @@ case "$host_os" in
      ELF_LINK="\$(CC) \$(LDFLAGS) -dynamiclib"
      ELF_LINK_CMD="\$(ELF_LINK) -install_name \$(install_lib_dir)/\$(ELFLIB_MAJOR) -compatibility_version \$(ELF_MAJOR_VERSION) -current_version \$(ELF_MAJOR_VERSION).\$(ELF_MINOR_VERSION)"
      ELF_DEP_LIBS="\$(LDFLAGS) \$(DL_LIB)"
-     CC_SHARED="\$(CC) -bundle -flat_namespace -undefined suppress \$(CFLAGS) -fno-common"
+     CC_SHARED="\$(CC) -dynamiclib -flat_namespace -undefined suppress \$(CFLAGS) -fno-common"
      ELFLIB="lib\$(THIS_LIB).dylib"
      ELFLIB_MAJOR="lib\$(THIS_LIB).\$(ELF_MAJOR_VERSION).dylib"
      ELFLIB_MAJOR_MINOR="lib\$(THIS_LIB).\$(ELF_MAJOR_VERSION).\$(ELF_MINOR_VERSION).dylib"
